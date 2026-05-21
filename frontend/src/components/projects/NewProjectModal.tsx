@@ -1,0 +1,666 @@
+import React, { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/router";
+import { useTranslation } from "react-i18next";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import ActionButton from "@/components/common/ActionButton";
+import { toast } from "sonner";
+import {
+  HiChevronDown,
+  HiCheck,
+  HiFolderPlus,
+  HiDocumentText,
+  HiSparkles,
+  HiRocketLaunch,
+  HiCog,
+  HiGlobeAlt,
+} from "react-icons/hi2";
+import { HiColorSwatch } from "react-icons/hi";
+import { useProject } from "@/contexts/project-context";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { PROJECT_CATEGORIES } from "@/utils/data/projectData";
+import { workflowsApi } from "@/utils/api/workflowsApi";
+import { isValidSlug } from "@/utils/slugUtils";
+
+interface NewProjectModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onProjectCreated?: () => void;
+  initialData?: {
+    organizationId?: string;
+  };
+}
+
+export function NewProjectModal({
+  isOpen,
+  onClose,
+  onProjectCreated,
+}: NewProjectModalProps) {
+  const { t } = useTranslation("projects");
+  const router = useRouter();
+  const projectContext = useProject();
+
+  const { createProject } = projectContext;
+  const [formData, setFormData] = useState({
+    name: "",
+    description: "",
+    color: "#3B82F6",
+    category: "operational",
+    workflowId: "",
+    visibility: "PRIVATE" as const,
+  });
+
+  const generateSlug = (name: string) => {
+    return name
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, "")
+      .replace(/\s+/g, "-")
+      .replace(/-+/g, "-")
+      .trim();
+  };
+
+  // Use projectSlug everywhere it's needed
+  const projectSlug = generateSlug(formData.name);
+
+  const themeColor = formData.color;
+  const themeColorWithOpacity = (opacity: number) =>
+    `${themeColor}${Math.round(opacity * 255)
+      .toString(16)
+      .padStart(2, "0")}`;
+
+  const dynamicStyles = {
+    "--dynamic-primary": themeColor,
+    "--dynamic-primary-20": themeColorWithOpacity(0.2),
+    "--dynamic-primary-10": themeColorWithOpacity(0.1),
+    "--dynamic-primary-5": themeColorWithOpacity(0.05),
+    "--dynamic-primary-80": themeColorWithOpacity(0.8),
+    "--dynamic-primary-90": themeColorWithOpacity(0.9),
+  } as React.CSSProperties;
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [categoryOpen, setCategoryOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const requestIdRef = useRef<string>("");
+  const isInitializedRef = useRef(false);
+
+  const [workflows, setWorkflows] = useState<any[]>([]);
+  const [workflowOpen, setWorkflowOpen] = useState(false);
+  const [workflowSearch, setWorkflowSearch] = useState("");
+  const [visibilityOpen, setVisibilityOpen] = useState(false);
+
+  const selectedCategory = PROJECT_CATEGORIES.find((cat) => cat.id === formData.category);
+  const filteredWorkflows = workflows.filter((wf) =>
+    wf.name.toLowerCase().includes(workflowSearch.toLowerCase())
+  );
+  const selectedWorkflow = workflows.find((wf) => wf.id === formData.workflowId);
+
+  const VISIBILITY_OPTIONS = [
+    {
+      value: "PRIVATE",
+      label: t("modal.visibilityOptions.PRIVATE.label"),
+      description: t("modal.visibilityOptions.PRIVATE.description"),
+    },
+    {
+      value: "INTERNAL",
+      label: t("modal.visibilityOptions.INTERNAL.label"),
+      description: t("modal.visibilityOptions.INTERNAL.description"),
+    },
+    {
+      value: "PUBLIC",
+      label: t("modal.visibilityOptions.PUBLIC.label"),
+      description: t("modal.visibilityOptions.PUBLIC.description"),
+    },
+  ];
+
+  const selectedWorkflowStatuses = selectedWorkflow?.statuses || [];
+
+  const retryFetch = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    isInitializedRef.current = false;
+    requestIdRef.current = "";
+    setError(null);
+    loadWorkflows();
+  };
+
+  // Cleanup effect
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      isInitializedRef.current = false;
+      requestIdRef.current = "";
+    };
+  }, []);
+
+  const loadWorkflows = async () => {
+    try {
+      const orgId = workflowsApi.getCurrentOrganization();
+      if (orgId) {
+        const wf = await workflowsApi.getWorkflowsByOrganization(orgId);
+        setWorkflows(wf || []);
+
+        const defaultWf = (wf || []).find((w) => w.isDefault);
+        if (defaultWf) {
+          setFormData((prev) => ({ ...prev, workflowId: defaultWf.id }));
+        }
+      } else {
+        setWorkflows([]);
+      }
+    } catch (err) {
+      setWorkflows([]);
+      console.error("Error fetching workflows:", err);
+    }
+  };
+
+  useEffect(() => {
+    if (!isOpen) return;
+    loadWorkflows();
+  }, [isOpen]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.name.trim()) return;
+
+    setIsSubmitting(true);
+    try {
+      const workflowSettings = formData.workflowId ? { workflowId: formData.workflowId } : {};
+      const projectData = {
+        name: formData.name.trim(),
+        slug: projectSlug,
+        description: formData.description.trim(),
+        color: formData.color,
+        status: "ACTIVE" as const,
+        priority: "MEDIUM" as const,
+        visibility: formData.visibility,
+        startDate: new Date().toISOString(),
+        endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        ...(formData.workflowId ? { workflowId: formData.workflowId } : {}),
+        settings: {
+          methodology: "scrum" as const,
+          defaultTaskType: "task" as const,
+          enableTimeTracking: false,
+          allowSubtasks: true,
+          ...workflowSettings,
+        },
+      };
+
+      const newProject = await createProject(projectData);
+      const projSlug = newProject?.slug;
+
+      toast.success(t("modal.success", { name: formData.name }));
+      handleClose();
+      document.body.style.pointerEvents = "auto";
+      onProjectCreated?.();
+
+      const workspaceSlug =
+        typeof router.query.workspaceSlug === "string"
+          ? router.query.workspaceSlug
+          : newProject?.workspace?.slug;
+
+      if (isValidSlug(projSlug) && isValidSlug(workspaceSlug)) {
+        router.push(`/${workspaceSlug}/${projSlug}`);
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : t("modal.errorCreate");
+      toast.error(errorMessage);
+      console.error("Failed to create project:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleClose = () => {
+    setFormData({
+      name: "",
+      description: "",
+      color: "#3B82F6",
+      category: "operational",
+      workflowId: "",
+      visibility: "PRIVATE",
+    });
+    setCategoryOpen(false);
+    setWorkflowOpen(false);
+    setWorkflowSearch("");
+    setVisibilityOpen(false);
+    onClose();
+  };
+
+  const handleCategorySelect = (category: any) => {
+    setFormData((prev) => ({
+      ...prev,
+      category: category.id,
+      color: category.color,
+    }));
+    setCategoryOpen(false);
+  };
+
+  // Add workflow select handler
+  const handleWorkflowSelect = (workflow: any) => {
+    setFormData((prev) => ({
+      ...prev,
+      workflowId: workflow.id,
+    }));
+    setWorkflowOpen(false);
+  };
+
+  const isValid = formData.name.trim().length > 0;
+
+  return (
+    <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
+      <DialogContent className="projects-modal-container border-none" style={dynamicStyles}>
+        <DialogHeader className="projects-modal-header">
+          <div className="projects-modal-header-content">
+            <div className="projects-modal-icon bg-[var(--dynamic-primary)]">
+              <HiFolderPlus className="projects-modal-icon-content" />
+            </div>
+            <div className="projects-modal-info">
+              <DialogTitle className="projects-modal-title">{t("modal.createTitle")}</DialogTitle>
+              <p className="projects-modal-description">
+                {t("modal.createDescription")}
+              </p>
+            </div>
+          </div>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="projects-modal-form">
+          {/* Error Alert with Retry Button */}
+          {error && (
+            <Alert
+              variant="destructive"
+              className="bg-[var(--destructive)]/10 border-[var(--destructive)]/20 text-[var(--destructive)] mb-4"
+            >
+              <AlertDescription className="flex flex-col gap-2">
+                {error}
+                <ActionButton
+                  secondary
+                  disabled={isSubmitting}
+                >
+                  {t("modal.tryAgain")}
+                </ActionButton>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* Project Name */}
+          <div className="projects-form-field">
+            <Label htmlFor="name" className="projects-form-label">
+              <HiSparkles
+                className="projects-form-label-icon"
+                style={{ color: "var(--dynamic-primary)" }}
+              />
+              {t("modal.projectName")} <span className="projects-form-label-required">*</span>
+            </Label>
+            <Input
+              id="name"
+              placeholder={t("modal.enterProjectName")}
+              value={formData.name}
+              onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
+              className="projects-form-input border-none"
+              style={
+                {
+                  "--tw-ring-color": "var(--dynamic-primary-20)",
+                  borderColor: "var(--border)",
+                } as any
+              }
+              onFocus={(e) => {
+                e.target.style.borderColor = "var(--dynamic-primary)";
+                e.target.style.boxShadow = `0 0 0 3px var(--dynamic-primary-20)`;
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = "var(--border)";
+                e.target.style.boxShadow = "none";
+              }}
+              autoFocus
+            />
+            {/* URL Preview */}
+            {formData.name && (
+              <div
+                className="projects-url-preview border-none"
+                style={{
+                  background: `linear-gradient(135deg, var(--dynamic-primary-5), var(--dynamic-primary-10))`,
+                  borderColor: "var(--dynamic-primary-20)",
+                }}
+              >
+                <HiRocketLaunch
+                  className="projects-url-preview-icon"
+                  style={{ color: "var(--dynamic-primary)" }}
+                />
+                <div className="projects-url-preview-label">{t("modal.url")}</div>
+                <code
+                  className="projects-url-preview-code border-none"
+                  style={{ color: "var(--dynamic-primary)" }}
+                >
+                  /projects/{projectSlug || t("modal.urlProject")}
+                </code>
+              </div>
+            )}
+          </div>
+
+          {/* Workflow - Dropdown  */}
+          <div className="projects-form-field">
+            <Label className="projects-form-label">
+              <HiCog
+                className="projects-form-label-icon"
+                style={{ color: "var(--dynamic-primary)" }}
+              />
+              {t("modal.workflow")}
+            </Label>
+            <Popover open={workflowOpen} onOpenChange={setWorkflowOpen} modal={true}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  className="projects-workspace-button border-none"
+                  style={{ borderColor: "var(--border)" }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = "var(--dynamic-primary-20)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = "var(--border)";
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = "var(--dynamic-primary)";
+                    e.currentTarget.style.boxShadow = `0 0 0 3px var(--dynamic-primary-20)`;
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = "var(--border)";
+                    e.currentTarget.style.boxShadow = "none";
+                  }}
+                >
+                  <span className="projects-workspace-selected">
+                    {selectedWorkflow?.name || t("modal.selectWorkflow")}
+                  </span>
+                  <HiChevronDown className="projects-workspace-dropdown-icon" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="projects-workspace-popover border-none" align="start">
+                <Command className="projects-workspace-command border-none">
+                  <CommandInput
+                    placeholder={t("modal.searchWorkflows")}
+                    value={workflowSearch}
+                    onValueChange={setWorkflowSearch}
+                    className="projects-workspace-command-input border-none"
+                  />
+                  <CommandEmpty className="projects-workspace-command-empty">
+                    {filteredWorkflows.length === 0 && workflowSearch
+                      ? t("modal.noWorkflowsFound")
+                      : t("modal.typeToSearchWorkflows")}
+                  </CommandEmpty>
+                  <CommandGroup className="projects-workspace-command-group">
+                    {filteredWorkflows.map((workflow) => (
+                      <CommandItem
+                        key={workflow.id}
+                        value={workflow.name}
+                        onSelect={() => handleWorkflowSelect(workflow)}
+                        className="projects-workspace-command-item"
+                      >
+                        <div className="flex flex-col flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[14px] font-medium">{workflow.name}</span>
+                            {/* Removed StatusBadge for Default */}
+                          </div>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {workflow.statuses &&
+                              workflow.statuses.map((status: any) => (
+                                <span
+                                  key={status.id}
+                                  className="px-2 py-0.5 rounded text-white text-[10px] font-semibold"
+                                  style={{ backgroundColor: status.color }}
+                                >
+                                  {status.name}
+                                </span>
+                              ))}
+                          </div>
+                        </div>
+                        {formData.workflowId === workflow.id && (
+                          <HiCheck className="projects-workspace-command-item-check" />
+                        )}
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </Command>
+              </PopoverContent>
+            </Popover>
+            <p className="projects-form-hint">
+              <HiCog
+                className="projects-form-hint-icon"
+                style={{ color: "var(--dynamic-primary)" }}
+              />
+              {t("modal.workflowHint")}
+            </p>
+          </div>
+
+          {/* Visibility - Dropdown */}
+          <div className="projects-form-field">
+            <Label className="projects-form-label">
+              <HiGlobeAlt
+                className="projects-form-label-icon"
+                style={{ color: "var(--dynamic-primary)" }}
+              />
+              {t("modal.visibility")} <span className="projects-form-label-required">*</span>
+            </Label>
+            <Popover open={visibilityOpen} onOpenChange={setVisibilityOpen} modal={true}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  className="projects-workspace-button border-none"
+                  style={{ borderColor: "var(--border)" }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = "var(--dynamic-primary-20)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = "var(--border)";
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = "var(--dynamic-primary)";
+                    e.currentTarget.style.boxShadow = `0 0 0 3px var(--dynamic-primary-20)`;
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = "var(--border)";
+                    e.currentTarget.style.boxShadow = "none";
+                  }}
+                >
+                  <span className="projects-workspace-selected">
+                    {VISIBILITY_OPTIONS.find((v) => v.value === formData.visibility)?.label ||
+                      t("modal.selectVisibility")}
+                  </span>
+                  <HiChevronDown className="projects-workspace-dropdown-icon" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="projects-workspace-popover border-none" align="start">
+                <Command className="projects-workspace-command border-none">
+                  <CommandEmpty className="projects-workspace-command-empty">
+                    {t("modal.noVisibilityOptions")}
+                  </CommandEmpty>
+                  <CommandGroup className="projects-workspace-command-group">
+                    {VISIBILITY_OPTIONS.map((option) => (
+                      <CommandItem
+                        key={option.value}
+                        value={option.value}
+                        onSelect={() => {
+                          setFormData((prev) => ({
+                            ...prev,
+                            visibility: option.value as any,
+                          }));
+                          setVisibilityOpen(false);
+                        }}
+                        className="projects-workspace-command-item"
+                      >
+                        <div className="flex items-center gap-2 flex-1">
+                          <span className="text-[14px] font-medium">{option.label}</span>
+                        </div>
+                        <span className="text-[12px] text-muted-foreground ml-7">
+                          {option.description}
+                        </span>
+                        {formData.visibility === option.value && (
+                          <HiCheck className="projects-workspace-command-item-check" />
+                        )}
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </Command>
+              </PopoverContent>
+            </Popover>
+            <p className="projects-form-hint">
+              <HiGlobeAlt
+                className="projects-form-hint-icon"
+                style={{ color: "var(--dynamic-primary)" }}
+              />
+              {t("modal.visibilityHint")}
+            </p>
+          </div>
+
+          {/* Description */}
+          <div className="projects-form-field">
+            <Label htmlFor="description" className="projects-form-label">
+              <HiDocumentText
+                className="projects-form-label-icon"
+                style={{ color: "var(--dynamic-primary)" }}
+              />
+              {t("modal.description")}
+            </Label>
+            <Textarea
+              id="description"
+              placeholder={t("modal.descriptionPlaceholder")}
+              value={formData.description}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  description: e.target.value,
+                }))
+              }
+              className="projects-form-textarea border-none"
+              style={{
+                borderColor: "var(--border)",
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = "var(--dynamic-primary)";
+                e.target.style.boxShadow = `0 0 0 3px var(--dynamic-primary-20)`;
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = "var(--border)";
+                e.target.style.boxShadow = "none";
+              }}
+            />
+            <p className="projects-form-hint">
+              <HiSparkles
+                className="projects-form-hint-icon"
+                style={{ color: "var(--dynamic-primary)" }}
+              />
+              {t("modal.descriptionHint")}
+            </p>
+          </div>
+
+          {/* Project Category - Dropdown */}
+          <div className="projects-form-field">
+            <Label className="projects-form-label">
+              <HiColorSwatch
+                className="projects-form-label-icon"
+                style={{ color: "var(--dynamic-primary)" }}
+              />
+              {t("modal.projectColors")}
+            </Label>
+            <Popover open={categoryOpen} onOpenChange={setCategoryOpen} modal={true}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  className="projects-workspace-button border-none"
+                  style={{
+                    borderColor: "var(--border)",
+                    height: "2.5rem", // Match input height
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = "var(--dynamic-primary-20)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = "var(--border)";
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = "var(--dynamic-primary)";
+                    e.currentTarget.style.boxShadow = `0 0 0 3px var(--dynamic-primary-20)`;
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = "var(--border)";
+                    e.currentTarget.style.boxShadow = "none";
+                  }}
+                >
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="size-6 rounded-sm"
+                      style={{ backgroundColor: selectedCategory?.color }}
+                    />
+                    <span className="projects-workspace-selected">
+                      {selectedCategory ? t(`categories.${selectedCategory.id}.label`) : t("modal.selectCategory")}
+                    </span>
+                  </div>
+                  <HiChevronDown className="projects-workspace-dropdown-icon" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="projects-workspace-popover border-none" align="start">
+                <Command className="projects-workspace-command border-none">
+                  <CommandEmpty className="projects-workspace-command-empty">
+                    {t("modal.noCategoriesFound")}
+                  </CommandEmpty>
+                  <CommandGroup className="projects-workspace-command-group">
+                    {PROJECT_CATEGORIES.map((category) => (
+                      <CommandItem
+                        key={category.id}
+                        value={t(`categories.${category.id}.label`)}
+                        onSelect={() => handleCategorySelect(category)}
+                        className="projects-workspace-command-item"
+                      >
+                        <div className="flex items-center gap-2 flex-1">
+                          <div
+                            className="size-7 rounded-sm"
+                            style={{ backgroundColor: category.color }}
+                          />
+                          <div className="flex flex-col">
+                            <span className="text-[14px] font-medium">{t(`categories.${category.id}.label`)}</span>
+                            <span className="text-[12px] text-muted-foreground">
+                              {t(`categories.${category.id}.description`)}
+                            </span>
+                          </div>
+                        </div>
+                        {formData.category === category.id && (
+                          <HiCheck className="projects-workspace-command-item-check" />
+                        )}
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </Command>
+              </PopoverContent>
+            </Popover>
+            <p className="projects-form-hint">
+              <HiColorSwatch
+                className="projects-form-hint-icon"
+                style={{ color: "var(--dynamic-primary)" }}
+              />
+              {t("modal.categoryHint")}
+            </p>
+          </div>
+
+          {/* Submit Buttons */}
+          <div className="projects-form-actions flex gap-2 justify-end mt-6">
+            <ActionButton type="button" secondary onClick={handleClose} disabled={isSubmitting}>
+              {t("modal.cancel")}
+            </ActionButton>
+            <ActionButton type="submit" primary disabled={!isValid || isSubmitting}>
+              {isSubmitting ? t("modal.creating") : t("modal.create")}
+            </ActionButton>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}

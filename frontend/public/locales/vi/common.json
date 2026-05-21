@@ -1,0 +1,34 @@
+{
+  "save": "Lưu",
+  "cancel": "Hủy",
+  "delete": "Xóa",
+  "continue": "Tiếp tục",
+  "confirm": "Xác nhận",
+  "error": "Lỗi",
+  "success": "Thành công",
+  "priorities": {
+    "lowest": "Thấp nhất",
+    "low": "Thấp",
+    "medium": "Trung bình",
+    "high": "Cao",
+    "highest": "Cao nhất"
+  },
+  "invite": {
+    "invalidTitle": "Lời mời không hợp lệ",
+    "invalidMessage": "Liên kết lời mời không hợp lệ hoặc đã hết hạn",
+    "whyHappened": "Why did this happen?",
+    "reasonExpired": "The invitation link may have expired",
+    "reasonEmail": "It might have been sent to a different email",
+    "reasonUsed": "The invitation was already used or revoked",
+    "logout": "Logout and Switch Account",
+    "login": "Quay lại đăng nhập",
+    "home": "Về trang chủ"
+  },
+  "pagination": {
+    "showing": "Hiển thị",
+    "to": "đến",
+    "of": "trên",
+    "page": "Trang",
+    "items": "mục"
+  }
+}

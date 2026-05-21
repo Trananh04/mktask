@@ -1,0 +1,160 @@
+{
+  "analytics_title": "Análise do Espaço de Trabalho",
+  "analytics_description": "Informações sobre o desempenho e as métricas do seu espaço de trabalho",
+  "dashboard_settings": "Configurações do Painel",
+  "customize_widgets": "Personalize os widgets do seu painel",
+  "no_widgets_title": "Nenhum widget para exibir",
+  "no_widgets_description": "Todos os widgets estão ocultos no momento. Use o botão de personalização para mostrar os widgets.",
+  "show_all_widgets": "Mostrar Todos os Widgets",
+  "no_data": "Nenhum dado analítico disponível para esta organização.",
+  "load_data": "Carregar Dados",
+  "error_loading": "Erro ao carregar análise da organização:",
+  "widgets": {
+    "kpi_metrics": "Métricas KPI",
+    "project_status": "Distribuição de Status do Projeto",
+    "task_priority": "Detalhamento de Prioridade de Tarefa",
+    "task_type": "Distribuição por Tipo de Tarefa",
+    "sprint_status": "Visão Geral do Status da Sprint",
+    "monthly_completion": "Conclusão Mensal de Tarefas",
+    "team_utilization": "Distribuição de Funções da Equipe",
+    "quality_metrics": "Qualidade da Resolução de Erros",
+    "workspace_projects": "Projetos por Espaço de Trabalho",
+    "member_workload": "Distribuição de Carga de Trabalho dos Membros",
+    "resource_allocation": "Alocação de Recursos"
+  },
+  "roles": {
+    "admin": "Administrador",
+    "manager": "Gerente",
+    "member": "Membro",
+    "viewer": "Visualizador",
+    "guest": "Convidado",
+    "contributor": "Contribuidor"
+  },
+  "project_status": {
+    "planning": "Planejamento",
+    "active": "Ativo",
+    "on_hold": "Em espera",
+    "completed": "Concluído",
+    "cancelled": "Cancelado"
+  },
+  "task_types": {
+    "story": "História",
+    "task": "Tarefa",
+    "bug": "Erro",
+    "epic": "Épico",
+    "feature": "Funcionalidade"
+  },
+  "priority": {
+    "lowest": "Muito baixa",
+    "low": "Baixa",
+    "medium": "Média",
+    "high": "Alta",
+    "highest": "Muito alta"
+  },
+  "workload": {
+    "label": "Carga de trabalho",
+    "low": "Baixa",
+    "medium": "Média",
+    "high": "Alta",
+    "assigned": "Tarefas atribuídas",
+    "reported": "Tarefas relatadas"
+  },
+  "quality": {
+    "resolved": "Resolvido",
+    "remaining": "Restante",
+    "low_performance": "Baixo desempenho",
+    "medium_performance": "Desempenho médio",
+    "high_performance": "Alto desempenho",
+    "resolution_rate": "Taxa de resolução"
+  },
+  "project_count": {
+    "low": "<=5 Projetos",
+    "medium": "6-10 Projetos",
+    "high": ">10 Projetos"
+  },
+  "charts": {
+    "project_status_description": "Detalhamento do status atual de todos os projetos",
+    "project_status_description_with_count": "{{count}} projetos totais em toda a organização",
+    "task_priority_description": "Visão geral das tarefas por seus níveis de prioridade em todos os projetos",
+    "task_type_description": "Distribuição das tarefas por seu tipo",
+    "task_type_description_with_count": "{{count}} tarefas totais em toda a organização",
+    "sprint_status_description": "Status atual de todas as sprints nos projetos",
+    "kpi_metrics_description": "Principais indicadores de desempenho para seu espaço de trabalho",
+    "monthly_completion_description": "Número de tarefas concluídas a cada mês",
+    "team_utilization_description_all": "Detalhamento das funções dos membros da organização",
+    "team_utilization_description_workspace": "Detalhamento das funções para o espaço de trabalho selecionado",
+    "all_workspaces": "Todos os espaços de trabalho",
+    "member_workload_description": "Tarefas ativas vs tarefas relatadas por membro",
+    "workspace_projects_description": "Distribuição de projetos entre os espaços de trabalho",
+    "resource_allocation_description_all": "Distribuição dos membros da equipe por função",
+    "resource_allocation_description_project": "Distribuição de funções para o projeto selecionado",
+    "all_projects": "Todos os projetos",
+    "count": "Contagem",
+    "quality_metrics_description_with_count": "{{resolved}}/{{total}} erros resolvidos ({{rate}}%)"
+  },
+  "kpi": {
+    "total_projects": "Total de Projetos",
+    "active_projects": "Projetos Ativos",
+    "completion_rate": "Taxa de Conclusão",
+    "total_tasks": "Total de Tarefas",
+    "overdue_tasks": "Tarefas Atrasadas",
+    "task_health": "Saúde das Tarefas",
+    "excellent": "Excelente",
+    "good": "Bom",
+    "needs_focus": "Precisa de Foco",
+    "perfect": "Perfeito",
+    "critical": "Crítico",
+    "monitor": "Monitorar"
+  },
+  "header": {
+    "ready_to_tackle": "Pronto para enfrentar seus objetivos?",
+    "todays_agenda": "Agenda de Hoje",
+    "new_task": "Nova Tarefa"
+  },
+  "analytics": {
+    "failed_to_fetch_today_task_data": "Falha ao buscar dados das tarefas de hoje",
+    "error_loading_organization_analytics": "Erro ao carregar análise da organização:",
+    "today_agenda_tooltip": "Agenda de Hoje",
+    "dashboard_settings_tooltip": "Configurações do Painel",
+    "dashboard_title": "Painel",
+    "dashboard_description": "Informações abrangentes sobre o desempenho e a saúde de sua organização",
+    "no_analytics_data": "Nenhum dado analítico disponível para esta organização.",
+    "load_data_button": "Carregar Dados",
+    "no_widgets_title": "Nenhum widget para exibir",
+    "no_widgets_description": "Todos os widgets estão ocultos no momento. Use o botão de personalização para mostrar os widgets.",
+    "show_all_widgets_button": "Mostrar Todos os Widgets",
+    "failed_to_load_widget_data": "Falha ao carregar dados para {{widgetTitle}}",
+    "retry_button": "Tentar Novamente",
+    "kpi_cards": {
+      "workspaces": "Total de Espaços de Trabalho",
+      "projects": "Total de Projetos",
+      "members": "Membros da Equipe",
+      "task_completion": "Conclusão de Tarefas",
+      "bug_resolution": "Resolução de Erros",
+      "overdue_tasks": "Tarefas Atrasadas",
+      "active_sprints": "Sprints Ativas",
+      "productivity": "Produtividade Geral",
+      "descriptions": {
+        "active_status": "{{count}} ativos",
+        "organization_members": "Membros da organização",
+        "tasks_count": "{{completed}} / {{total}} tarefas",
+        "resolved_count": "{{resolved}} / {{total}} resolvidos",
+        "require_attention": "Exigem atenção",
+        "currently_running": "Atualmente em execução",
+        "task_completion_rate": "Taxa de conclusão de tarefas"
+      }
+    }
+  },
+  "agenda": {
+    "overdue": "Atrasado",
+    "today": "Hoje",
+    "tomorrow": "Amanhã",
+    "due": "Vencimento",
+    "no_due_date": "Sem data de vencimento",
+    "all_clear": "Tudo em ordem por hoje!",
+    "no_tasks_scheduled": "Nenhuma tarefa agendada. Você está em dia!",
+    "great_job": "Ótimo trabalho mantendo-se organizado!",
+    "open_task": "Abrir tarefa: {{title}}",
+    "click_to_view": "Clique para ver os detalhes da tarefa"
+  }
+}

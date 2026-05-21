@@ -1,0 +1,30 @@
+{
+  "title": "Bảng hoạt động",
+  "description": "Quản lý và theo dõi toàn bộ hoạt động của bạn ở một nơi.",
+  "workspace_description": "Hoạt động và cập nhật gần đây trong không gian làm việc \"{{workspaceName}}\"",
+  "filters": {
+    "all": "Tất cả hoạt động",
+    "tasks": "Công việc",
+    "projects": "Dự án",
+    "workspaces": "Không gian làm việc",
+    "users": "Người dùng",
+    "comments": "Bình luận",
+    "status_changes": "Thay đổi trạng thái",
+    "assignments": "Phân công",
+    "filter_by_type": "Lọc theo loại",
+    "clear_filter": "Xóa bộ lọc"
+  },
+  "pagination": {
+    "page_info": "Trang {{currentPage}} / {{totalPages}}",
+    "previous": "Trước",
+    "next": "Tiếp"
+  },
+  "recent_activity": "Hoạt động gần đây",
+  "workspace_activity": "Hoạt động không gian làm việc",
+  "failed_to_load": "Không thể tải hoạt động",
+  "failed_to_refresh": "Không thể làm mới hoạt động",
+  "failed_to_load_workspace": "Không thể tải hoạt động của không gian làm việc",
+  "no_activity": "Chưa có hoạt động",
+  "no_filter_results": "Không tìm thấy kết quả cho bộ lọc {{filter}}",
+  "workspace_not_found": "Không tìm thấy không gian làm việc"
+}

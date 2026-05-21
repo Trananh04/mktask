@@ -1,0 +1,53 @@
+{
+  "title": "dự án cài đặt",
+  "description": "Manage your dự án configuration and preferences",
+  "refreshing": "làm mớiing dự án data...",
+  "auth_required": "Cần xác thực",
+  "workspace_not_found": "Không tìm thấy không gian làm việc",
+  "project_not_found": "dự án not found",
+  "failed_to_load": "không thể load dự án",
+  "tabs": {
+    "general": "General",
+    "email": "email Setup",
+    "rules": "Rules"
+  },
+  "general": {
+    "title": "General Information",
+    "subtitle": "Manage general information of your dự án",
+    "name_label": "dự án tên",
+    "name_placeholder": "Nhập dự án tên",
+    "slug_label": "dự án Slug",
+    "slug_placeholder": "dự án-slug",
+    "slug_description": "Used in URLs. Only lowercase letters, numbers, and hyphens are allowed.",
+    "slug_error": "dự án slug can only contain lowercase letters, numbers, and hyphens",
+    "description_label": "Mô tả",
+    "description_placeholder": "Describe your dự án...",
+    "status_label": "Trạng thái",
+    "status_placeholder": "Chọn trạng thái",
+    "status_active": "Đang hoạt động",
+    "status_on_hold": "On Hold",
+    "status_completed": "Completed",
+    "status_archived": "Archived",
+    "visibility_label": "Visibility",
+    "visibility_placeholder": "chọn visibility",
+    "visibility_private": "Private - Only thành viên",
+    "visibility_internal": "Internal - không gian làm việc thành viên can view",
+    "visibility_public": "Public - Anyone can view",
+    "visibility_description": "Control who can access this dự án. thành viên always have full access based on their role.",
+    "save_changes": "lưu Changes",
+    "saving": "Saving...",
+    "save_success": "dự án cài đặt cập nhậtd thành công!",
+    "save_failed": "không thể cập nhật dự án"
+  },
+  "danger_zone": {
+    "title": "Danger Zone",
+    "description": "These actions cannot be undone. vui lòng proceed with caution.",
+    "archive_label": "Archive dự án",
+    "archive_description": "Archive this dự án and make it read-only",
+    "archive_failed": "không thể archive dự án",
+    "delete_label": "xóa dự án",
+    "delete_description": "Permanently xóa this dự án and all its data",
+    "delete_failed": "không thể xóa dự án",
+    "delete_button": "xóa dự án"
+  }
+}

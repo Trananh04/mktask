@@ -1,0 +1,28 @@
+{
+  "modal": {
+    "createTitle": "tạo New tổ chức",
+    "createDescription": "Provide information about your new tổ chức",
+    "name": "tổ chức tên",
+    "namePlaceholder": "Nhập tổ chức tên",
+    "slug": "tổ chức Slug",
+    "slugPlaceholder": "tổ chức-slug",
+    "slugHint": "This will be used in your tổ chức URL. Only lowercase letters, numbers, and hyphens are allowed.",
+    "description": "Mô tả",
+    "descriptionPlaceholder": "Describe your tổ chức...",
+    "website": "Website",
+    "websitePlaceholder": "https://example.com",
+    "cancel": "Hủy",
+    "create": "tạo tổ chức",
+    "update": "cập nhật tổ chức",
+    "creating": "Creating...",
+    "saving": "Saving...",
+    "success": "tổ chức tạod thành công!",
+    "errorDefault": "không thể tạo tổ chức",
+    "errorSave": "không thể lưu tổ chức. vui lòng Thử lại.",
+    "errorTitle": "Error creating tổ chức",
+    "errorNameRequired": "tổ chức tên is bắt buộc",
+    "errorSlugRequired": "tổ chức slug is bắt buộc",
+    "errorSlugInvalid": "Slug can only contain lowercase letters, numbers, and hyphens",
+    "errorWebsiteInvalid": "vui lòng Nhập a valid URL"
+  }
+}

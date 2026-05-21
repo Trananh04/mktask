@@ -1,0 +1,204 @@
+{
+  "administration": "Administration",
+  "navigation": {
+    "overview": "Tổng quan",
+    "users": "Người dùng",
+    "organizations": "Tổ chức",
+    "configuration": "Configuration"
+  },
+  "dashboard": {
+    "welcome_back": "Welcome back, {{name}}",
+    "platform_overview": "Here's an overview of your platform. {{userCount}} active người dùng across {{orgCount}} tổ chức.",
+    "stats": {
+      "total_users": "Total người dùng",
+      "active_users": "Active người dùng",
+      "organizations": "Tổ chức",
+      "workspaces": "Không gian làm việc",
+      "projects": "Dự án",
+      "tasks": "Công việc",
+      "new_this_week": "+{{count}} this week"
+    },
+    "system_status": {
+      "title": "System trạng thái",
+      "manage": "Manage",
+      "registration": "Registration",
+      "email_smtp": "email / SMTP",
+      "sso": "Single Sign-On",
+      "enabled": "đã bật",
+      "disabled": "đã tắt",
+      "configured": "Configured",
+      "not_configured": "Not configured"
+    }
+  },
+  "users": {
+    "title": "Người dùng",
+    "description": "Manage platform người dùng and their roles",
+    "search_placeholder": "tìm kiếm by tên, email or người dùngtên...",
+    "table": {
+      "user": "Người dùng",
+      "role": "Role",
+      "status": "Trạng thái",
+      "organizations": "Tổ chức",
+      "created": "tạod",
+      "actions": "Actions"
+    },
+    "roles": {
+      "super_admin": "Quản trị viên cấp cao",
+      "user": "Người dùng"
+    },
+    "status": {
+      "active": "Đang hoạt động",
+      "inactive": "Không hoạt động",
+      "suspended": "Suspended"
+    },
+    "actions": {
+      "edit": "Sửa",
+      "suspend": "Suspend",
+      "activate": "Activate",
+      "delete": "Xóa",
+      "view_details": "View Details",
+      "promote_super_admin": "Promote to Super Admin",
+      "remove_super_admin": "gỡ Super Admin",
+      "deactivate": "Deactivate",
+      "reset_password": "Reset mật khẩu",
+      "reset_password_link_copied": "mật khẩu reset link for {{name}} copied to clipboard",
+      "delete_confirmation": "Bạn có chắc muốn xóa người dùng {{name}}? Không thể hoàn tác hành động này.",
+      "user_removed": "người dùng {{name}} has been gỡd"
+    },
+    "total_count": "Total: {{count}} người dùng",
+    "no_users": "Không có người dùng in the system yet",
+    "details": {
+      "profile_info": "hồ sơ Information",
+      "actions": "Actions",
+      "danger_zone": "Danger Zone",
+      "memberships": "tổ chức thành viênhips",
+      "last_login": "Last login",
+      "never": "Never",
+      "email_verified": "email Verified",
+      "source": "Source",
+      "timezone": "Timezone",
+      "language": "Language",
+      "yes": "Yes",
+      "no": "No",
+      "membership_count": "{{count}} thành viênhip",
+      "membership_count_plural": "{{count}} thành viênhips",
+      "no_memberships": "Không có tổ chức thành viênhips"
+    }
+  },
+  "organizations": {
+    "title": "Tổ chức",
+    "description": "Manage platform tổ chức and their limits",
+    "create_new": "New tổ chức",
+    "search_placeholder": "tìm kiếm by tên or slug...",
+    "table": {
+      "organization": "Tổ chức",
+      "slug": "Slug",
+      "owner": "Owner",
+      "users": "Người dùng",
+      "workspaces": "Không gian làm việc",
+      "created": "tạod",
+      "actions": "Actions"
+    },
+    "total_count": "Total: {{count}} tổ chức",
+    "no_orgs": "Không có tổ chức in the system yet",
+    "details": {
+      "information": "tổ chức Information",
+      "danger_zone": "Danger Zone",
+      "members": "Thành viên",
+      "workspaces": "Không gian làm việc",
+      "projects": "Dự án",
+      "tasks": "Công việc"
+    },
+    "actions": {
+      "transfer_ownership": "Transfer Ownership",
+      "transfer_confirmation": "Bạn có chắc muốn transfer ownership of this tổ chức? Không thể hoàn tác hành động này.",
+      "select_new_owner": "chọn new owner",
+      "transfer": "Transfer"
+    }
+  },
+  "config": {
+    "title": "System Configuration",
+    "description": "Global system cài đặt and configuration",
+    "save_changes": "lưu Changes",
+    "saving": "Saving...",
+    "sections": {
+      "general": "General cài đặt",
+      "registration": "Registration",
+      "registration_desc": "Control who can tạo accounts and resources on the platform",
+      "security": "bảo mật",
+      "smtp": "SMTP cài đặt"
+    },
+    "labels": {
+      "site_name": "Site tên",
+      "registration_enabled": "Enable Registration",
+      "registration_enabled_desc": "When đã tắt, only admins can tạo new người dùng accounts via invitations",
+      "default_org": "Default tổ chức",
+      "default_org_desc": "New người dùng will automatically join this tổ chức instead of creating their own. Leave empty to require org creation on signup.",
+      "default_org_active_desc": "New người dùng will automatically join {{name}}",
+      "default_org_none_desc": "New người dùng will need to tạo their own tổ chức on signup",
+      "allow_org_creation": "Allow tổ chức Creation",
+      "allow_org_creation_desc": "When đã tắt, only Super Admins can tạo new tổ chức. người dùng will be assigned to the default tổ chức.",
+      "allow_workspace_creation": "Allow không gian làm việc Creation",
+      "allow_workspace_creation_desc": "When đã tắt, only tổ chức Owners and Managers can tạo không gian làm việc.",
+      "allow_project_creation": "Allow dự án Creation",
+      "allow_project_creation_desc": "When đã tắt, only không gian làm việc Managers and above can tạo dự án.",
+      "resource_creation_perms": "Resource Creation Permissions",
+      "sso_enabled": "Enable SSO",
+      "sso_enabled_desc": "Allow người dùng to log in with an external identity provider",
+      "sso_desc": "Configure OpenID Connect for external authentication",
+      "sso_provider_name": "Provider Display tên",
+      "sso_provider_name_desc": "Shown on the login button, e.g., 'Login with Authentik'",
+      "sso_issuer_url": "Issuer URL",
+      "sso_issuer_url_desc": "OIDC discovery URL, e.g., https://auth.example.com/application/o/mkcông việc/",
+      "sso_client_id": "Client ID",
+      "sso_client_id_desc": "OAuth2 client ID from your identity provider",
+      "sso_client_secret": "Client Secret",
+      "sso_client_secret_desc": "OAuth2 client secret",
+      "sso_auto_register": "Auto-tạo Accounts via SSO",
+      "sso_auto_register_desc": "When đã bật, new người dùng can be tạod through SSO even if public registration is đã tắt",
+      "smtp_host": "SMTP Host",
+      "smtp_host_desc": "e.g., smtp.gmail.com, smtp.sendgrid.net",
+      "smtp_port": "SMTP Port",
+      "smtp_port_desc": "Common ports: 587 (TLS), 465 (SSL), 25 (unencrypted)",
+      "smtp_user": "SMTP người dùng",
+      "smtp_user_desc": "Usually your email address",
+      "smtp_pass": "SMTP mật khẩu",
+      "smtp_pass_desc": "App mật khẩu or SMTP credential",
+      "smtp_from": "SMTP From Address",
+      "smtp_from_desc": "The sender email address for outgoing emails",
+      "smtp_desc": "Configure outgoing email cài đặt for thông báo and mật khẩu resets",
+      "redirect_uri": "Redirect URI",
+      "redirect_uri_desc": "Add this URL as the redirect/callback URI in your identity provider cài đặt.",
+      "auto_generated": "Auto-generated",
+      "copy": "Copy",
+      "copied_to_clipboard": "Copied to clipboard",
+      "test_connection": "Kiểm tra kết nối",
+      "test_connection_desc": "Verify SMTP server is reachable and credentials are valid",
+      "testing": "Testing...",
+      "smtp_verified": "SMTP connection verified",
+      "smtp_test_failed": "SMTP test failed",
+      "set_via_env": "Set via .env",
+      "readonly_env_desc": "This value is set via environment variable and cannot be changed here."
+    },
+    "warnings": {
+      "no_org_creation_or_default": "tổ chức creation is đã tắt with no default tổ chức set",
+      "no_org_creation_or_default_desc": "New người dùng will be unable to proceed after signup. Set a default tổ chức above or enable tổ chức creation below."
+    },
+    "save_success": "thành công lưud {{section}} configuration",
+    "save_error": "không thể lưu configuration"
+  },
+  "common": {
+    "loading": "Đang tải...",
+    "error_loading": "không thể load data",
+    "no_results": "Không có results found",
+    "success": "Thành công",
+    "filters": "lọcs",
+    "try_adjusting": "Try adjusting your tìm kiếm or lọcs",
+    "none": "Không có",
+    "confirmation": {
+      "title": "Are you sure?",
+      "confirm": "Xác nhận",
+      "cancel": "Hủy"
+    }
+  }
+}

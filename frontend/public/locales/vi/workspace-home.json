@@ -1,0 +1,160 @@
+{
+  "analytics_title": "không gian làm việc Analytics",
+  "analytics_description": "Insights into your không gian làm việc performance and metrics",
+  "dashboard_settings": "bảng điều khiển cài đặt",
+  "customize_widgets": "Customize your bảng điều khiển widgets",
+  "no_widgets_title": "Không có widgets to display",
+  "no_widgets_description": "All widgets are currently hidden. Use the customize button to show widgets.",
+  "show_all_widgets": "Show All Widgets",
+  "no_data": "Không có analytics data có sẵn for this tổ chức.",
+  "load_data": "Load Data",
+  "error_loading": "Error đang tải tổ chức analytics:",
+  "widgets": {
+    "kpi_metrics": "KPI Metrics",
+    "project_status": "dự án trạng thái Distribution",
+    "task_priority": "công việc độ ưu tiên Breakdown",
+    "task_type": "công việc Type Distribution",
+    "sprint_status": "Sprint trạng thái Overview",
+    "monthly_completion": "Monthly công việc Completion",
+    "team_utilization": "Team Role Distribution",
+    "quality_metrics": "Bug Resolution Quality",
+    "workspace_projects": "dự án per không gian làm việc",
+    "member_workload": "thành viên Workload Distribution",
+    "resource_allocation": "Resource Allocation"
+  },
+  "roles": {
+    "admin": "Quản trị",
+    "manager": "Manager",
+    "member": "Thành viên",
+    "viewer": "Viewer",
+    "guest": "Guest",
+    "contributor": "Contributor"
+  },
+  "project_status": {
+    "planning": "Planning",
+    "active": "Đang hoạt động",
+    "on_hold": "On Hold",
+    "completed": "Completed",
+    "cancelled": "hủyled"
+  },
+  "task_types": {
+    "story": "Story",
+    "task": "Công việc",
+    "bug": "Bug",
+    "epic": "Epic",
+    "feature": "Feature"
+  },
+  "priority": {
+    "lowest": "Thấp nhất",
+    "low": "Thấp",
+    "medium": "Trung bình",
+    "high": "Cao",
+    "highest": "Cao nhất"
+  },
+  "workload": {
+    "label": "Workload",
+    "low": "Thấp",
+    "medium": "Trung bình",
+    "high": "Cao",
+    "assigned": "Assigned công việc",
+    "reported": "Reported công việc"
+  },
+  "quality": {
+    "resolved": "Resolved",
+    "remaining": "Remaining",
+    "low_performance": "Low Performance",
+    "medium_performance": "Medium Performance",
+    "high_performance": "High Performance",
+    "resolution_rate": "Resolution Rate"
+  },
+  "project_count": {
+    "low": "<=5 dự án",
+    "medium": "6-10 dự án",
+    "high": ">10 dự án"
+  },
+  "charts": {
+    "project_status_description": "Current trạng thái breakdown of all dự án",
+    "project_status_description_with_count": "{{count}} total dự án across tổ chức",
+    "task_priority_description": "Overview of công việc by their độ ưu tiên levels across all dự án",
+    "task_type_description": "Distribution of công việc by their type",
+    "task_type_description_with_count": "{{count}} total công việc across tổ chức",
+    "sprint_status_description": "Current trạng thái of all sprints across dự án",
+    "kpi_metrics_description": "Key performance indicators for your không gian làm việc",
+    "monthly_completion_description": "Number of công việc completed each month",
+    "team_utilization_description_all": "tổ chức thành viên roles breakdown",
+    "team_utilization_description_workspace": "Role breakdown for chọned không gian làm việc",
+    "all_workspaces": "Tất cả không gian làm việc",
+    "member_workload_description": "Active công việc vs reported công việc by thành viên",
+    "workspace_projects_description": "dự án distribution across không gian làm việc",
+    "resource_allocation_description_all": "Team thành viên distribution by role",
+    "resource_allocation_description_project": "Role distribution for chọned dự án",
+    "all_projects": "Tất cả dự án",
+    "count": "Count",
+    "quality_metrics_description_with_count": "{{resolved}}/{{total}} bugs resolved ({{rate}}%)"
+  },
+  "kpi": {
+    "total_projects": "Total dự án",
+    "active_projects": "Active dự án",
+    "completion_rate": "Completion Rate",
+    "total_tasks": "Total công việc",
+    "overdue_tasks": "Overdue công việc",
+    "task_health": "công việc Health",
+    "excellent": "Excellent",
+    "good": "Good",
+    "needs_focus": "Needs Focus",
+    "perfect": "Perfect",
+    "critical": "Critical",
+    "monitor": "Monitor"
+  },
+  "header": {
+    "ready_to_tackle": "Ready to tackle your goals?",
+    "todays_agenda": "Today's Agenda",
+    "new_task": "Công việc mới"
+  },
+  "analytics": {
+    "failed_to_fetch_today_task_data": "không thể fetch today công việc data",
+    "error_loading_organization_analytics": "Error đang tải tổ chức analytics:",
+    "today_agenda_tooltip": "Today Agenda",
+    "dashboard_settings_tooltip": "bảng điều khiển cài đặt",
+    "dashboard_title": "Bảng điều khiển",
+    "dashboard_description": "Comprehensive insights into your tổ chức's performance and health",
+    "no_analytics_data": "Không có analytics data có sẵn for this tổ chức.",
+    "load_data_button": "Load Data",
+    "no_widgets_title": "Không có widgets to display",
+    "no_widgets_description": "All widgets are currently hidden. Use the customize button to show widgets.",
+    "show_all_widgets_button": "Show All Widgets",
+    "failed_to_load_widget_data": "không thể load data for {{widgetTitle}}",
+    "retry_button": "Retry",
+    "kpi_cards": {
+      "workspaces": "Total không gian làm việc",
+      "projects": "Total dự án",
+      "members": "Team thành viên",
+      "task_completion": "công việc Completion",
+      "bug_resolution": "Bug Resolution",
+      "overdue_tasks": "Overdue công việc",
+      "active_sprints": "Active Sprints",
+      "productivity": "Overall Productivity",
+      "descriptions": {
+        "active_status": "{{count}} active",
+        "organization_members": "tổ chức thành viên",
+        "tasks_count": "{{completed}} / {{total}} công việc",
+        "resolved_count": "{{resolved}} / {{total}} resolved",
+        "require_attention": "Require attention",
+        "currently_running": "Currently running",
+        "task_completion_rate": "công việc completion rate"
+      }
+    }
+  },
+  "agenda": {
+    "overdue": "Overdue",
+    "today": "Hôm nay",
+    "tomorrow": "Ngày mai",
+    "due": "Due",
+    "no_due_date": "Chưa có hạn",
+    "all_clear": "All clear for today!",
+    "no_tasks_scheduled": "Không có công việc scheduled. You're all caught up!",
+    "great_job": "Great job staying organized!",
+    "open_task": "Open công việc: {{title}}",
+    "click_to_view": "Click to view công việc details"
+  }
+}

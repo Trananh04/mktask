@@ -1,0 +1,35 @@
+{
+  "save": "Guardar",
+  "cancel": "Cancelar",
+  "delete": "Eliminar",
+  "continue": "Continuar",
+  "confirm": "Confirmar",
+  "error": "Error",
+  "success": "Éxito",
+  "priorities": {
+    "lowest": "Muy Baja",
+    "low": "Baja",
+    "medium": "Media",
+    "high": "Alta",
+    "highest": "Muy Alta"
+  },
+  "invite": {
+    "invalidTitle": "Invitación inválida",
+    "invalidMessage": "Enlace de invitación inválido o caducado",
+    "whyHappened": "¿Por qué sucedió esto?",
+    "reasonExpired": "El enlace de invitación puede haber caducado",
+    "reasonEmail": "Podría haber sido enviado a un correo electrónico diferente",
+    "reasonUsed": "La invitación ya fue utilizada o revocada",
+    "logout": "Cerrar sesión y cambiar de cuenta",
+    "login": "Volver al inicio de sesión",
+        "home": "Volver al inicio"
+      },
+      "pagination": {
+        "showing": "Mostrando",
+        "to": "a",
+        "of": "de",
+        "page": "Página",
+        "items": "ítems"
+      }
+    }
+    

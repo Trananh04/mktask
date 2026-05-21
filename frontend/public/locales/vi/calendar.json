@@ -1,0 +1,42 @@
+{
+  "title": "Lịch",
+  "description": "Xem công việc theo ngày đến hạn.",
+  "createTask": "Tạo công việc",
+  "noTasks": {
+    "title": "Không tìm thấy công việc",
+    "description": "tạo your first công việc for {{name}} to see it on the calendar"
+  },
+  "errors": {
+    "invalidSlug": "không hợp lệ không gian làm việc or dự án slug",
+    "workspaceNotFound": "Không tìm thấy không gian làm việc",
+    "projectNotFound": "dự án not found",
+    "failedLoadData": "không thể load data",
+    "projectOrWorkspaceNotFound": "dự án or không gian làm việc not found"
+  },
+  "view": {
+    "noTasksScheduled": "Không có công việc scheduled",
+    "noTasksScheduledDescription": "công việc with due dates will appear on the calendar. tạo công việc with specific due dates to visualize your schedule.",
+    "days": {
+      "sun": "Sun",
+      "mon": "Mon",
+      "tue": "Tue",
+      "wed": "Wed",
+      "thu": "Thu",
+      "fri": "Fri",
+      "sat": "Sat"
+    },
+    "untitledTask": "Untiêu đềd công việc",
+    "more": "more",
+    "time": "Time",
+    "weekOf": "Week of {{date}}",
+    "daysWithTasks": "{{count}} days with công việc this month",
+    "tasksThisWeek": "{{count}} công việc this week",
+    "month": "Month",
+    "week": "Week",
+    "today": "Hôm nay",
+    "noTasksThisDay": "Không có công việc scheduled for this day",
+    "noStatus": "Không có trạng thái",
+    "overdue": "Overdue",
+    "assignee": "Người phụ trách"
+  }
+}

@@ -1,0 +1,141 @@
+{
+  "title": "Sprint Management",
+  "description": "Organize your work into focused iterations and track progress effectively.",
+  "createSprint": "tạo Sprint",
+  "noSprints": {
+    "title": "Không có sprints yet",
+    "description": "tạo your first sprint to start organizing your work into focused iterations."
+  },
+  "deleteSprint": {
+    "title": "xóa Sprint",
+    "message": "Bạn có chắc muốn xóa the sprint \"{{name}}\"? Không thể hoàn tác hành động này.",
+    "confirm": "Xóa",
+    "deleting": "Deleting...",
+    "cancel": "Hủy"
+  },
+  "errors": {
+    "workspaceNotFound": "Không tìm thấy không gian làm việc",
+    "projectNotFound": "dự án not found",
+    "loadingProjectError": "Error đang tải dự án data",
+    "loadingPageError": "Error đang tải page data",
+    "fetchingProjectError": "Error fetching dự án data",
+    "fetchTasksFailed": "không thể fetch công việc"
+  },
+  "sprintTasks": {
+    "title": "Sprint công việc",
+    "description": "Quản lý và theo dõi all công việc in this sprint. {{total}} total công việc",
+    "searchPlaceholder": "Tìm công việc..."
+  },
+  "card": {
+    "noDates": "Không có dates set",
+    "days": "{{count}} days",
+    "completeSprint": "Complete Sprint",
+    "editSprint": "sửa Sprint",
+    "deleteSprint": "xóa Sprint"
+  },
+  "form": {
+    "editTitle": "sửa Sprint",
+    "createTitle": "tạo new sprint",
+    "editDescription": "cập nhật sprint details and timeline",
+    "createDescription": "tạo a new sprint to organize your work into focused iterations",
+    "nameLabel": "Sprint tên",
+    "namePlaceholder": "Nhập sprint tên",
+    "goalLabel": "Sprint goal",
+    "goalPlaceholder": "Describe the main objective and outcomes for this sprint...",
+    "goalHint": "Help your team understand the sprint's focus and expected outcomes.",
+    "statusLabel": "Trạng thái",
+    "statusPlaceholder": "Chọn trạng thái",
+    "startDateLabel": "Start date",
+    "endDateLabel": "End date",
+    "cancel": "Hủy",
+    "update": "cập nhật",
+    "create": "Tạo",
+    "updating": "Updating...",
+    "creating": "Creating sprint...",
+    "statuses": {
+      "planning": "Planning",
+      "active": "Đang hoạt động",
+      "completed": "Completed",
+      "cancelled": "hủyled"
+    },
+    "validation": {
+      "nameRequired": "Sprint tên is bắt buộc",
+      "startDateRequired": "Start date is bắt buộc",
+      "endDateRequired": "End date is bắt buộc",
+      "endDateAfterStart": "End date must be after start date"
+    },
+    "saveFailed": "không thể lưu sprint"
+  },
+  "board": {
+    "loading": "Đang tải...",
+    "invalidDate": "không hợp lệ date",
+    "noSprintSelected": "Không có Sprint chọned",
+    "selectSprintToView": "vui lòng chọn a sprint to view the board",
+    "noSprintSelectedSubtitle": "vui lòng chọn a sprint from the dropdown above to view progress.",
+    "tasks": "công việc",
+    "points": "points",
+    "startSprint": "Start Sprint",
+    "completeSprint": "Complete Sprint",
+    "tasksCompleted": "công việc Completed",
+    "storyPoints": "Story Points",
+    "completionRate": "Completion Rate",
+    "statuses": {
+      "sprintBacklog": "Sprint Backlog",
+      "inProgress": "In Progress",
+      "testing": "Testing",
+      "done": "Xong"
+    }
+  },
+  "selector": {
+    "noActiveSprint": "Không có Active Sprint",
+    "noSprintsAvailable": "Không có sprints có sẵn",
+    "createFirstSprint": "tạo your first sprint"
+  },
+  "progress": {
+    "title": "Sprint Progress",
+    "timeline": "Sprint Timeline",
+    "daysRemaining": "{{count}} days remaining",
+    "sprintEnded": "Sprint ended",
+    "complete": "complete",
+    "timeSpent": "Time Spent",
+    "estimated": "estimated",
+    "tasksComplete": "công việc Complete",
+    "inProgress": "in progress",
+    "velocity": "Velocity",
+    "storyPointsPerDay": "Story points per day",
+    "capacity": "Capacity",
+    "burndown": "Sprint Burndown",
+    "burndownPlaceholder": "Burndown chart will be implemented here",
+    "quickActions": "Quick Actions",
+    "viewReport": "View Sprint Report",
+    "exportData": "Export Data"
+  },
+  "planning": {
+    "title": "Sprint Planning",
+    "selectSprint": "chọn a sprint",
+    "selectSprintToPlan": "vui lòng chọn a sprint from the dropdown above to start planning.",
+    "saveChanges": "lưu Changes",
+    "startSprint": "Start Sprint",
+    "goal": "Sprint Goal",
+    "noGoal": "Không có goal set",
+    "duration": "Duration",
+    "noDates": "Không có dates set",
+    "capacity": "Capacity",
+    "hours": "hours",
+    "productBacklog": "Product Backlog",
+    "tasks": "công việc",
+    "sp": "SP",
+    "noTasksInBacklog": "Không có công việc in backlog",
+    "sprintBacklog": "Sprint Backlog",
+    "dragTasksHere": "Drag công việc here to add to sprint",
+    "clickToMove": "Click công việc to move them between backlog and sprint",
+    "summary": "Sprint Summary",
+    "estimatedTime": "Estimated Time"
+  },
+  "tasksPanel": {
+    "title": "Sprint công việc",
+    "tasks": "công việc",
+    "errorNoOrg": "Không có tổ chức chọned. vui lòng chọn an tổ chức first.",
+    "fetchFailed": "không thể fetch công việc"
+  }
+}

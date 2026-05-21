@@ -1,0 +1,84 @@
+{
+  "project_analytics_title": "dự án Analytics",
+  "project_analytics_description": "Insights into your dự án performance and team productivity",
+  "kpi_metrics": "KPI Metrics",
+  "chart_widgets": "Chart Widgets",
+  "dashboard_settings": "bảng điều khiển cài đặt",
+  "customize_widgets": "Customize your bảng điều khiển widgets",
+  "no_widgets_title": "Không có widgets to display",
+  "no_widgets_description": "All widgets are currently hidden. Use the customize button to show widgets.",
+  "show_all_widgets": "Show All Widgets",
+  "no_data_available": "Không có analytics data có sẵn for this dự án.",
+  "load_data": "Load Data",
+  "no_settings_available": "Không có cài đặt có sẵn",
+  "unknown": "Unknown",
+  "na": "N/A",
+  "charts": {
+    "task_status_flow": {
+      "title": "công việc trạng thái Flow",
+      "description": "Current công việc distribution by trạng thái"
+    },
+    "task_type_distribution": {
+      "title": "công việc Type Distribution",
+      "description": "Types of công việc in this dự án",
+      "types": {
+        "story": "Story",
+        "task": "Công việc",
+        "bug": "Bug",
+        "epic": "Epic",
+        "feature": "Feature"
+      }
+    },
+    "task_priority_distribution": {
+      "title": "công việc độ ưu tiên Distribution",
+      "description": "độ ưu tiên breakdown of dự án công việc",
+      "count": "Count",
+      "priorities": {
+        "lowest": "Thấp nhất",
+        "low": "Thấp",
+        "medium": "Trung bình",
+        "high": "Cao",
+        "highest": "Cao nhất"
+      }
+    },
+    "sprint_velocity_trend": {
+      "title": "Sprint Velocity Trend",
+      "description": "Story points completed per sprint",
+      "story_points": "Story Points",
+      "average_velocity": "Average Velocity",
+      "no_sprints": "Không có completed sprints found for this dự án"
+    }
+  },
+  "kpi": {
+    "total_tasks": {
+      "title": "Total công việc",
+      "label": "Công việc",
+      "description": "All công việc in dự án"
+    },
+    "completed_tasks": {
+      "title": "Completed công việc",
+      "label": "Completed công việc",
+      "description": "thành công finished"
+    },
+    "active_sprints": {
+      "title": "Active Sprints",
+      "label": "Active Sprints",
+      "description": "Currently running"
+    },
+    "bug_resolution": {
+      "title": "Bug Resolution",
+      "label": "Bug Resolution",
+      "description": "{{resolved}}/{{total}} bugs fixed"
+    },
+    "task_completion": {
+      "title": "công việc Completion",
+      "label": "công việc Completion",
+      "description": "Overall progress"
+    },
+    "open_bugs": {
+      "title": "Open Bugs",
+      "label": "Open Bugs",
+      "description": "Requiring attention"
+    }
+  }
+}

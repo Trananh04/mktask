@@ -1,0 +1,160 @@
+{
+  "analytics_title": "Workspace Analytics",
+  "analytics_description": "Insights into your workspace performance and metrics",
+  "dashboard_settings": "Dashboard Settings",
+  "customize_widgets": "Customize your dashboard widgets",
+  "no_widgets_title": "No widgets to display",
+  "no_widgets_description": "All widgets are currently hidden. Use the customize button to show widgets.",
+  "show_all_widgets": "Show All Widgets",
+  "no_data": "No analytics data available for this organization.",
+  "load_data": "Load Data",
+  "error_loading": "Error loading organization analytics:",
+  "widgets": {
+    "kpi_metrics": "KPI Metrics",
+    "project_status": "Project Status Distribution",
+    "task_priority": "Task Priority Breakdown",
+    "task_type": "Task Type Distribution",
+    "sprint_status": "Sprint Status Overview",
+    "monthly_completion": "Monthly Task Completion",
+    "team_utilization": "Team Role Distribution",
+    "quality_metrics": "Bug Resolution Quality",
+    "workspace_projects": "Projects per Workspace",
+    "member_workload": "Member Workload Distribution",
+    "resource_allocation": "Resource Allocation"
+  },
+  "roles": {
+    "admin": "Admin",
+    "manager": "Manager",
+    "member": "Member",
+    "viewer": "Viewer",
+    "guest": "Guest",
+    "contributor": "Contributor"
+  },
+  "project_status": {
+    "planning": "Planning",
+    "active": "Active",
+    "on_hold": "On Hold",
+    "completed": "Completed",
+    "cancelled": "Cancelled"
+  },
+  "task_types": {
+    "story": "Story",
+    "task": "Task",
+    "bug": "Bug",
+    "epic": "Epic",
+    "feature": "Feature"
+  },
+  "priority": {
+    "lowest": "Lowest",
+    "low": "Low",
+    "medium": "Medium",
+    "high": "High",
+    "highest": "Highest"
+  },
+  "workload": {
+    "label": "Workload",
+    "low": "Low",
+    "medium": "Medium",
+    "high": "High",
+    "assigned": "Assigned Tasks",
+    "reported": "Reported Tasks"
+  },
+  "quality": {
+    "resolved": "Resolved",
+    "remaining": "Remaining",
+    "low_performance": "Low Performance",
+    "medium_performance": "Medium Performance",
+    "high_performance": "High Performance",
+    "resolution_rate": "Resolution Rate"
+  },
+  "project_count": {
+    "low": "<=5 Projects",
+    "medium": "6-10 Projects",
+    "high": ">10 Projects"
+  },
+  "charts": {
+    "project_status_description": "Current status breakdown of all projects",
+    "project_status_description_with_count": "{{count}} total projects across organization",
+    "task_priority_description": "Overview of tasks by their priority levels across all projects",
+    "task_type_description": "Distribution of tasks by their type",
+    "task_type_description_with_count": "{{count}} total tasks across organization",
+    "sprint_status_description": "Current status of all sprints across projects",
+    "kpi_metrics_description": "Key performance indicators for your workspace",
+    "monthly_completion_description": "Number of tasks completed each month",
+    "team_utilization_description_all": "Organization member roles breakdown",
+    "team_utilization_description_workspace": "Role breakdown for selected workspace",
+    "all_workspaces": "All Workspaces",
+    "member_workload_description": "Active tasks vs reported tasks by member",
+    "workspace_projects_description": "Project distribution across workspaces",
+    "resource_allocation_description_all": "Team member distribution by role",
+    "resource_allocation_description_project": "Role distribution for selected project",
+    "all_projects": "All Projects",
+    "count": "Count",
+    "quality_metrics_description_with_count": "{{resolved}}/{{total}} bugs resolved ({{rate}}%)"
+  },
+  "kpi": {
+    "total_projects": "Total Projects",
+    "active_projects": "Active Projects",
+    "completion_rate": "Completion Rate",
+    "total_tasks": "Total Tasks",
+    "overdue_tasks": "Overdue Tasks",
+    "task_health": "Task Health",
+    "excellent": "Excellent",
+    "good": "Good",
+    "needs_focus": "Needs Focus",
+    "perfect": "Perfect",
+    "critical": "Critical",
+    "monitor": "Monitor"
+  },
+  "header": {
+    "ready_to_tackle": "Ready to tackle your goals?",
+    "todays_agenda": "Today's Agenda",
+    "new_task": "New Task"
+  },
+  "analytics": {
+    "failed_to_fetch_today_task_data": "Failed to fetch today task data",
+    "error_loading_organization_analytics": "Error loading organization analytics:",
+    "today_agenda_tooltip": "Today Agenda",
+    "dashboard_settings_tooltip": "Dashboard Settings",
+    "dashboard_title": "Dashboard",
+    "dashboard_description": "Comprehensive insights into your organization's performance and health",
+    "no_analytics_data": "No analytics data available for this organization.",
+    "load_data_button": "Load Data",
+    "no_widgets_title": "No widgets to display",
+    "no_widgets_description": "All widgets are currently hidden. Use the customize button to show widgets.",
+    "show_all_widgets_button": "Show All Widgets",
+    "failed_to_load_widget_data": "Failed to load data for {{widgetTitle}}",
+    "retry_button": "Retry",
+    "kpi_cards": {
+      "workspaces": "Total Workspaces",
+      "projects": "Total Projects",
+      "members": "Team Members",
+      "task_completion": "Task Completion",
+      "bug_resolution": "Bug Resolution",
+      "overdue_tasks": "Overdue Tasks",
+      "active_sprints": "Active Sprints",
+      "productivity": "Overall Productivity",
+      "descriptions": {
+        "active_status": "{{count}} active",
+        "organization_members": "Organization members",
+        "tasks_count": "{{completed}} / {{total}} tasks",
+        "resolved_count": "{{resolved}} / {{total}} resolved",
+        "require_attention": "Require attention",
+        "currently_running": "Currently running",
+        "task_completion_rate": "Task completion rate"
+      }
+    }
+  },
+  "agenda": {
+    "overdue": "Overdue",
+    "today": "Today",
+    "tomorrow": "Tomorrow",
+    "due": "Due",
+    "no_due_date": "No due date",
+    "all_clear": "All clear for today!",
+    "no_tasks_scheduled": "No tasks scheduled. You're all caught up!",
+    "great_job": "Great job staying organized!",
+    "open_task": "Open task: {{title}}",
+    "click_to_view": "Click to view task details"
+  }
+}

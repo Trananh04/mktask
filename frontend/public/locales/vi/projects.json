@@ -1,0 +1,144 @@
+{
+  "title": "Dự án",
+  "description": "Quản lý dự án và cộng tác với đội nhóm.",
+  "search_placeholder": "Tìm dự án...",
+  "advanced_filters": "Bộ lọc nâng cao",
+  "filter_placeholder": "lọc dự án...",
+  "create_project": "Tạo dự án",
+  "no_projects_found": "Không tìm thấy dự án",
+  "no_projects_match": "Không có dự án match your current tìm kiếm and lọcs. Try adjusting your criteria.",
+  "clear_filters": "Clear lọcs",
+  "empty_state_title": "Không tìm thấy dự án",
+  "empty_state_description": "tạo your first dự án to get started with organizing your công việc and collaborating with your team.",
+  "tasks_count": "Number of công việc",
+  "start_date": "Ngày bắt đầu",
+  "load_more": "Load More",
+  "loading": "Đang tải...",
+  "showing_projects_one": "Showing {{count}} dự án",
+  "showing_projects_other": "Showing {{count}} dự án",
+  "matching": " matching \"{{query}}\"",
+  "with_filters_one": " with {{count}} lọc applied",
+  "with_filters_other": " with {{count}} lọcs applied",
+  "status": {
+    "active": "Đang hoạt động",
+    "planning": "Planning",
+    "on_hold": "On Hold",
+    "completed": "Completed"
+  },
+  "priority": {
+    "title": "Độ ưu tiên"
+  },
+  "messages": {
+    "created_success": "Tạo dự án thành công!",
+    "refresh_failed": "dự án tạod but không thể làm mới list",
+    "load_failed": "Không thể tải dự án",
+    "auth_required": "Authentication bắt buộc. vui lòng log in again."
+  },
+  "modal": {
+    "createTitle": "Tạo dự án mới",
+    "createDescription": "Organize your công việc and collaborate with your team",
+    "tryAgain": "Thử lại",
+    "projectName": "dự án tên",
+    "enterProjectName": "Nhập dự án tên",
+    "url": "URL:",
+    "urlWorkspace": "không gian làm việc",
+    "urlProject": "dự án-tên",
+    "workflow": "Workflow",
+    "searchWorkflows": "tìm kiếm workflows...",
+    "noWorkflowsFound": "Không có workflows found.",
+    "typeToSearchWorkflows": "Type to tìm kiếm workflows",
+    "selectWorkflow": "chọn workflow",
+    "workflowHint": "Chọn a workflow for your dự án's process.",
+    "visibility": "Visibility",
+    "selectVisibility": "chọn visibility",
+    "noVisibilityOptions": "Không có visibility options found.",
+    "visibilityHint": "Control who can access this dự án.",
+    "workspace": "Không gian làm việc",
+    "loadingWorkspaces": "Đang tải không gian làm việc...",
+    "selectWorkspace": "Chọn không gian làm việc",
+    "searchWorkspaces": "Tìm không gian làm việc...",
+    "noWorkspacesFound": "Không tìm thấy không gian làm việc.",
+    "typeToSearchWorkspaces": "Nhập để tìm không gian làm việc",
+    "workspaceHint": "dự án will be tạod in this không gian làm việc.",
+    "description": "Mô tả",
+    "descriptionPlaceholder": "Describe what this dự án is about...",
+    "descriptionHint": "Help your team understand the dự án's goals and scope.",
+    "projectColors": "dự án Colors",
+    "selectCategory": "chọn category",
+    "noCategoriesFound": "Không có categories found.",
+    "categoryHint": "Chọn a category to help organize and identify your dự án.",
+    "cancel": "Hủy",
+    "create": "tạo dự án",
+    "creating": "Creating dự án...",
+    "success": "dự án \"{{name}}\" tạod thành công!",
+    "errorLoadWorkspaces": "Không thể tải không gian làm việc",
+    "errorCreate": "Không thể tạo dự án",
+    "visibilityOptions": {
+      "PRIVATE": {
+        "label": "Private",
+        "description": "Only thành viên can access this dự án"
+      },
+      "INTERNAL": {
+        "label": "Internal",
+        "description": "không gian làm việc thành viên can view, thành viên can sửa"
+      },
+      "PUBLIC": {
+        "label": "Public",
+        "description": "Anyone can view, thành viên can sửa"
+      }
+    }
+  },
+  "categories": {
+    "operational": {
+      "label": "Operational",
+      "description": "Day-to-day operations and maintenance"
+    },
+    "technical": {
+      "label": "Technical",
+      "description": "Development and technical dự án"
+    },
+    "strategic": {
+      "label": "Strategic",
+      "description": "Long-term planning and strategy"
+    },
+    "hiring": {
+      "label": "Hiring",
+      "description": "Recruitment and team building"
+    },
+    "financial": {
+      "label": "Financial",
+      "description": "Budget and financial planning"
+    },
+    "neutral": {
+      "label": "Neutral",
+      "description": "General or uncategorized dự án"
+    },
+    "innovation": {
+      "label": "Innovation",
+      "description": "Creativity and innovation initiatives"
+    },
+    "community": {
+      "label": "Community",
+      "description": "Community and engagement initiatives"
+    },
+    "sustainability": {
+      "label": "Sustainability",
+      "description": "Sustainability and environment dự án"
+    },
+    "marketing": {
+      "label": "Marketing",
+      "description": "Marketing and outreach campaigns"
+    },
+    "research": {
+      "label": "Retìm kiếm",
+      "description": "Retìm kiếm and analysis dự án"
+    },
+    "growth": {
+      "label": "Growth",
+      "description": "Growth and expansion initiatives"
+    }
+  },
+  "new_project": "Dự án mới",
+  "archived_projects": "Dự án đã lưu trữ",
+  "workspace_projects": "Dự án của {{name}}"
+}

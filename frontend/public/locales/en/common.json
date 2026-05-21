@@ -1,0 +1,34 @@
+{
+  "save": "Save",
+  "cancel": "Cancel",
+  "delete": "Delete",
+  "continue": "Continue",
+  "confirm": "Confirm",
+  "error": "Error",
+  "success": "Success",
+  "priorities": {
+    "lowest": "Lowest",
+    "low": "Low",
+    "medium": "Medium",
+    "high": "High",
+    "highest": "Highest"
+  },
+  "invite": {
+    "invalidTitle": "Invitation invalid",
+    "invalidMessage": "Invalid or expired invitation link",
+    "whyHappened": "Why did this happen?",
+    "reasonExpired": "The invitation link may have expired",
+    "reasonEmail": "It might have been sent to a different email",
+    "reasonUsed": "The invitation was already used or revoked",
+    "logout": "Logout and Switch Account",
+    "login": "Back to login",
+    "home": "Return home"
+  },
+  "pagination": {
+    "showing": "Showing",
+    "to": "to",
+    "of": "of",
+    "page": "Page",
+    "items": "items"
+  }
+}
