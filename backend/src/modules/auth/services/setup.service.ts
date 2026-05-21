@@ -208,7 +208,7 @@ export class SetupService {
       where: {
         organizationId_slug: {
           organizationId: organization.id,
-          slug: 'projects',
+          slug: 'mekong',
         },
       },
       update: {
@@ -216,7 +216,7 @@ export class SetupService {
       },
       create: {
         name: 'Projects',
-        slug: 'projects',
+        slug: 'mekong',
         description: 'Default internal project area',
         organizationId: organization.id,
         createdBy: userId,

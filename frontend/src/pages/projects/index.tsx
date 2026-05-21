@@ -32,9 +32,14 @@ export default function ProjectsPage() {
         emptyStateTitle={t("empty_state_title")}
         emptyStateDescription={t("empty_state_description")}
         enablePagination={true}
-        generateProjectLink={(project) => `/${project.workspace?.slug || "workspaces"}/${project.slug}`}
+        generateProjectLink={(project) => {
+          const workspaceSlug =
+            project.workspace?.slug && project.workspace.slug !== "projects"
+              ? project.workspace.slug
+              : "mekong";
+          return `/${workspaceSlug}/${project.slug}`;
+        }}
       />
     </>
   );
 }
-

@@ -472,29 +472,53 @@ export class SeederService {
 
       const workflow = await this.ensureDefaultWorkflow(tx, organization.id, owner.id);
 
-      const workspace = await tx.workspace.upsert({
+      let workspace = await tx.workspace.findFirst({
         where: {
-          organizationId_slug: {
-            organizationId: organization.id,
-            slug: 'projects',
-          },
-        },
-        update: {
-          name: 'Projects',
-          description: 'Default project workspace for mekong',
-          archive: false,
-          updatedBy: owner.id,
-        },
-        create: {
-          name: 'Projects',
-          slug: 'projects',
-          description: 'Default project workspace for mekong',
           organizationId: organization.id,
-          createdBy: owner.id,
-          updatedBy: owner.id,
-          archive: false,
+          slug: { in: ['mekong', 'projects'] },
         },
-        select: { id: true },
+        orderBy: { slug: 'asc' },
+        select: { id: true, slug: true },
+      });
+
+      if (workspace) {
+        workspace = await tx.workspace.update({
+          where: { id: workspace.id },
+          data: {
+            slug: 'mekong',
+            name: 'Projects',
+            description: 'Default project workspace for mekong',
+            archive: false,
+            updatedBy: owner.id,
+          },
+          select: { id: true, slug: true },
+        });
+      } else {
+        workspace = await tx.workspace.create({
+          data: {
+            name: 'Projects',
+            slug: 'mekong',
+            description: 'Default project workspace for mekong',
+            organizationId: organization.id,
+            createdBy: owner.id,
+            updatedBy: owner.id,
+            archive: false,
+          },
+          select: { id: true, slug: true },
+        });
+      }
+
+      await tx.workspace.updateMany({
+        where: {
+          organizationId: organization.id,
+          id: { not: workspace.id },
+          slug: 'projects',
+        },
+        data: {
+          name: 'Projects',
+          slug: 'mekong-legacy',
+          updatedBy: owner.id,
+        },
       });
 
       const users = await tx.user.findMany({

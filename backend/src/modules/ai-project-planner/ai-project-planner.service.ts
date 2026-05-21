@@ -409,7 +409,7 @@ ${description}`;
     }
 
     let workspace = await this.prisma.workspace.findFirst({
-      where: { organizationId, slug: 'projects', archive: false },
+      where: { organizationId, slug: { in: ['mekong', 'projects'] }, archive: false },
       select: { id: true },
     });
 
@@ -417,7 +417,7 @@ ${description}`;
       workspace = await this.prisma.workspace.create({
         data: {
           name: 'Projects',
-          slug: 'projects',
+          slug: 'mekong',
           description: 'Default project workspace for mekong',
           organizationId,
           createdBy: userId,

@@ -357,7 +357,7 @@ export class OidcService {
     });
 
     let workspace = await this.prisma.workspace.findFirst({
-      where: { organizationId: defaultOrgId, slug: 'projects', archive: false },
+      where: { organizationId: defaultOrgId, slug: { in: ['mekong', 'projects'] }, archive: false },
       select: { id: true },
     });
 
@@ -365,7 +365,7 @@ export class OidcService {
       workspace = await this.prisma.workspace.create({
         data: {
           name: 'Projects',
-          slug: 'projects',
+          slug: 'mekong',
           description: 'Default project workspace for mekong',
           organizationId: defaultOrgId,
           createdBy: userId,

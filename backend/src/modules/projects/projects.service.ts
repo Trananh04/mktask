@@ -145,7 +145,7 @@ export class ProjectsService {
         defaultWorkspace = await this.prisma.workspace.create({
           data: {
             name: 'Projects',
-            slug: 'projects',
+            slug: 'mekong',
             description: 'Default project workspace for mekong',
             organizationId,
             createdBy: userId,
