@@ -503,7 +503,12 @@ export class SeederService {
       });
 
       for (const user of users) {
-        const role = user.role === Role.SUPER_ADMIN ? Role.SUPER_ADMIN : Role.MEMBER;
+        const role =
+          user.role === Role.SUPER_ADMIN
+            ? Role.SUPER_ADMIN
+            : user.role === Role.MANAGER
+              ? Role.MANAGER
+              : Role.MEMBER;
         await tx.organizationMember.upsert({
           where: {
             userId_organizationId: {
