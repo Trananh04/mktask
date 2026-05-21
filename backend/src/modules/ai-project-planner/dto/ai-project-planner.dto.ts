@@ -13,9 +13,13 @@ import {
 } from 'class-validator';
 
 export class PlanProjectRequestDto {
-  @ApiProperty({ description: 'Workspace ID where the generated projects will be created' })
+  @ApiProperty({
+    description: 'Workspace ID where the generated projects will be created',
+    required: false,
+  })
   @IsUUID()
-  workspaceId: string;
+  @IsOptional()
+  workspaceId?: string;
 
   @ApiProperty({ description: 'Free-form project description from the user' })
   @IsString()
@@ -95,7 +99,8 @@ export class ProjectPlanDto {
 
 export class ApplyProjectPlanRequestDto {
   @IsUUID()
-  workspaceId: string;
+  @IsOptional()
+  workspaceId?: string;
 
   @ValidateNested()
   @Type(() => ProjectPlanDto)

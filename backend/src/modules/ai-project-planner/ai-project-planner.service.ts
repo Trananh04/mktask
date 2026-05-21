@@ -32,8 +32,8 @@ export class AiProjectPlannerService {
   ) {}
 
   async plan(dto: PlanProjectRequestDto, userId: string): Promise<ProjectPlanDto> {
-    await this.ensureWorkspaceAccess(dto.workspaceId, userId);
-    const members = await this.getWorkspaceMembersForPlanning(dto.workspaceId);
+    const workspaceId = await this.resolveWorkspaceId(dto.workspaceId, userId);
+    const members = await this.getWorkspaceMembersForPlanning(workspaceId);
     const rawPlan = await this.generatePlanWithAi(dto.description, members, userId);
     const normalizedPlan = this.normalizePlan(rawPlan);
     const flatTasks = normalizedPlan.projects.flatMap((project) =>
@@ -70,7 +70,7 @@ export class AiProjectPlannerService {
     dto: ApplyProjectPlanRequestDto,
     userId: string,
   ): Promise<ApplyProjectPlanResponseDto> {
-    await this.ensureWorkspaceAccess(dto.workspaceId, userId);
+    const workspaceId = await this.resolveWorkspaceId(dto.workspaceId, userId);
     const plan = this.normalizePlan(dto.plan);
     const createdProjects: ApplyProjectPlanResponseDto['createdProjects'] = [];
     const createdTasks: ApplyProjectPlanResponseDto['createdTasks'] = [];
@@ -85,7 +85,7 @@ export class AiProjectPlannerService {
           color: '#3B82F6',
           avatar: '',
           priority: ProjectPriority.MEDIUM,
-          workspaceId: dto.workspaceId,
+          workspaceId,
         },
         userId,
       );
@@ -366,6 +366,83 @@ ${description}`;
       assigneeId: task.assigneeId ? String(task.assigneeId) : undefined,
       assigneeName: task.assigneeName ? String(task.assigneeName) : undefined,
     };
+  }
+
+  private async resolveWorkspaceId(workspaceId: string | undefined, userId: string) {
+    if (workspaceId) {
+      await this.ensureWorkspaceAccess(workspaceId, userId);
+      return workspaceId;
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { defaultOrganizationId: true, role: true },
+    });
+    const configuredOrgId = await this.settingsService.get('default_organization_id');
+    const mekongOrg = await this.prisma.organization.findUnique({
+      where: { slug: 'mekong' },
+      select: { id: true },
+    });
+
+    const organizationId =
+      user?.defaultOrganizationId ||
+      configuredOrgId ||
+      mekongOrg?.id ||
+      (
+        await this.prisma.organizationMember.findFirst({
+          where: { userId, organization: { archive: false } },
+          orderBy: { createdAt: 'asc' },
+          select: { organizationId: true },
+        })
+      )?.organizationId;
+
+    if (!organizationId) {
+      throw new NotFoundException('Khong tim thay to chuc mac dinh.');
+    }
+
+    const orgMember = await this.prisma.organizationMember.findUnique({
+      where: { userId_organizationId: { userId, organizationId } },
+      select: { role: true },
+    });
+    if (!orgMember && user?.role !== Role.SUPER_ADMIN) {
+      throw new ForbiddenException('Ban khong co quyen dung to chuc mac dinh.');
+    }
+
+    let workspace = await this.prisma.workspace.findFirst({
+      where: { organizationId, slug: 'projects', archive: false },
+      select: { id: true },
+    });
+
+    if (!workspace) {
+      workspace = await this.prisma.workspace.create({
+        data: {
+          name: 'Projects',
+          slug: 'projects',
+          description: 'Default project workspace for mekong',
+          organizationId,
+          createdBy: userId,
+          updatedBy: userId,
+        },
+        select: { id: true },
+      });
+    }
+
+    await this.prisma.workspaceMember.upsert({
+      where: { userId_workspaceId: { userId, workspaceId: workspace.id } },
+      update: {
+        role: orgMember?.role === Role.OWNER ? Role.OWNER : Role.MANAGER,
+      },
+      create: {
+        userId,
+        workspaceId: workspace.id,
+        role: orgMember?.role === Role.OWNER ? Role.OWNER : Role.MANAGER,
+        createdBy: userId,
+        updatedBy: userId,
+      },
+    });
+
+    await this.ensureWorkspaceAccess(workspace.id, userId);
+    return workspace.id;
   }
 
   private async ensureWorkspaceAccess(workspaceId: string, userId: string) {

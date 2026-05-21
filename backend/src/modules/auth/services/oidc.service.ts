@@ -314,6 +314,14 @@ export class OidcService {
     let defaultOrgId = await this.settingsService.get('default_organization_id');
 
     if (!defaultOrgId) {
+      const mekongOrg = await this.prisma.organization.findUnique({
+        where: { slug: 'mekong' },
+        select: { id: true },
+      });
+      defaultOrgId = mekongOrg?.id || null;
+    }
+
+    if (!defaultOrgId) {
       const fallbackOrg = await this.prisma.organization.findFirst({
         where: { archive: false },
         orderBy: { createdAt: 'asc' },
@@ -346,6 +354,37 @@ export class OidcService {
     await this.prisma.user.update({
       where: { id: userId },
       data: { defaultOrganizationId: defaultOrgId },
+    });
+
+    let workspace = await this.prisma.workspace.findFirst({
+      where: { organizationId: defaultOrgId, slug: 'projects', archive: false },
+      select: { id: true },
+    });
+
+    if (!workspace) {
+      workspace = await this.prisma.workspace.create({
+        data: {
+          name: 'Projects',
+          slug: 'projects',
+          description: 'Default project workspace for mekong',
+          organizationId: defaultOrgId,
+          createdBy: userId,
+          updatedBy: userId,
+        },
+        select: { id: true },
+      });
+    }
+
+    await this.prisma.workspaceMember.upsert({
+      where: { userId_workspaceId: { userId, workspaceId: workspace.id } },
+      update: { role: Role.MEMBER },
+      create: {
+        userId,
+        workspaceId: workspace.id,
+        role: Role.MEMBER,
+        createdBy: userId,
+        updatedBy: userId,
+      },
     });
   }
 }

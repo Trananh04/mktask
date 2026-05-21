@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma, Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { UsersSeederService } from './users.seeder.service';
 import { OrganizationsSeederService } from './organizations.seeder.service';
@@ -15,6 +16,11 @@ import { TaskWatchersSeederService } from './task-watchers.seeder.service';
 import { TimeEntriesSeederService } from './time-entries.seeder.service';
 import { AdminSeederService } from './admin-seeder.service';
 import { InboxRulesSeederService } from './inbox-rules.seeder.service';
+import {
+  DEFAULT_STATUS_TRANSITIONS,
+  DEFAULT_TASK_STATUSES,
+  DEFAULT_WORKFLOW,
+} from '../constants/defaultWorkflow';
 
 @Injectable()
 export class SeederService {
@@ -405,6 +411,269 @@ export class SeederService {
       replacementUser: replacementUser.email,
       deletedEmails: demoUsers.map((user) => user.email),
     };
+  }
+
+  async normalizeMekongOrganization() {
+    console.log('Normalizing mekong as the only active organization...');
+
+    const owner = await this.prisma.user.findFirst({
+      where: { role: Role.SUPER_ADMIN },
+      orderBy: { createdAt: 'asc' },
+      select: { id: true, email: true },
+    });
+
+    if (!owner) {
+      throw new Error('Cannot normalize organizations because no SUPER_ADMIN user exists.');
+    }
+
+    const result = await this.prisma.$transaction(async (tx) => {
+      const organization = await tx.organization.upsert({
+        where: { slug: 'mekong' },
+        update: {
+          name: 'mekong',
+          description: 'Default organization for Mekong projects',
+          website: 'https://mktask.app',
+          avatar: null,
+          ownerId: owner.id,
+          updatedBy: owner.id,
+          archive: false,
+          settings: {
+            allowPublicSignup: false,
+            defaultUserRole: 'MEMBER',
+            requireEmailVerification: true,
+            enableTimeTracking: true,
+            enableAutomation: true,
+            singleCompanyMode: true,
+            timezone: 'UTC',
+          },
+        },
+        create: {
+          name: 'mekong',
+          slug: 'mekong',
+          description: 'Default organization for Mekong projects',
+          website: 'https://mktask.app',
+          avatar: null,
+          ownerId: owner.id,
+          createdBy: owner.id,
+          updatedBy: owner.id,
+          archive: false,
+          settings: {
+            allowPublicSignup: false,
+            defaultUserRole: 'MEMBER',
+            requireEmailVerification: true,
+            enableTimeTracking: true,
+            enableAutomation: true,
+            singleCompanyMode: true,
+            timezone: 'UTC',
+          },
+        },
+        select: { id: true },
+      });
+
+      const workflow = await this.ensureDefaultWorkflow(tx, organization.id, owner.id);
+
+      const workspace = await tx.workspace.upsert({
+        where: {
+          organizationId_slug: {
+            organizationId: organization.id,
+            slug: 'projects',
+          },
+        },
+        update: {
+          name: 'Projects',
+          description: 'Default project workspace for mekong',
+          archive: false,
+          updatedBy: owner.id,
+        },
+        create: {
+          name: 'Projects',
+          slug: 'projects',
+          description: 'Default project workspace for mekong',
+          organizationId: organization.id,
+          createdBy: owner.id,
+          updatedBy: owner.id,
+          archive: false,
+        },
+        select: { id: true },
+      });
+
+      const users = await tx.user.findMany({
+        where: { deletedAt: null },
+        select: { id: true, role: true },
+      });
+
+      for (const user of users) {
+        const role = user.role === Role.SUPER_ADMIN ? Role.SUPER_ADMIN : Role.MEMBER;
+        await tx.organizationMember.upsert({
+          where: {
+            userId_organizationId: {
+              userId: user.id,
+              organizationId: organization.id,
+            },
+          },
+          update: {
+            role,
+            isDefault: true,
+            updatedBy: owner.id,
+          },
+          create: {
+            userId: user.id,
+            organizationId: organization.id,
+            role,
+            isDefault: true,
+            createdBy: owner.id,
+            updatedBy: owner.id,
+          },
+        });
+
+        await tx.workspaceMember.upsert({
+          where: {
+            userId_workspaceId: {
+              userId: user.id,
+              workspaceId: workspace.id,
+            },
+          },
+          update: {
+            role,
+            updatedBy: owner.id,
+          },
+          create: {
+            userId: user.id,
+            workspaceId: workspace.id,
+            role,
+            createdBy: owner.id,
+            updatedBy: owner.id,
+          },
+        });
+      }
+
+      await tx.user.updateMany({
+        where: { deletedAt: null },
+        data: { defaultOrganizationId: organization.id },
+      });
+
+      const archivedOrganizations = await tx.organization.updateMany({
+        where: {
+          id: { not: organization.id },
+          archive: false,
+        },
+        data: { archive: true, updatedBy: owner.id },
+      });
+
+      await this.upsertGlobalSetting(
+        tx,
+        'default_organization_id',
+        organization.id,
+        'Mekong organization used for all registered users',
+        'registration',
+      );
+      await this.upsertGlobalSetting(
+        tx,
+        'allow_org_creation',
+        'false',
+        'Single organization mode disables organization creation',
+        'registration',
+      );
+
+      return {
+        organizationId: organization.id,
+        workspaceId: workspace.id,
+        workflowId: workflow.id,
+        usersUpdated: users.length,
+        archivedOrganizations: archivedOrganizations.count,
+      };
+    });
+
+    console.log(
+      `mekong is active. Users updated: ${result.usersUpdated}. Archived organizations: ${result.archivedOrganizations}.`,
+    );
+    return result;
+  }
+
+  private async ensureDefaultWorkflow(
+    tx: Prisma.TransactionClient,
+    organizationId: string,
+    userId: string,
+  ) {
+    const existingWorkflow = await tx.workflow.findFirst({
+      where: { organizationId, isDefault: true },
+      include: { statuses: true },
+    });
+
+    if (existingWorkflow) return existingWorkflow;
+
+    const workflow = await tx.workflow.create({
+      data: {
+        name: DEFAULT_WORKFLOW.name,
+        description: DEFAULT_WORKFLOW.description,
+        isDefault: true,
+        organizationId,
+        createdBy: userId,
+        updatedBy: userId,
+        statuses: {
+          create: DEFAULT_TASK_STATUSES.map((status) => ({
+            name: status.name,
+            color: status.color,
+            category: status.category,
+            position: status.position,
+            isDefault: status.isDefault,
+            createdBy: userId,
+            updatedBy: userId,
+          })),
+        },
+      },
+      include: { statuses: true },
+    });
+
+    const statusMap = new Map(workflow.statuses.map((status) => [status.name, status.id]));
+    const transitions = DEFAULT_STATUS_TRANSITIONS.flatMap((transition) => {
+      const fromStatusId = statusMap.get(transition.from);
+      const toStatusId = statusMap.get(transition.to);
+      if (!fromStatusId || !toStatusId) return [];
+      return [
+        {
+          name: `${transition.from} -> ${transition.to}`,
+          workflowId: workflow.id,
+          fromStatusId,
+          toStatusId,
+          createdBy: userId,
+          updatedBy: userId,
+        },
+      ];
+    });
+
+    if (transitions.length > 0) {
+      await tx.statusTransition.createMany({
+        data: transitions,
+        skipDuplicates: true,
+      });
+    }
+
+    return workflow;
+  }
+
+  private async upsertGlobalSetting(
+    tx: Prisma.TransactionClient,
+    key: string,
+    value: string,
+    description: string,
+    category: string,
+  ) {
+    const existing = await tx.settings.findFirst({
+      where: { key, userId: null },
+    });
+
+    if (existing) {
+      await tx.settings.update({
+        where: { id: existing.id },
+        data: { value, description, category, isEncrypted: false },
+      });
+      return;
+    }
+
+    await tx.settings.create({
+      data: { key, value, userId: null, description, category, isEncrypted: false },
+    });
   }
 
   async seedInboxRules() {

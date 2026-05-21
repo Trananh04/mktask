@@ -34,6 +34,12 @@ async function bootstrap() {
         console.log('\nDemo user cleanup completed successfully!');
         break;
 
+      case 'normalize-mekong':
+        console.log('Starting Mekong organization normalization...\n');
+        await seederService.normalizeMekongOrganization();
+        console.log('\nMekong organization normalization completed successfully!');
+        break;
+
       case 'reset':
         console.log('Starting core modules reset...\n');
         await seederService.clearCoreModules();
@@ -50,6 +56,7 @@ Seeder Commands:
   npm run seed:admin            - Seed admin user only (idempotent)
   npm run seed:clear            - Clear all core modules data
   npm run seed:clear-demo-users - Remove seeded demo users only
+  npm run seed:normalize-mekong - Keep mekong as the only active organization
   npm run seed:reset            - Clear and re-seed core modules
 
 All seed commands are idempotent and safe to run multiple times.

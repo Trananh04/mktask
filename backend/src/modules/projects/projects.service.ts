@@ -63,7 +63,11 @@ export class ProjectsService {
     userId: string,
     currentOrganizationId?: string,
   ): Promise<Project> {
-    // Get the selected organization when the frontend sends it, otherwise fall back to the user's first organization.
+    const defaultOrganizationId = currentOrganizationId
+      ? null
+      : await this.settingsService.get('default_organization_id');
+
+    // Get the selected organization when provided; otherwise prefer the configured mekong organization.
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: {
@@ -79,19 +83,50 @@ export class ProjectsService {
               },
             },
           },
-          where: currentOrganizationId ? { organizationId: currentOrganizationId } : undefined,
+          where: currentOrganizationId
+            ? { organizationId: currentOrganizationId }
+            : defaultOrganizationId
+              ? { organizationId: defaultOrganizationId }
+              : { organization: { slug: 'mekong', archive: false } },
           take: 1,
         },
       },
     });
 
-    if (!user?.organizationMembers?.[0]) {
+    let selectedOrganizationMember = user?.organizationMembers?.[0];
+
+    if (!selectedOrganizationMember && !currentOrganizationId) {
+      const fallbackUser = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          organizationMembers: {
+            select: {
+              organizationId: true,
+              role: true,
+              organization: {
+                select: {
+                  id: true,
+                  ownerId: true,
+                  archive: true,
+                },
+              },
+            },
+            where: { organization: { archive: false } },
+            orderBy: { createdAt: 'asc' },
+            take: 1,
+          },
+        },
+      });
+      selectedOrganizationMember = fallbackUser?.organizationMembers?.[0];
+    }
+
+    if (!selectedOrganizationMember) {
       throw new NotFoundException('User is not a member of any organization');
     }
 
-    const organizationId = user.organizationMembers[0].organizationId;
-    const organizationRole = user.organizationMembers[0].role;
-    const organization = user.organizationMembers[0].organization;
+    const organizationId = selectedOrganizationMember.organizationId;
+    const organizationRole = selectedOrganizationMember.role;
+    const organization = selectedOrganizationMember.organization;
 
     // Check if organization is archived
     if (organization.archive) {
@@ -109,9 +144,9 @@ export class ProjectsService {
       if (!defaultWorkspace) {
         defaultWorkspace = await this.prisma.workspace.create({
           data: {
-            name: 'Company',
-            slug: 'company',
-            description: 'Default workspace for company projects',
+            name: 'Projects',
+            slug: 'projects',
+            description: 'Default project workspace for mekong',
             organizationId,
             createdBy: userId,
             updatedBy: userId,

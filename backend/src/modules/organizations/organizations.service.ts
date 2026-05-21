@@ -113,16 +113,9 @@ export class OrganizationsService {
     // Check if org creation is allowed globally
     const allowOrgCreation = await this.settingsService.get('allow_org_creation');
     if (allowOrgCreation === 'false') {
-      // Only SUPER_ADMIN can create orgs when disabled
-      const user = await this.prisma.user.findUnique({
-        where: { id: userId },
-        select: { role: true },
-      });
-      if (user?.role !== Role.SUPER_ADMIN) {
-        throw new ForbiddenException(
-          'Organization creation is disabled. Please contact your administrator.',
-        );
-      }
+      throw new ForbiddenException(
+        'Organization creation is disabled. Please contact your administrator.',
+      );
     }
 
     try {
