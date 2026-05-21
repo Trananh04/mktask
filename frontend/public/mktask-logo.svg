@@ -1,11 +1,19 @@
-<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="mktask logo">
-  <rect width="512" height="512" rx="104" fill="#111111"/>
-  <path d="M92 333V171l132 132 132-132v162h-58V310l-74 74-74-74v23H92Z" fill="#ffffff"/>
-  <path d="m191 356 62 62 159-159-41-41-118 118-21-21-41 41Z" fill="#5b55ff"/>
-  <circle cx="177" cy="124" r="17" fill="#ffffff"/>
-  <circle cx="177" cy="173" r="17" fill="#5b55ff"/>
-  <circle cx="177" cy="222" r="17" fill="#ffffff"/>
-  <rect x="215" y="111" width="120" height="22" rx="11" fill="#ffffff"/>
-  <rect x="215" y="160" width="120" height="22" rx="11" fill="#ffffff"/>
-  <rect x="215" y="209" width="120" height="22" rx="11" fill="#ffffff"/>
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="mktask logo mark">
+  <defs>
+    <linearGradient id="mktask-mark-bg" x1="91" y1="88" x2="421" y2="424" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#18bdd5"/>
+      <stop offset="0.55" stop-color="#3480de"/>
+      <stop offset="1" stop-color="#4f39e8"/>
+    </linearGradient>
+    <linearGradient id="mktask-mark-line" x1="158" y1="159" x2="368" y2="349" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#baf3ff"/>
+      <stop offset="1" stop-color="#d8ddff"/>
+    </linearGradient>
+  </defs>
+  <rect x="56" y="56" width="400" height="400" rx="106" fill="url(#mktask-mark-bg)"/>
+  <path d="M165 159h151c22 0 40 18 40 40v151" fill="none" stroke="url(#mktask-mark-line)" stroke-width="22" stroke-linecap="round" stroke-linejoin="round" opacity=".78"/>
+  <path d="M178 260l56 56 111-112" fill="none" stroke="#fff" stroke-width="42" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="165" cy="159" r="22" fill="#c2f4ff"/>
+  <circle cx="356" cy="199" r="22" fill="#c2f4ff" opacity=".88"/>
+  <circle cx="356" cy="350" r="22" fill="#dce1ff"/>
 </svg>

@@ -27,7 +27,7 @@ export default function getMentionSuggestion(mentions: any[]) {
 
           popup = tippy('body', {
             getReferenceClientRect: props.clientRect,
-            appendTo: () => document.getElementById('taskosaur-portal-root') || document.body,
+            appendTo: () => document.getElementById('mktask-portal-root') || document.body,
             content: component.element,
             showOnCreate: true,
             interactive: true,

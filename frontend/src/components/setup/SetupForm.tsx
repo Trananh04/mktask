@@ -18,12 +18,10 @@ import {
   Shield,
 } from "lucide-react";
 import Image from "next/image";
-import { useTheme } from "next-themes";
 import { SetupAdminData } from "@/types";
 
 export function SetupForm() {
   const router = useRouter();
-  const { resolvedTheme } = useTheme();
 
   const [formData, setFormData] = useState<SetupAdminData>({
     email: "",
@@ -149,13 +147,11 @@ export function SetupForm() {
         <div className="setup-mobile-logo">
           <div className="setup-mobile-logo-icon">
             <Image
-              src="/mktask-logo.png"
+              src="/logo-mark.svg"
               alt="mktask Logo"
               width={50}
               height={50}
-              className={`size-10 ${
-                resolvedTheme === "light" ? "filter invert brightness-200" : ""
-              }`}
+              className="size-10"
             />
           </div>
         </div>

@@ -29,7 +29,7 @@ export const QUEUE_DEFAULTS = {
   /**
    * Default queue prefix
    */
-  PREFIX: 'taskosaur',
+  PREFIX: 'mktask',
 
   /**
    * Default job options

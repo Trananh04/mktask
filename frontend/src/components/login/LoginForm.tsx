@@ -9,9 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Eye, EyeOff, Loader2, Mail, Lock, ArrowRight, Sparkle, Shield } from "lucide-react";
+import { Eye, EyeOff, Loader2, Mail, Lock, ArrowRight, Shield } from "lucide-react";
 import Image from "next/image";
-import { useTheme } from "next-themes";
 interface FormData {
   email: string;
   password: string;
@@ -21,7 +20,6 @@ interface FormData {
 export function LoginForm() {
   const { login, checkOrganizationAndRedirect } = useAuth();
   const router = useRouter();
-  const { resolvedTheme } = useTheme();
 
   const [formData, setFormData] = useState<FormData>({
     email: "",
@@ -126,13 +124,11 @@ export function LoginForm() {
         <div className="signup-mobile-logo">
           <div className="signup-mobile-logo-icon">
             <Image
-              src="/mktask-logo.png"
+              src="/logo-mark.svg"
               alt="mktask Logo"
               width={50}
               height={50}
-              className={`size-10 ${
-                resolvedTheme === "light" ? " filter invert brightness-200" : ""
-              }`}
+              className="size-10"
             />
           </div>
         </div>

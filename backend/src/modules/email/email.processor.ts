@@ -51,7 +51,7 @@ export class EmailProcessor implements OnModuleInit {
 
       // Get configuration from QueueConfigService to ensure worker matches queue settings
       const bullMqConfig = this.queueConfigService.getBullMQConfig();
-      const queuePrefix = bullMqConfig?.prefix || 'taskosaur';
+      const queuePrefix = bullMqConfig?.prefix || 'mktask';
       const queueConnection = bullMqConfig?.connection;
 
       if (!queueConnection) {

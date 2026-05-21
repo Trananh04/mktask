@@ -25,9 +25,9 @@ export class OrganizationsSeederService {
     const organizationsData = [
       {
         name: 'mktask Inc.',
-        slug: 'taskosaur-inc',
+        slug: 'mktask-inc',
         description: 'A comprehensive task management solution for modern teams',
-        website: 'https://taskosaur.com',
+        website: 'https://mktask.app',
         avatar: 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=150',
         ownerId: adminUser.id,
         createdBy: adminUser.id,

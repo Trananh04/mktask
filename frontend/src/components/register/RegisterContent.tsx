@@ -1,9 +1,6 @@
 import { motion } from "framer-motion";
-import { useTheme } from "next-themes";
 import Image from "next/image";
 export function RegisterContent() {
-  const { resolvedTheme } = useTheme();
-
   return (
     <div className="signup-hero-container">
       {/* Main Content */}
@@ -15,18 +12,14 @@ export function RegisterContent() {
           transition={{ duration: 0.8, ease: "easeOut" }}
           className="signup-brand-header"
         >
-          <div className="">
-            <div className="flex items-center">
-              <Image
-                src="/mktask-logo.png"
-                alt="mktask Logo"
-                width={50}
-                height={50}
-                className={`size-6 lg:size-10 ${resolvedTheme === "light" ? " filter invert brightness-200" : ""}`}
-              />
-              <h1 className="login-brand-title">mktask</h1>
-            </div>
-          </div>
+          <Image
+            src="/logo-primary-dark.svg"
+            alt="mktask AI Work Management"
+            width={320}
+            height={80}
+            priority
+            className="mb-8 h-auto w-48 lg:w-64"
+          />
 
           <h2 className="signup-hero-heading">
             Start your journey to

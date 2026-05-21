@@ -74,7 +74,7 @@ export class WorkspacesSeederService {
 
   private getWorkspacesDataForOrganization(organization: any) {
     // Different workspace configurations based on organization
-    if (organization.slug === 'taskosaur-inc') {
+    if (organization.slug === 'mktask-inc') {
       return [
         {
           name: 'Development Team',

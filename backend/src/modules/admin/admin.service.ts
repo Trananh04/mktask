@@ -39,12 +39,39 @@ export class AdminService {
       this.prisma.user.count({ where: { deletedAt: null } }),
       this.prisma.organization.count({ where: { archive: false } }),
       this.prisma.workspace.count({ where: { archive: false, organization: { archive: false } } }),
-      this.prisma.project.count({ where: { archive: false, workspace: { archive: false, organization: { archive: false } } } }),
-      this.prisma.task.count({ where: { isArchived: false, project: { archive: false, workspace: { archive: false, organization: { archive: false } } } } }),
+      this.prisma.project.count({
+        where: { archive: false, workspace: { archive: false, organization: { archive: false } } },
+      }),
+      this.prisma.task.count({
+        where: {
+          isArchived: false,
+          project: {
+            archive: false,
+            workspace: { archive: false, organization: { archive: false } },
+          },
+        },
+      }),
       this.prisma.user.count({ where: { deletedAt: null, createdAt: { gte: startOfWeek } } }),
-      this.prisma.organization.count({ where: { archive: false, createdAt: { gte: startOfWeek } } }),
-      this.prisma.project.count({ where: { archive: false, workspace: { archive: false, organization: { archive: false } }, createdAt: { gte: startOfWeek } } }),
-      this.prisma.task.count({ where: { isArchived: false, project: { archive: false, workspace: { archive: false, organization: { archive: false } } }, createdAt: { gte: startOfWeek } } }),
+      this.prisma.organization.count({
+        where: { archive: false, createdAt: { gte: startOfWeek } },
+      }),
+      this.prisma.project.count({
+        where: {
+          archive: false,
+          workspace: { archive: false, organization: { archive: false } },
+          createdAt: { gte: startOfWeek },
+        },
+      }),
+      this.prisma.task.count({
+        where: {
+          isArchived: false,
+          project: {
+            archive: false,
+            workspace: { archive: false, organization: { archive: false } },
+          },
+          createdAt: { gte: startOfWeek },
+        },
+      }),
       this.prisma.user.count({ where: { deletedAt: null, status: UserStatus.ACTIVE } }),
     ]);
 

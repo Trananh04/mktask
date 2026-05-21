@@ -14,7 +14,7 @@ export class UsersSeederService {
 
     const usersData = [
       {
-        email: 'admin@taskosaur.com',
+        email: 'admin@mktask.app',
         username: 'admin',
         firstName: 'Admin',
         lastName: 'User',
@@ -28,7 +28,7 @@ export class UsersSeederService {
         mobileNumber: '+10000000001',
       },
       {
-        email: 'john.doe@taskosaur.com',
+        email: 'john.doe@mktask.app',
         username: 'johndoe',
         firstName: 'John',
         lastName: 'Doe',
@@ -43,7 +43,7 @@ export class UsersSeederService {
         mobileNumber: '+10000000002',
       },
       {
-        email: 'jane.smith@taskosaur.com',
+        email: 'jane.smith@mktask.app',
         username: 'janesmith',
         firstName: 'Jane',
         lastName: 'Smith',
@@ -58,7 +58,7 @@ export class UsersSeederService {
         mobileNumber: '+10000000003',
       },
       {
-        email: 'mike.wilson@taskosaur.com',
+        email: 'mike.wilson@mktask.app',
         username: 'mikewilson',
         firstName: 'Mike',
         lastName: 'Wilson',
@@ -73,7 +73,7 @@ export class UsersSeederService {
         mobileNumber: '+10000000004',
       },
       {
-        email: 'sarah.jones@taskosaur.com',
+        email: 'sarah.jones@mktask.app',
         username: 'sarahjones',
         firstName: 'Sarah',
         lastName: 'Jones',
@@ -88,7 +88,7 @@ export class UsersSeederService {
         mobileNumber: '+10000000005',
       },
       {
-        email: 'alex.brown@taskosaur.com',
+        email: 'alex.brown@mktask.app',
         username: 'alexbrown',
         firstName: 'Alex',
         lastName: 'Brown',
@@ -103,7 +103,7 @@ export class UsersSeederService {
         mobileNumber: '+10000000006',
       },
       {
-        email: 'emma.davis@taskosaur.com',
+        email: 'emma.davis@mktask.app',
         username: 'emmadavis',
         firstName: 'Emma',
         lastName: 'Davis',
@@ -118,7 +118,7 @@ export class UsersSeederService {
         mobileNumber: '+10000000007',
       },
       {
-        email: 'tom.garcia@taskosaur.com',
+        email: 'tom.garcia@mktask.app',
         username: 'tomgarcia',
         firstName: 'Tom',
         lastName: 'Garcia',

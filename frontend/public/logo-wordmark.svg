@@ -1,0 +1,12 @@
+<svg width="512" height="160" viewBox="0 0 512 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="mktask AI Work Management">
+  <defs>
+    <linearGradient id="mktask-wordmark" x1="44" y1="80" x2="303" y2="80" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#111827"/>
+      <stop offset=".48" stop-color="#111827"/>
+      <stop offset=".49" stop-color="#5445f2"/>
+      <stop offset="1" stop-color="#5445f2"/>
+    </linearGradient>
+  </defs>
+  <text x="44" y="92" fill="url(#mktask-wordmark)" font-family="Inter, Arial, Helvetica, sans-serif" font-size="80" font-weight="800">mktask</text>
+  <text x="49" y="126" fill="#65738a" font-family="Inter, Arial, Helvetica, sans-serif" font-size="22" font-weight="800" letter-spacing="4">AI WORK MANAGEMENT</text>
+</svg>

@@ -22,7 +22,6 @@ import {
   ArrowRight,
   Shield,
 } from "lucide-react";
-import { useTheme } from "next-themes";
 
 interface FormData {
   firstName: string;
@@ -35,7 +34,6 @@ interface FormData {
 
 export function RegisterForm() {
   const router = useRouter();
-  const { resolvedTheme } = useTheme();
 
   const searchParams = useSearchParams();
   const { register, checkOrganizationAndRedirect } = useAuth();
@@ -153,13 +151,11 @@ export function RegisterForm() {
         <div className="signup-mobile-logo">
           <div className="signup-mobile-logo-icon">
             <Image
-              src="/mktask-logo.png"
+              src="/logo-mark.svg"
               alt="mktask Logo"
               width={50}
               height={50}
-              className={`size-10 ${
-                resolvedTheme === "light" ? " filter invert brightness-200" : ""
-              }`}
+              className="size-10"
             />
           </div>
         </div>

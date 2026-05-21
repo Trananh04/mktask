@@ -39,7 +39,7 @@ function TooltipContent({
   const [container, setContainer] = React.useState<HTMLElement | null>(null);
 
   React.useEffect(() => {
-    setContainer(document.getElementById("taskosaur-portal-root") || document.body);
+    setContainer(document.getElementById("mktask-portal-root") || document.body);
   }, []);
 
   return (

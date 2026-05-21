@@ -41,7 +41,7 @@ export class BulkTaskImportProcessor implements OnModuleInit {
       }
 
       const bullMqConfig = this.queueConfigService.getBullMQConfig();
-      const queuePrefix = bullMqConfig?.prefix || 'taskosaur';
+      const queuePrefix = bullMqConfig?.prefix || 'mktask';
       const queueConnection = bullMqConfig?.connection;
 
       if (!queueConnection) {

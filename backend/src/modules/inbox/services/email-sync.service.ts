@@ -1266,7 +1266,7 @@ export class EmailSyncService {
         text: template,
         html: template.replace(/\n/g, '<br>'),
         inReplyTo: message.messageId,
-        messageId: `<${Date.now()}.${Math.random().toString(36)}@${process.env.EMAIL_DOMAIN || 'taskosaur.com'}>`,
+        messageId: `<${Date.now()}.${Math.random().toString(36)}@${process.env.EMAIL_DOMAIN || 'mktask.app'}>`,
       };
 
       await transporter.sendMail(mailOptions);

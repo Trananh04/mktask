@@ -330,7 +330,7 @@ export class EmailReplyService {
   private generateMessageId(): string {
     const timestamp = Date.now();
     const random = Math.random().toString(36).substring(2);
-    const domain = process.env.EMAIL_DOMAIN || 'taskosaur.com';
+    const domain = process.env.EMAIL_DOMAIN || 'mktask.app';
     return `<${timestamp}.${random}@${domain}>`;
   }
 

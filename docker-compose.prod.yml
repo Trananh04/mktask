@@ -3,18 +3,18 @@ services:
   postgres:
     image: postgres:16
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-taskosaur}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-taskosaur}
-      POSTGRES_DB: ${POSTGRES_DB:-taskosaur}
+      POSTGRES_USER: ${POSTGRES_USER:-mktask}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mktask}
+      POSTGRES_DB: ${POSTGRES_DB:-mktask}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-taskosaur}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-mktask}"]
       interval: 10s
       timeout: 5s
       retries: 5
     networks:
-      - taskosaur-network
+      - mktask-network
     restart: unless-stopped
 
   # Redis for Bull Queue
@@ -29,7 +29,7 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - taskosaur-network
+      - mktask-network
     restart: unless-stopped
 
   # Application (Production Build)
@@ -43,7 +43,7 @@ services:
 
       # Database Configuration (connect to internal PostgreSQL)
       # Note: Explicitly set to use 'postgres' hostname for Docker network
-      DATABASE_URL: postgresql://${POSTGRES_USER:-taskosaur}:${POSTGRES_PASSWORD:-taskosaur}@postgres:5432/${POSTGRES_DB:-taskosaur}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-mktask}:${POSTGRES_PASSWORD:-mktask}@postgres:5432/${POSTGRES_DB:-mktask}
 
       # Redis Configuration (connect to internal Redis)
       # Note: Explicitly set to use 'redis' hostname for Docker network
@@ -68,8 +68,8 @@ services:
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASS: ${SMTP_PASS:-}
-      SMTP_FROM: ${SMTP_FROM:-noreply@taskosaur.com}
-      EMAIL_DOMAIN: ${EMAIL_DOMAIN:-taskosaur.com}
+      SMTP_FROM: ${SMTP_FROM:-noreply@mktask.app}
+      EMAIL_DOMAIN: ${EMAIL_DOMAIN:-mktask.app}
 
       # File Upload
       UPLOAD_DEST: ${UPLOAD_DEST:-./uploads}
@@ -95,7 +95,7 @@ services:
       redis:
         condition: service_healthy
     networks:
-      - taskosaur-network
+      - mktask-network
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:3000/api/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))\""]
@@ -115,5 +115,5 @@ volumes:
     driver: local
 
 networks:
-  taskosaur-network:
+  mktask-network:
     driver: bridge

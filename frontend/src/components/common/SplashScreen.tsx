@@ -31,7 +31,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({
         <div className="splash-logo-glow" />
         <div className="splash-logo">
           <Image
-            src="/mktask-logo.png"
+            src="/logo-mark.svg"
             alt="mktask Logo"
             width={120}
             height={120}

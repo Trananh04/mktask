@@ -7,7 +7,7 @@ const __dirname = path.dirname(__filename);
 
 const authFile = path.join(__dirname, '.auth/user.json');
 
-const ADMIN_EMAIL = 'admin@taskosaur.com';
+const ADMIN_EMAIL = 'admin@mktask.app';
 const ADMIN_PASSWORD = 'password123';
 
 setup('authenticate', async ({ page }) => {

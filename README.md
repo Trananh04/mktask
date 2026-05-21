@@ -1,5 +1,9 @@
 # mktask
 
+<p align="center">
+  <img src="frontend/public/logo-primary.svg" alt="mktask AI Work Management" width="320" />
+</p>
+
 Nền tảng quản lý dự án mã nguồn mở có trợ lí AI để tạo việc, thao tác giao diện, lập kế hoạch dự án và hỗ trợ đội nhóm làm việc theo workspace/project/task.
 
 ![Node.js](https://img.shields.io/badge/Node.js-%3E%3D22-brightgreen)
@@ -135,7 +139,7 @@ cp .env.example .env
 Kiểm tra lại `.env` trước khi chạy. Các giá trị quan trọng:
 
 ```env
-DATABASE_URL="postgresql://taskosaur:taskosaur@localhost:5432/taskosaur"
+DATABASE_URL="postgresql://mktask:mktask@localhost:5432/mktask"
 JWT_SECRET="thay-bang-chuoi-bi-mat"
 JWT_REFRESH_SECRET="thay-bang-chuoi-bi-mat-khac"
 ENCRYPTION_KEY="thay-bang-chuoi-32-byte"

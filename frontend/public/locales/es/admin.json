@@ -150,7 +150,7 @@
       "sso_provider_name": "Nombre del Proveedor",
       "sso_provider_name_desc": "Se muestra en el botón de inicio de sesión, ej: 'Iniciar sesión con Authentik'",
       "sso_issuer_url": "URL del Emisor",
-      "sso_issuer_url_desc": "URL de descubrimiento OIDC, ej: https://auth.ejemplo.com/application/o/taskosaur/",
+      "sso_issuer_url_desc": "URL de descubrimiento OIDC, ej: https://auth.ejemplo.com/application/o/mktask/",
       "sso_client_id": "ID del Cliente",
       "sso_client_id_desc": "ID de cliente OAuth2 de su proveedor",
       "sso_client_secret": "Secreto del Cliente",

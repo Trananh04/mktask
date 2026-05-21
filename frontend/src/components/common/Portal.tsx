@@ -7,7 +7,7 @@ export default function Portal({ children }: { children: ReactNode }) {
   const [container, setContainer] = useState<HTMLElement | null>(null);
 
   useEffect(() => {
-    setContainer(document.getElementById("taskosaur-portal-root") || document.body);
+    setContainer(document.getElementById("mktask-portal-root") || document.body);
     setMounted(true);
     return () => setMounted(false);
   }, []);

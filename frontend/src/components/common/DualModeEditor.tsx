@@ -38,7 +38,7 @@ const MDEditor = dynamic(() => import("@uiw/react-md-editor"), { ssr: false });
 
 export type EditorMode = "markdown" | "richtext";
 
-const EDITOR_MODE_STORAGE_KEY = "taskosaur_comment_editor_mode";
+const EDITOR_MODE_STORAGE_KEY = "mktask_comment_editor_mode";
 
 // Track ongoing uploads by placeholder ID
 const ongoingUploads = new Map<string, boolean>();

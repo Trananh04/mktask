@@ -1,5 +1,5 @@
 {
-  "name": "@taskosaur/dist",
+  "name": "@mktask/dist",
   "version": "0.1.0",
   "description": "mktask Backend - NestJS API Server",
   "author": "mktask Team",

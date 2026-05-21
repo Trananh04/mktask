@@ -1,0 +1,27 @@
+<svg width="1024" height="256" viewBox="0 0 1024 256" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="mktask AI Work Management">
+  <defs>
+    <linearGradient id="mktask-primary-bg" x1="63" y1="56" x2="201" y2="200" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#18bdd5"/>
+      <stop offset=".55" stop-color="#3480de"/>
+      <stop offset="1" stop-color="#4f39e8"/>
+    </linearGradient>
+    <linearGradient id="mktask-primary-line" x1="97" y1="90" x2="186" y2="170" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#baf3ff"/>
+      <stop offset="1" stop-color="#d8ddff"/>
+    </linearGradient>
+    <linearGradient id="mktask-word" x1="249" y1="124" x2="543" y2="124" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#111827"/>
+      <stop offset=".47" stop-color="#111827"/>
+      <stop offset=".48" stop-color="#5445f2"/>
+      <stop offset="1" stop-color="#5445f2"/>
+    </linearGradient>
+  </defs>
+  <rect x="62" y="56" width="144" height="144" rx="37" fill="url(#mktask-primary-bg)"/>
+  <path d="M98 90h54c14 0 25 11 25 25v55" fill="none" stroke="url(#mktask-primary-line)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" opacity=".82"/>
+  <path d="M101 128l25 25 49-49" fill="none" stroke="#fff" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="98" cy="90" r="8" fill="#c2f4ff"/>
+  <circle cx="177" cy="115" r="8" fill="#c2f4ff" opacity=".88"/>
+  <circle cx="177" cy="170" r="8" fill="#dce1ff"/>
+  <text x="248" y="147" fill="url(#mktask-word)" font-family="Inter, Arial, Helvetica, sans-serif" font-size="86" font-weight="800">mktask</text>
+  <text x="252" y="184" fill="#65738a" font-family="Inter, Arial, Helvetica, sans-serif" font-size="24" font-weight="800" letter-spacing="4">AI WORK MANAGEMENT</text>
+</svg>

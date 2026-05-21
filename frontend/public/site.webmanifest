@@ -1,7 +1,7 @@
 {
   "name": "mktask",
   "short_name": "mktask",
-  "description": "Nền tảng quản lý công việc và dự án",
+  "description": "AI work management platform",
   "icons": [
     {
       "src": "/android-chrome-192x192.png",

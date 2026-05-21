@@ -587,11 +587,11 @@ const TaskTable: React.FC<TaskTableProps> = ({
   // Make the key project-specific so each project can have its own column order
   const getStorageKey = () => {
     if (projectSlug) {
-      return `taskosaur_task_table_column_order_${projectSlug}`;
+      return `mktask_task_table_column_order_${projectSlug}`;
     } else if (workspaceSlug) {
-      return `taskosaur_task_table_column_order_workspace_${workspaceSlug}`;
+      return `mktask_task_table_column_order_workspace_${workspaceSlug}`;
     } else {
-      return 'taskosaur_task_table_column_order_global';
+      return 'mktask_task_table_column_order_global';
     }
   };
 

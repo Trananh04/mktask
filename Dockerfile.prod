@@ -4,7 +4,7 @@
 # =============================================================================
 FROM node:22-slim AS builder
 
-WORKDIR /app/taskosaur
+WORKDIR /app/mktask
 
 # Configure npm for better network reliability (env vars inherited by all child processes)
 ENV npm_config_fetch_timeout=150000 \
@@ -51,7 +51,7 @@ RUN npm run build:dist
 # =============================================================================
 FROM node:22-slim AS production
 
-WORKDIR /app/taskosaur
+WORKDIR /app/mktask
 
 # Install only runtime dependencies and netcat for health checks
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -75,7 +75,7 @@ ENV NPM_CONFIG_CACHE=/tmp/.npm
 ENV NPM_CONFIG_PREFIX=/tmp/.npm-global
 
 # Copy only the dist directory from builder stage
-COPY --chown=www-data:www-data --from=builder /app/taskosaur/dist .
+COPY --chown=www-data:www-data --from=builder /app/mktask/dist .
 
 # Validate that required files exist in the dist folder
 RUN if [ ! -f "package.json" ]; then \

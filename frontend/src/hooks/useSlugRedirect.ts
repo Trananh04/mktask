@@ -3,7 +3,7 @@ import { useRouter } from "next/router";
 import { useWorkspace } from "@/contexts/workspace-context";
 import { useProject } from "@/contexts/project-context";
 
-const SLUG_CACHE_KEY = "taskosaur_slug_cache";
+const SLUG_CACHE_KEY = "mktask_slug_cache";
 function getSlugCache(): Record<string, string> {
     try {
         const raw = localStorage.getItem(SLUG_CACHE_KEY);
