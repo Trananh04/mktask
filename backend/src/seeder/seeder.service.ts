@@ -120,6 +120,293 @@ export class SeederService {
     }
   }
 
+  async clearDemoUsers() {
+    console.log('Clearing demo users...');
+
+    const demoEmails = [
+      'john.doe@mktask.app',
+      'jane.smith@mktask.app',
+      'mike.wilson@mktask.app',
+      'sarah.jones@mktask.app',
+      'alex.brown@mktask.app',
+      'emma.davis@mktask.app',
+      'tom.garcia@mktask.app',
+      'john.doe@taskosaur.com',
+      'jane.smith@taskosaur.com',
+      'mike.wilson@taskosaur.com',
+      'sarah.jones@taskosaur.com',
+      'alex.brown@taskosaur.com',
+      'emma.davis@taskosaur.com',
+      'tom.garcia@taskosaur.com',
+    ];
+
+    const demoUsers = await this.prisma.user.findMany({
+      where: { email: { in: demoEmails } },
+      select: { id: true, email: true },
+    });
+
+    if (demoUsers.length === 0) {
+      console.log('No demo users found.');
+      return { deletedUsers: 0 };
+    }
+
+    const replacementUser = await this.prisma.user.findFirst({
+      where: {
+        email: { notIn: demoEmails },
+        OR: [
+          { role: 'SUPER_ADMIN' },
+          { email: { in: ['admin@mktask.app', 'admin@taskosaur.com'] } },
+        ],
+      },
+      orderBy: { createdAt: 'asc' },
+      select: { id: true, email: true },
+    });
+
+    if (!replacementUser) {
+      throw new Error('Cannot clear demo users because no non-demo admin user exists.');
+    }
+
+    const demoUserIds = demoUsers.map((user) => user.id);
+    const whereDemoUser = { in: demoUserIds };
+    const reassign = replacementUser.id;
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.organization.updateMany({
+        where: { ownerId: whereDemoUser },
+        data: { ownerId: reassign },
+      });
+      await tx.organization.updateMany({
+        where: { createdBy: whereDemoUser },
+        data: { createdBy: reassign },
+      });
+      await tx.organization.updateMany({
+        where: { updatedBy: whereDemoUser },
+        data: { updatedBy: reassign },
+      });
+
+      await tx.workspace.updateMany({
+        where: { createdBy: whereDemoUser },
+        data: { createdBy: reassign },
+      });
+      await tx.workspace.updateMany({
+        where: { updatedBy: whereDemoUser },
+        data: { updatedBy: reassign },
+      });
+      await tx.project.updateMany({
+        where: { createdBy: whereDemoUser },
+        data: { createdBy: reassign },
+      });
+      await tx.project.updateMany({
+        where: { updatedBy: whereDemoUser },
+        data: { updatedBy: reassign },
+      });
+      await tx.workflow.updateMany({
+        where: { createdBy: whereDemoUser },
+        data: { createdBy: reassign },
+      });
+      await tx.workflow.updateMany({
+        where: { updatedBy: whereDemoUser },
+        data: { updatedBy: reassign },
+      });
+      await tx.taskStatus.updateMany({
+        where: { createdBy: whereDemoUser },
+        data: { createdBy: reassign },
+      });
+      await tx.taskStatus.updateMany({
+        where: { updatedBy: whereDemoUser },
+        data: { updatedBy: reassign },
+      });
+      await tx.taskStatus.updateMany({
+        where: { deletedBy: whereDemoUser },
+        data: { deletedBy: reassign },
+      });
+      await tx.statusTransition.updateMany({
+        where: { createdBy: whereDemoUser },
+        data: { createdBy: reassign },
+      });
+      await tx.statusTransition.updateMany({
+        where: { updatedBy: whereDemoUser },
+        data: { updatedBy: reassign },
+      });
+      await tx.sprint.updateMany({
+        where: { createdBy: whereDemoUser },
+        data: { createdBy: reassign },
+      });
+      await tx.sprint.updateMany({
+        where: { updatedBy: whereDemoUser },
+        data: { updatedBy: reassign },
+      });
+      await tx.label.updateMany({
+        where: { createdBy: whereDemoUser },
+        data: { createdBy: reassign },
+      });
+      await tx.label.updateMany({
+        where: { updatedBy: whereDemoUser },
+        data: { updatedBy: reassign },
+      });
+      await tx.taskLabel.updateMany({
+        where: { createdBy: whereDemoUser },
+        data: { createdBy: reassign },
+      });
+      await tx.taskLabel.updateMany({
+        where: { updatedBy: whereDemoUser },
+        data: { updatedBy: reassign },
+      });
+      await tx.task.updateMany({
+        where: { createdBy: whereDemoUser },
+        data: { createdBy: reassign },
+      });
+      await tx.task.updateMany({
+        where: { updatedBy: whereDemoUser },
+        data: { updatedBy: reassign },
+      });
+      await tx.task.updateMany({
+        where: { archivedBy: whereDemoUser },
+        data: { archivedBy: reassign },
+      });
+      await tx.taskDependency.updateMany({
+        where: { createdBy: whereDemoUser },
+        data: { createdBy: reassign },
+      });
+      await tx.taskDependency.updateMany({
+        where: { updatedBy: whereDemoUser },
+        data: { updatedBy: reassign },
+      });
+      await tx.taskWatcher.updateMany({
+        where: { createdBy: whereDemoUser },
+        data: { createdBy: reassign },
+      });
+      await tx.taskWatcher.updateMany({
+        where: { updatedBy: whereDemoUser },
+        data: { updatedBy: reassign },
+      });
+      await tx.taskComment.updateMany({
+        where: { createdBy: whereDemoUser },
+        data: { createdBy: reassign },
+      });
+      await tx.taskComment.updateMany({
+        where: { updatedBy: whereDemoUser },
+        data: { updatedBy: reassign },
+      });
+      await tx.taskAttachment.updateMany({
+        where: { createdBy: whereDemoUser },
+        data: { createdBy: reassign },
+      });
+      await tx.taskAttachment.updateMany({
+        where: { updatedBy: whereDemoUser },
+        data: { updatedBy: reassign },
+      });
+      await tx.publicTaskShare.updateMany({
+        where: { createdBy: whereDemoUser },
+        data: { createdBy: reassign },
+      });
+      await tx.timeEntry.updateMany({
+        where: { createdBy: whereDemoUser },
+        data: { createdBy: reassign },
+      });
+      await tx.timeEntry.updateMany({
+        where: { updatedBy: whereDemoUser },
+        data: { updatedBy: reassign },
+      });
+      await tx.customField.updateMany({
+        where: { createdBy: whereDemoUser },
+        data: { createdBy: reassign },
+      });
+      await tx.customField.updateMany({
+        where: { updatedBy: whereDemoUser },
+        data: { updatedBy: reassign },
+      });
+      await tx.notification.updateMany({
+        where: { createdBy: whereDemoUser },
+        data: { createdBy: reassign },
+      });
+      await tx.notification.updateMany({
+        where: { updatedBy: whereDemoUser },
+        data: { updatedBy: reassign },
+      });
+      await tx.activityLog.updateMany({
+        where: { createdBy: whereDemoUser },
+        data: { createdBy: reassign },
+      });
+      await tx.activityLog.updateMany({
+        where: { updatedBy: whereDemoUser },
+        data: { updatedBy: reassign },
+      });
+      await tx.automationRule.updateMany({
+        where: { createdBy: whereDemoUser },
+        data: { createdBy: reassign },
+      });
+      await tx.automationRule.updateMany({
+        where: { updatedBy: whereDemoUser },
+        data: { updatedBy: reassign },
+      });
+      await tx.ruleExecution.updateMany({
+        where: { createdBy: whereDemoUser },
+        data: { createdBy: reassign },
+      });
+      await tx.ruleExecution.updateMany({
+        where: { updatedBy: whereDemoUser },
+        data: { updatedBy: reassign },
+      });
+      await tx.organizationMember.updateMany({
+        where: { createdBy: whereDemoUser },
+        data: { createdBy: reassign },
+      });
+      await tx.organizationMember.updateMany({
+        where: { updatedBy: whereDemoUser },
+        data: { updatedBy: reassign },
+      });
+      await tx.workspaceMember.updateMany({
+        where: { createdBy: whereDemoUser },
+        data: { createdBy: reassign },
+      });
+      await tx.workspaceMember.updateMany({
+        where: { updatedBy: whereDemoUser },
+        data: { updatedBy: reassign },
+      });
+      await tx.projectMember.updateMany({
+        where: { createdBy: whereDemoUser },
+        data: { createdBy: reassign },
+      });
+      await tx.projectMember.updateMany({
+        where: { updatedBy: whereDemoUser },
+        data: { updatedBy: reassign },
+      });
+      await tx.taskStatusChangeRequest.updateMany({
+        where: { reviewedById: whereDemoUser },
+        data: { reviewedById: reassign },
+      });
+      await tx.taskDailyReport.updateMany({
+        where: { reviewedById: whereDemoUser },
+        data: { reviewedById: reassign },
+      });
+      await tx.projectInbox.updateMany({
+        where: { defaultAssigneeId: whereDemoUser },
+        data: { defaultAssigneeId: null },
+      });
+      await tx.inboxMessage.updateMany({
+        where: { convertedBy: whereDemoUser },
+        data: { convertedBy: reassign },
+      });
+      await tx.user.updateMany({
+        where: { deletedBy: whereDemoUser },
+        data: { deletedBy: reassign },
+      });
+
+      const deletedUsers = await tx.user.deleteMany({
+        where: { id: whereDemoUser },
+      });
+
+      console.log(`Deleted ${deletedUsers.count} demo users.`);
+    });
+
+    return {
+      deletedUsers: demoUsers.length,
+      replacementUser: replacementUser.email,
+      deletedEmails: demoUsers.map((user) => user.email),
+    };
+  }
+
   async seedInboxRules() {
     console.log('📧 Starting inbox rules seeding...');
 

@@ -46,6 +46,7 @@
         "db:reset": "dotenv -- npm run prisma:reset --workspace=backend",
         "db:seed": "dotenv -- npm run seed --workspace=backend",
         "db:seed:admin": "dotenv -- npm run seed:admin --workspace=backend",
+        "db:seed:clear-demo-users": "dotenv -- npm run seed:clear-demo-users --workspace=backend",
         "db:seed:clear": "dotenv -- npm run seed:clear --workspace=backend",
         "db:seed:reset": "dotenv -- npm run seed:reset --workspace=backend",
         "db:generate": "dotenv -- npm run prisma:generate --workspace=backend",
