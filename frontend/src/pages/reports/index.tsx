@@ -3,12 +3,15 @@ import { useRouter } from "next/router";
 import Link from "next/link";
 import { toast } from "sonner";
 import {
+  AlertCircle,
   CalendarDays,
   Check,
   ClipboardList,
+  Clock3,
   ExternalLink,
   FolderKanban,
   RefreshCw,
+  Users,
   X,
 } from "lucide-react";
 import { PageHeader } from "@/components/common/PageHeader";
@@ -29,6 +32,16 @@ const today = new Date().toISOString().split("T")[0];
 function getUserName(user: any) {
   const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(" ").trim();
   return fullName || user?.email || "Nhân viên";
+}
+
+function getInitials(name: string) {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
 }
 
 function formatReportType(type: TaskDailyReport["type"]) {
@@ -58,6 +71,39 @@ function getTaskHref(task?: TaskReportTaskSummary | null) {
 
 function getProjectCount(reports: TaskDailyReport[]) {
   return new Set(reports.map((report) => report.task?.project?.id).filter(Boolean)).size;
+}
+
+function StatCard({
+  icon,
+  label,
+  value,
+  tone = "neutral",
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string | number;
+  tone?: "neutral" | "warning" | "success";
+}) {
+  return (
+    <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-4 shadow-sm">
+      <div className="flex items-center gap-3">
+        <div
+          className={cn(
+            "flex h-10 w-10 items-center justify-center rounded-md",
+            tone === "warning" && "bg-amber-50 text-amber-700",
+            tone === "success" && "bg-emerald-50 text-emerald-700",
+            tone === "neutral" && "bg-slate-100 text-slate-700"
+          )}
+        >
+          {icon}
+        </div>
+        <div className="min-w-0">
+          <p className="text-2xl font-semibold tracking-normal">{value}</p>
+          <p className="text-sm text-[var(--muted-foreground)]">{label}</p>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default function ReportsPage() {
@@ -123,6 +169,8 @@ export default function ReportsPage() {
     }, {});
   }, [dailyReports]);
 
+  const reviewedCount = dailyReports.filter((report) => report.status === "REVIEWED").length;
+
   const reviewStatusRequest = async (
     request: TaskStatusChangeRequest,
     decision: "APPROVED" | "REJECTED"
@@ -155,215 +203,294 @@ export default function ReportsPage() {
   return (
     <>
       <SEO title="Báo cáo" description="Báo cáo task hằng ngày và duyệt trạng thái" />
-      <div className="space-y-6 px-3 py-4 sm:px-6">
-        <PageHeader
-          className="rounded border border-[var(--border)] bg-[var(--card)] p-4"
-          icon={<ClipboardList className="h-5 w-5" />}
-          title="Báo cáo"
-          description="Duyệt trạng thái task và xem báo cáo nhân viên theo ngày"
-          actions={
-            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
-              <label className="flex h-10 w-full items-center gap-2 rounded border border-[var(--border)] bg-[var(--background)] px-3 sm:w-auto">
-                <CalendarDays className="h-4 w-4 shrink-0 text-[var(--muted-foreground)]" />
-                <input
-                  type="date"
-                  value={selectedDate}
-                  onChange={(event) => setSelectedDate(event.target.value)}
-                  className="min-w-0 flex-1 bg-transparent text-sm outline-none sm:w-[9.5rem]"
-                  aria-label="Ngày báo cáo"
-                />
-              </label>
-              <Button
-                type="button"
-                variant="outline"
-                className="h-10 justify-center gap-2"
-                onClick={loadReports}
-                disabled={isLoading}
-              >
-                <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} />
-                Làm mới
-              </Button>
+      <div className="dashboard-container">
+        <div className="space-y-6">
+          <PageHeader
+            icon={<ClipboardList className="h-5 w-5" />}
+            title="Báo cáo"
+            description="Duyệt yêu cầu trạng thái và theo dõi báo cáo công việc theo ngày."
+            actions={
+              <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+                <label className="flex h-10 w-full items-center gap-2 rounded-md border border-[var(--border)] bg-[var(--card)] px-3 shadow-sm sm:w-auto">
+                  <CalendarDays className="h-4 w-4 shrink-0 text-[var(--muted-foreground)]" />
+                  <input
+                    type="date"
+                    value={selectedDate}
+                    onChange={(event) => setSelectedDate(event.target.value)}
+                    className="min-w-0 flex-1 bg-transparent text-sm outline-none sm:w-[9.5rem]"
+                    aria-label="Ngày báo cáo"
+                  />
+                </label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-10 justify-center gap-2 rounded-md shadow-sm"
+                  onClick={loadReports}
+                  disabled={isLoading}
+                >
+                  <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} />
+                  Làm mới
+                </Button>
+              </div>
+            }
+          />
+
+          {isLoading ? (
+            <div className="grid gap-4">
+              <div className="h-24 animate-pulse rounded-lg border border-[var(--border)] bg-[var(--muted)]/20" />
+              <div className="h-56 animate-pulse rounded-lg border border-[var(--border)] bg-[var(--muted)]/20" />
             </div>
-          }
-        />
-
-        {isLoading ? (
-          <div className="space-y-3">
-            <div className="h-28 animate-pulse rounded border border-[var(--border)] bg-[var(--muted)]/20" />
-            <div className="h-40 animate-pulse rounded border border-[var(--border)] bg-[var(--muted)]/20" />
-          </div>
-        ) : (
-          <>
-            <section className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h2 className="text-base font-semibold">Yêu cầu đổi trạng thái</h2>
-                <span className="text-sm text-[var(--muted-foreground)]">
-                  {statusRequests.length} chờ duyệt
-                </span>
+          ) : (
+            <>
+              <div className="grid gap-3 md:grid-cols-3">
+                <StatCard
+                  icon={<AlertCircle className="h-5 w-5" />}
+                  label="Yêu cầu chờ duyệt"
+                  value={statusRequests.length}
+                  tone="warning"
+                />
+                <StatCard
+                  icon={<ClipboardList className="h-5 w-5" />}
+                  label="Báo cáo trong ngày"
+                  value={dailyReports.length}
+                />
+                <StatCard
+                  icon={<Check className="h-5 w-5" />}
+                  label="Đã xem"
+                  value={`${reviewedCount}/${dailyReports.length}`}
+                  tone="success"
+                />
               </div>
-              {statusRequests.length === 0 ? (
-                <div className="rounded border border-[var(--border)] bg-[var(--card)] p-4 text-sm text-[var(--muted-foreground)]">
-                  Không có yêu cầu đổi trạng thái đang chờ.
+
+              <section className="rounded-lg border border-[var(--border)] bg-[var(--card)] shadow-sm">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border)] px-5 py-4">
+                  <div>
+                    <h2 className="text-base font-semibold">Yêu cầu đổi trạng thái</h2>
+                    <p className="text-sm text-[var(--muted-foreground)]">
+                      Các yêu cầu cần manager xác nhận trước khi đổi trạng thái task.
+                    </p>
+                  </div>
+                  <span className="rounded-md bg-amber-50 px-2.5 py-1 text-sm font-medium text-amber-700">
+                    {statusRequests.length} chờ duyệt
+                  </span>
                 </div>
-              ) : (
-                <div className="grid gap-3">
-                  {statusRequests.map((request) => (
-                    <article key={request.id} className="rounded border border-[var(--border)] bg-[var(--card)] p-4">
-                      <div className="flex flex-wrap items-start justify-between gap-3">
-                        <div className="min-w-0 flex-1">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <p className="min-w-0 break-words font-medium">
-                              {request.task?.title || "Công việc"}
+
+                {statusRequests.length === 0 ? (
+                  <div className="flex items-center gap-3 px-5 py-6 text-sm text-[var(--muted-foreground)]">
+                    <Clock3 className="h-5 w-5" />
+                    Không có yêu cầu đổi trạng thái đang chờ.
+                  </div>
+                ) : (
+                  <div className="grid gap-3 p-4">
+                    {statusRequests.map((request) => (
+                      <article
+                        key={request.id}
+                        className="rounded-lg border border-[var(--border)] bg-[var(--background)] p-4"
+                      >
+                        <div className="flex flex-wrap items-start justify-between gap-4">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <p className="min-w-0 break-words font-medium">
+                                {request.task?.title || "Công việc"}
+                              </p>
+                              <span className="inline-flex max-w-full items-center gap-1 rounded-md bg-[var(--muted)] px-2 py-1 text-xs font-medium text-[var(--muted-foreground)]">
+                                <FolderKanban className="h-3.5 w-3.5 shrink-0" />
+                                <span className="truncate">{getProjectLabel(request.task)}</span>
+                              </span>
+                            </div>
+                            <p className="mt-1 text-sm text-[var(--muted-foreground)]">
+                              {getUserName(request.requestedBy)} muốn chuyển sang{" "}
+                              <span className="font-medium text-[var(--foreground)]">
+                                {request.requestedStatus?.name}
+                              </span>
                             </p>
-                            <span className="inline-flex max-w-full items-center gap-1 rounded bg-[var(--muted)] px-2 py-1 text-xs font-medium text-[var(--muted-foreground)]">
-                              <FolderKanban className="h-3.5 w-3.5 shrink-0" />
-                              <span className="truncate">{getProjectLabel(request.task)}</span>
-                            </span>
+                            {request.requesterNote && (
+                              <p className="mt-2 break-words text-sm">{request.requesterNote}</p>
+                            )}
+                            <p className="mt-1 text-xs text-[var(--muted-foreground)]">
+                              {getWorkspaceLabel(request.task)}
+                            </p>
                           </div>
-                          <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-                            {getUserName(request.requestedBy)} muốn chuyển sang{" "}
-                            <span className="font-medium text-[var(--foreground)]">
-                              {request.requestedStatus?.name}
-                            </span>
-                          </p>
-                          {request.requesterNote && (
-                            <p className="mt-2 break-words text-sm">{request.requesterNote}</p>
-                          )}
-                          <p className="mt-1 text-xs text-[var(--muted-foreground)]">
-                            {getWorkspaceLabel(request.task)}
-                          </p>
-                          {getTaskHref(request.task) && (
-                            <Link
-                              href={getTaskHref(request.task)!}
-                              className="mt-3 inline-flex h-8 items-center gap-1.5 rounded border border-[var(--border)] px-2.5 text-xs font-medium hover:bg-[var(--muted)]"
-                            >
-                              <ExternalLink className="h-3.5 w-3.5" />
-                              Xem công việc
-                            </Link>
-                          )}
-                        </div>
-                        <div className="flex w-full gap-2 sm:w-auto">
-                          <button
-                            type="button"
-                            disabled={reviewingId === request.id}
-                            onClick={() => reviewStatusRequest(request, "APPROVED")}
-                            className="inline-flex h-9 flex-1 items-center justify-center gap-1 rounded bg-green-600 px-3 text-sm font-medium text-white disabled:opacity-60 sm:flex-none"
-                          >
-                            <Check className="h-4 w-4" />
-                            Duyệt
-                          </button>
-                          <button
-                            type="button"
-                            disabled={reviewingId === request.id}
-                            onClick={() => reviewStatusRequest(request, "REJECTED")}
-                            className="inline-flex h-9 flex-1 items-center justify-center gap-1 rounded border border-[var(--border)] px-3 text-sm font-medium disabled:opacity-60 sm:flex-none"
-                          >
-                            <X className="h-4 w-4" />
-                            Từ chối
-                          </button>
-                        </div>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-              )}
-            </section>
-
-            <section className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h2 className="text-base font-semibold">Báo cáo theo nhân viên</h2>
-                <span className="text-sm text-[var(--muted-foreground)]">
-                  {dailyReports.length} báo cáo
-                </span>
-              </div>
-              {dailyReports.length === 0 ? (
-                <div className="rounded border border-[var(--border)] bg-[var(--card)] p-4 text-sm text-[var(--muted-foreground)]">
-                  Chưa có báo cáo trong ngày đã chọn.
-                </div>
-              ) : (
-                <div className="grid gap-4">
-                  {Object.entries(reportsByEmployee).map(([employeeId, reports]) => (
-                    <section key={employeeId} className="overflow-hidden rounded border border-[var(--border)] bg-[var(--card)]">
-                      <div className="border-b border-[var(--border)] px-4 py-3">
-                        <h3 className="truncate font-medium">{getUserName(reports[0]?.reporter)}</h3>
-                        <p className="text-sm text-[var(--muted-foreground)]">
-                          {reports.length} báo cáo trong ngày
-                          {getProjectCount(reports) > 0 && ` • ${getProjectCount(reports)} dự án`}
-                        </p>
-                      </div>
-                      <div className="divide-y divide-[var(--border)]">
-                        {reports.map((report) => (
-                          <article key={report.id} className="p-4">
-                            <div className="flex flex-wrap items-start justify-between gap-3">
-                              <div className="min-w-0 flex-1">
-                                <div className="flex flex-wrap items-center gap-2">
-                                  <span className="rounded bg-[var(--muted)] px-2 py-1 text-xs font-medium">
-                                    {formatReportType(report.type)}
-                                  </span>
-                                  <span className="min-w-0 break-words text-sm font-medium">
-                                    {report.task?.title || "Công việc"}
-                                  </span>
-                                  <span className="inline-flex max-w-full items-center gap-1 rounded bg-[var(--muted)] px-2 py-1 text-xs font-medium text-[var(--muted-foreground)]">
-                                    <FolderKanban className="h-3.5 w-3.5 shrink-0" />
-                                    <span className="truncate">{getProjectLabel(report.task)}</span>
-                                  </span>
-                                  <span
-                                    className={cn(
-                                      "rounded px-2 py-1 text-xs",
-                                      report.status === "REVIEWED"
-                                        ? "bg-green-100 text-green-700"
-                                        : "bg-amber-100 text-amber-700"
-                                    )}
-                                  >
-                                    {report.status === "REVIEWED" ? "Đã xem" : "Chưa xem"}
-                                  </span>
-                                </div>
-                                <p className="mt-1 text-xs text-[var(--muted-foreground)]">
-                                  {getWorkspaceLabel(report.task)}
-                                  {report.task?.status?.name && ` • ${report.task.status.name}`}
-                                </p>
-                                <p className="mt-2 whitespace-pre-wrap break-words text-sm">{report.content}</p>
-                                {report.blockers && (
-                                  <p className="mt-2 break-words text-sm text-red-600">
-                                    Vướng mắc: {report.blockers}
-                                  </p>
-                                )}
-                                {typeof report.progressPercent === "number" && (
-                                  <p className="mt-2 text-sm text-[var(--muted-foreground)]">
-                                    Tiến độ: {report.progressPercent}%
-                                  </p>
-                                )}
-                              </div>
-                              {getTaskHref(report.task) && (
-                                <Link
-                                  href={getTaskHref(report.task)!}
-                                  className="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded border border-[var(--border)] px-3 text-sm font-medium hover:bg-[var(--muted)] sm:w-auto"
-                                >
+                          <div className="flex w-full flex-wrap gap-2 sm:w-auto">
+                            {getTaskHref(request.task) && (
+                              <Button variant="outline" size="sm" asChild>
+                                <Link href={getTaskHref(request.task)!}>
                                   <ExternalLink className="h-4 w-4" />
                                   Xem công việc
                                 </Link>
-                              )}
-                              {report.status !== "REVIEWED" && (
-                                <button
-                                  type="button"
-                                  disabled={reviewingId === report.id}
-                                  onClick={() => reviewDailyReport(report)}
-                                  className="h-9 w-full rounded border border-[var(--border)] px-3 text-sm font-medium disabled:opacity-60 sm:w-auto"
-                                >
-                                  Đánh dấu đã xem
-                                </button>
-                              )}
-                            </div>
-                          </article>
-                        ))}
-                      </div>
-                    </section>
-                  ))}
+                              </Button>
+                            )}
+                            <Button
+                              type="button"
+                              size="sm"
+                              className="bg-emerald-600 text-white hover:bg-emerald-700"
+                              disabled={reviewingId === request.id}
+                              onClick={() => reviewStatusRequest(request, "APPROVED")}
+                            >
+                              <Check className="h-4 w-4" />
+                              Duyệt
+                            </Button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              disabled={reviewingId === request.id}
+                              onClick={() => reviewStatusRequest(request, "REJECTED")}
+                            >
+                              <X className="h-4 w-4" />
+                              Từ chối
+                            </Button>
+                          </div>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                )}
+              </section>
+
+              <section className="space-y-3">
+                <div className="flex flex-wrap items-end justify-between gap-2">
+                  <div>
+                    <h2 className="text-base font-semibold">Báo cáo theo nhân viên</h2>
+                    <p className="text-sm text-[var(--muted-foreground)]">
+                      Tổng hợp nội dung báo cáo, vướng mắc và tiến độ theo từng người.
+                    </p>
+                  </div>
+                  <span className="text-sm text-[var(--muted-foreground)]">
+                    {dailyReports.length} báo cáo
+                  </span>
                 </div>
-              )}
-            </section>
-          </>
-        )}
+
+                {dailyReports.length === 0 ? (
+                  <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-6 text-sm text-[var(--muted-foreground)] shadow-sm">
+                    Chưa có báo cáo trong ngày đã chọn.
+                  </div>
+                ) : (
+                  <div className="grid gap-4">
+                    {Object.entries(reportsByEmployee).map(([employeeId, reports]) => {
+                      const employeeName = getUserName(reports[0]?.reporter);
+                      return (
+                        <section
+                          key={employeeId}
+                          className="overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--card)] shadow-sm"
+                        >
+                          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border)] px-5 py-4">
+                            <div className="flex min-w-0 items-center gap-3">
+                              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-slate-900 text-sm font-semibold text-white">
+                                {getInitials(employeeName)}
+                              </div>
+                              <div className="min-w-0">
+                                <h3 className="truncate font-semibold">{employeeName}</h3>
+                                <p className="text-sm text-[var(--muted-foreground)]">
+                                  {reports.length} báo cáo trong ngày
+                                  {getProjectCount(reports) > 0 &&
+                                    ` - ${getProjectCount(reports)} dự án`}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="inline-flex items-center gap-1.5 rounded-md bg-[var(--muted)] px-2.5 py-1 text-sm text-[var(--muted-foreground)]">
+                              <Users className="h-4 w-4" />
+                              Nhân viên
+                            </div>
+                          </div>
+
+                          <div className="divide-y divide-[var(--border)]">
+                            {reports.map((report) => {
+                              const taskHref = getTaskHref(report.task);
+                              return (
+                                <article key={report.id} className="p-5">
+                                  <div className="flex flex-wrap items-start justify-between gap-4">
+                                    <div className="min-w-0 flex-1">
+                                      <div className="flex flex-wrap items-center gap-2">
+                                        <span className="rounded-md bg-slate-100 px-2 py-1 text-xs font-medium text-slate-700">
+                                          {formatReportType(report.type)}
+                                        </span>
+                                        <span className="min-w-0 break-words text-sm font-semibold">
+                                          {report.task?.title || "Công việc"}
+                                        </span>
+                                        <span className="inline-flex max-w-full items-center gap-1 rounded-md bg-[var(--muted)] px-2 py-1 text-xs font-medium text-[var(--muted-foreground)]">
+                                          <FolderKanban className="h-3.5 w-3.5 shrink-0" />
+                                          <span className="truncate">
+                                            {getProjectLabel(report.task)}
+                                          </span>
+                                        </span>
+                                        <span
+                                          className={cn(
+                                            "rounded-md px-2 py-1 text-xs font-medium",
+                                            report.status === "REVIEWED"
+                                              ? "bg-emerald-50 text-emerald-700"
+                                              : "bg-amber-50 text-amber-700"
+                                          )}
+                                        >
+                                          {report.status === "REVIEWED" ? "Đã xem" : "Chưa xem"}
+                                        </span>
+                                      </div>
+                                      <p className="mt-1 text-xs text-[var(--muted-foreground)]">
+                                        {getWorkspaceLabel(report.task)}
+                                        {report.task?.status?.name &&
+                                          ` - ${report.task.status.name}`}
+                                      </p>
+                                      <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-6">
+                                        {report.content}
+                                      </p>
+                                      {report.blockers && (
+                                        <p className="mt-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+                                          Vướng mắc: {report.blockers}
+                                        </p>
+                                      )}
+                                      {typeof report.progressPercent === "number" && (
+                                        <div className="mt-3 max-w-md">
+                                          <div className="mb-1 flex justify-between text-xs text-[var(--muted-foreground)]">
+                                            <span>Tiến độ</span>
+                                            <span>{report.progressPercent}%</span>
+                                          </div>
+                                          <div className="h-2 rounded-full bg-[var(--muted)]">
+                                            <div
+                                              className="h-2 rounded-full bg-slate-900"
+                                              style={{
+                                                width: `${Math.min(Math.max(report.progressPercent, 0), 100)}%`,
+                                              }}
+                                            />
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+
+                                    <div className="flex w-full flex-wrap gap-2 sm:w-auto">
+                                      {taskHref && (
+                                        <Button variant="outline" size="sm" asChild>
+                                          <Link href={taskHref}>
+                                            <ExternalLink className="h-4 w-4" />
+                                            Xem công việc
+                                          </Link>
+                                        </Button>
+                                      )}
+                                      {report.status !== "REVIEWED" && (
+                                        <Button
+                                          type="button"
+                                          size="sm"
+                                          variant="outline"
+                                          disabled={reviewingId === report.id}
+                                          onClick={() => reviewDailyReport(report)}
+                                        >
+                                          Đánh dấu đã xem
+                                        </Button>
+                                      )}
+                                    </div>
+                                  </div>
+                                </article>
+                              );
+                            })}
+                          </div>
+                        </section>
+                      );
+                    })}
+                  </div>
+                )}
+              </section>
+            </>
+          )}
+        </div>
       </div>
     </>
   );
