@@ -10,6 +10,13 @@ import { BrowserAgent } from "@/lib/browser-automation/browser-agent";
 import { VoiceController } from "@/lib/voice";
 import { aiProjectPlannerApi, ProjectPlan } from "@/utils/api/aiProjectPlannerApi";
 import { workspaceApi } from "@/utils/api/workspaceApi";
+import { projectApi } from "@/utils/api/projectApi";
+import { taskApi } from "@/utils/api/taskApi";
+
+type BulkTaskDraft = {
+  tasks: Array<{ title: string; description?: string }>;
+  awaitingProjectPath: boolean;
+};
 
 interface Message {
   role: "user" | "assistant" | "system";
@@ -74,6 +81,50 @@ function getPlannerErrorMessage(error: any): string {
   );
 }
 
+function parseSuggestedTasks(text: string): Array<{ title: string; description?: string }> {
+  const tasks: Array<{ title: string; description?: string }> = [];
+  const lines = text.split(/\r?\n/);
+
+  for (const line of lines) {
+    const normalized = line
+      .replace(/\*\*/g, "")
+      .replace(/^[-*]\s+/, "")
+      .trim();
+    const match = normalized.match(/^\d+[\).:-]?\s+(.+)$/);
+    if (!match) continue;
+
+    const title = match[1]
+      .replace(/\s+/g, " ")
+      .replace(/^task\s*[:.-]\s*/i, "")
+      .trim();
+    if (title.length >= 3) {
+      tasks.push({ title: title.slice(0, 240) });
+    }
+  }
+
+  return tasks;
+}
+
+function isBulkTaskCreateRequest(message: string) {
+  const normalized = message.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  return (
+    normalized.includes("tao task") ||
+    normalized.includes("tao cac task") ||
+    normalized.includes("tao nhieu task") ||
+    normalized.includes("create tasks") ||
+    normalized.includes("create these tasks")
+  );
+}
+
+function extractProjectRoute(message: string) {
+  const match = message.match(/\/([a-zA-Z0-9._-]+)\/([a-zA-Z0-9._-]+)(?:\/tasks)?(?:\s|$)/);
+  if (!match) return null;
+  return {
+    workspaceSlug: match[1],
+    projectSlug: match[2],
+  };
+}
+
 export default function ChatPanel() {
   const { isChatOpen, toggleChat } = useChatContext();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -89,6 +140,7 @@ export default function ChatPanel() {
   const [currentOrganizationId, setCurrentOrganizationId] = useState<string | null>(null);
   const { getCurrentUser } = useAuth();
   const [panelWidth, setPanelWidth] = useState(400);
+  const [bulkTaskDraft, setBulkTaskDraft] = useState<BulkTaskDraft | null>(null);
   const resizing = useRef(false);
 
   // Browser automation state
@@ -545,7 +597,107 @@ export default function ChatPanel() {
     }
   };
 
+  const findLatestSuggestedTasks = () => {
+    for (let index = messages.length - 1; index >= 0; index -= 1) {
+      const message = messages[index];
+      if (message.role !== "assistant") continue;
+      const tasks = parseSuggestedTasks(message.content);
+      if (tasks.length > 1) return tasks;
+    }
+    return [];
+  };
+
+  const getDefaultStatusId = async (projectId: string) => {
+    const response = await taskApi.getTaskStatusByProject({ projectId });
+    const statuses = response.data || [];
+    const defaultStatus =
+      statuses.find((status) => status.isDefault) ||
+      statuses.find((status) => status.category === "TODO") ||
+      statuses.find((status) => /todo|to do|backlog|open|chưa|mới/i.test(status.name)) ||
+      statuses[0];
+
+    if (!defaultStatus?.id) {
+      throw new Error("Dự án này chưa có trạng thái task mặc định.");
+    }
+    return defaultStatus.id;
+  };
+
+  const createBulkTasksFromDraft = async (routeText: string) => {
+    const route = extractProjectRoute(routeText);
+    if (!route || !bulkTaskDraft?.tasks.length) return false;
+
+    setIsLoading(true);
+    setError(null);
+    try {
+      const project = await projectApi.getProjectBySlug(route.projectSlug, true, route.workspaceSlug);
+      const statusId = await getDefaultStatusId(project.id);
+      const result = await taskApi.bulkCreateTasks({
+        projectId: project.id,
+        statusId,
+        tasks: bulkTaskDraft.tasks.map((task) => ({
+          title: task.title,
+          description: task.description,
+          type: "TASK",
+          priority: "MEDIUM",
+        })),
+      });
+
+      setBulkTaskDraft(null);
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: `Đã tạo ${result.created ?? bulkTaskDraft.tasks.length} task trong dự án ${project.name}.`,
+          timestamp: new Date(),
+        },
+      ]);
+    } catch (error: any) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: sanitizeErrorMessage(
+            error?.response?.data?.message ||
+              error?.response?.data?.error ||
+              error?.message ||
+              "Không tạo được các task này."
+          ),
+          timestamp: new Date(),
+        },
+      ]);
+    } finally {
+      setIsLoading(false);
+    }
+
+    return true;
+  };
+
+  const handleBulkTaskCreateIntent = async (message: string) => {
+    if (bulkTaskDraft?.awaitingProjectPath && extractProjectRoute(message)) {
+      return createBulkTasksFromDraft(message);
+    }
+
+    if (!isBulkTaskCreateRequest(message)) return false;
+
+    const tasks = bulkTaskDraft?.tasks.length ? bulkTaskDraft.tasks : findLatestSuggestedTasks();
+    if (tasks.length <= 1) return false;
+
+    setBulkTaskDraft({ tasks, awaitingProjectPath: true });
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: "assistant",
+        content: `Mình đã nhận ${tasks.length} task. Bạn muốn tạo vào project nào? Gửi đường dẫn dạng /mekong/web-bn-sch/tasks hoặc /mekong/web-bn-sch.`,
+        timestamp: new Date(),
+      },
+    ]);
+    return true;
+  };
+
   const processUserMessage = async (message: string) => {
+    if (await handleBulkTaskCreateIntent(message)) {
+      return;
+    }
     if (isProjectPlannerRequest(message)) {
       await handleProjectPlanning(message);
       return;
