@@ -552,12 +552,10 @@ export class SeederService {
         data: { defaultOrganizationId: organization.id },
       });
 
-      const archivedOrganizations = await tx.organization.updateMany({
+      const deletedOrganizations = await tx.organization.deleteMany({
         where: {
           id: { not: organization.id },
-          archive: false,
         },
-        data: { archive: true, updatedBy: owner.id },
       });
 
       await this.upsertGlobalSetting(
@@ -580,12 +578,12 @@ export class SeederService {
         workspaceId: workspace.id,
         workflowId: workflow.id,
         usersUpdated: users.length,
-        archivedOrganizations: archivedOrganizations.count,
+        deletedOrganizations: deletedOrganizations.count,
       };
     });
 
     console.log(
-      `mekong is active. Users updated: ${result.usersUpdated}. Archived organizations: ${result.archivedOrganizations}.`,
+      `mekong is active. Users updated: ${result.usersUpdated}. Deleted organizations: ${result.deletedOrganizations}.`,
     );
     return result;
   }
