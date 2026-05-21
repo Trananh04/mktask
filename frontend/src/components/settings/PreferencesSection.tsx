@@ -59,7 +59,7 @@ export default function PreferencesSection() {
       });
       toast.success("Preferences updated successfully!");
     } catch {
-      toast.error("Failed to update preferences. Please try again.");
+      toast.error("Không thể cập nhật tùy chọn. Vui lòng thử lại.");
     } finally {
       setLoading(false);
       fetchingRef.current = false;
@@ -94,7 +94,7 @@ export default function PreferencesSection() {
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <HiGlobeAlt className="w-4 h-4 text-[var(--primary)]" />
-              <Label className="text-sm font-medium text-[var(--foreground)]">Timezone</Label>
+              <Label className="text-sm font-medium text-[var(--foreground)]">Múi giờ</Label>
             </div>
             <div className="max-w-md">
               <Select
@@ -105,7 +105,7 @@ export default function PreferencesSection() {
                     timezone: value,
                   }));
                   handleTimezoneChange(value, false).catch(() => {
-                    toast.error("Failed to update timezone");
+                    toast.error("Không thể cập nhật múi giờ");
                   });
                 }}
               >
@@ -144,7 +144,7 @@ export default function PreferencesSection() {
                       ...prev,
                       timezone: browserTz,
                     }));
-                    toast.success(`Timezone updated to ${browserTz}`);
+                    toast.success(`Đã cập nhật múi giờ thành ${browserTz}`);
                   }}
                   className="mt-2 h-7 text-xs"
                 >
@@ -171,7 +171,7 @@ export default function PreferencesSection() {
                   Saving...
                 </div>
               ) : (
-                "Save Preferences"
+                "Lưu tùy chọn"
               )}
             </ActionButton>
           </div>

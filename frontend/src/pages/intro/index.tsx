@@ -15,34 +15,34 @@ const QuizPage = () => {
   const questions = [
     {
       id: 1,
-      question: "Hey there, what brings you here today?",
+      question: "Hôm nay bạn dùng mktask cho mục đích gì?",
       options: [
-        { id: 1, text: "Work", value: "work" },
-        { id: 2, text: "Personal", value: "personal" },
-        { id: 3, text: "School", value: "school" },
-        { id: 4, text: "Nonprofits", value: "nonprofits" },
+        { id: 1, text: "Công việc", value: "work" },
+        { id: 2, text: "Cá nhân", value: "personal" },
+        { id: 3, text: "Học tập", value: "school" },
+        { id: 4, text: "Tổ chức phi lợi nhuận", value: "nonprofits" },
       ],
       svg: "",
     },
     {
       id: 2,
-      question: "What describes your current role?",
+      question: "Vai trò hiện tại của bạn là gì?",
       options: [
-        { id: 1, text: "Business owner", value: "businessOwner" },
-        { id: 2, text: "Team Leader", value: "teamLeader" },
-        { id: 3, text: "Team Member", value: "teamMember" },
+        { id: 1, text: "Chủ doanh nghiệp", value: "businessOwner" },
+        { id: 2, text: "Trưởng nhóm", value: "teamLeader" },
+        { id: 3, text: "Thành viên nhóm", value: "teamMember" },
         { id: 4, text: "Freelancer", value: "freelancer" },
-        { id: 5, text: "Director", value: "director" },
-        { id: 6, text: "C-Level", value: "cLevel" },
+        { id: 5, text: "Giám đốc", value: "director" },
+        { id: 6, text: "Lãnh đạo cấp cao", value: "cLevel" },
         { id: 7, text: "VP", value: "vp" },
       ],
       svg: "",
     },
     {
       id: 3,
-      question: "How many people are on your team?",
+      question: "Đội nhóm của bạn có bao nhiêu người?",
       options: [
-        { id: 1, text: "Only me", value: "onlyMe" },
+        { id: 1, text: "Chỉ mình tôi", value: "onlyMe" },
         { id: 2, text: "2-5", value: "2-5" },
         { id: 3, text: "6-10", value: "6-10" },
         { id: 4, text: "11-15", value: "11-15" },
@@ -55,7 +55,7 @@ const QuizPage = () => {
     },
     {
       id: 4,
-      question: "How many people work at your company?",
+      question: "Công ty của bạn có bao nhiêu người?",
       options: [
         { id: 1, text: "1-19", value: "1-19" },
         { id: 2, text: "20-49", value: "20-49" },
@@ -69,19 +69,19 @@ const QuizPage = () => {
     },
     {
       id: 5,
-      question: "One last question, select what you'd like to manage first",
+      question: "Câu cuối: bạn muốn quản lý nội dung nào trước?",
       options: [
-        { id: 1, text: "Education", value: "education" },
-        { id: 2, text: "Sales and CRM", value: "salesAndCRM" },
-        { id: 3, text: "Design and Creative", value: "designAndCreative" },
-        { id: 4, text: "Product Management", value: "productManagement" },
+        { id: 1, text: "Giáo dục", value: "education" },
+        { id: 2, text: "Bán hàng và CRM", value: "salesAndCRM" },
+        { id: 3, text: "Thiết kế và sáng tạo", value: "designAndCreative" },
+        { id: 4, text: "Quản lý sản phẩm", value: "productManagement" },
         { id: 5, text: "IT", value: "it" },
-        { id: 6, text: "HR and Recruiting", value: "hrAndRecruiting" },
-        { id: 7, text: "Software Development", value: "softwareDevelopment" },
-        { id: 8, text: "Legal", value: "legal" },
-        { id: 9, text: "Construction", value: "construction" },
+        { id: 6, text: "Nhân sự và tuyển dụng", value: "hrAndRecruiting" },
+        { id: 7, text: "Phát triển phần mềm", value: "softwareDevelopment" },
+        { id: 8, text: "Pháp lý", value: "legal" },
+        { id: 9, text: "Xây dựng", value: "construction" },
         { id: 14, text: "Marketing", value: "marketing" },
-        { id: 15, text: "Other", value: "other" },
+        { id: 15, text: "Khác", value: "other" },
       ],
       svg: "",
     },
@@ -109,10 +109,10 @@ const QuizPage = () => {
         await updateUser(currentUser.id, {
           onboardInfo: answers,
         });
-        toast.success("Preference updated successfully!");
+        toast.success("Đã cập nhật tùy chọn thành công!");
         router.push("/organization");
       } catch {
-        toast.error("Failed to update profile. Please try again.");
+        toast.error("Không thể cập nhật hồ sơ. Vui lòng thử lại.");
       }
     }
 
@@ -149,10 +149,10 @@ const QuizPage = () => {
             <div className="max-w-6xl mx-auto px-6 py-4">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium text-[var(--foreground)]">
-                  Question {currentQuestion + 1} of {totalQuestions}
+                  Câu hỏi {currentQuestion + 1}/{totalQuestions}
                 </span>
                 <span className="text-sm font-medium text-[var(--foreground)]">
-                  {Math.round(((currentQuestion + 1) / totalQuestions) * 100)}% Complete
+                  Hoàn thành {Math.round(((currentQuestion + 1) / totalQuestions) * 100)}%
                 </span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
@@ -171,7 +171,7 @@ const QuizPage = () => {
                 {currentQuestionData.question}
               </h1>
               <p className="text-[var(--foreground)]">
-                Please select one option that best describes your preference.
+                Vui lòng chọn một tùy chọn phù hợp nhất với bạn.
               </p>
             </div>
 
@@ -211,7 +211,7 @@ const QuizPage = () => {
                 }`}
               >
                 <ChevronLeft className="h-5 w-5" />
-                Previous
+                Trước
               </button>
 
               <button
@@ -223,7 +223,7 @@ const QuizPage = () => {
                     : "bg-[var(--primary)] hover:bg-[var(--primary)]/90 text-[var(--primary-foreground)] hover:shadow-lg cursor-pointer"
                 }`}
               >
-                {currentQuestion === totalQuestions - 1 ? "Complete" : "Next"}
+                {currentQuestion === totalQuestions - 1 ? "Hoàn tất" : "Tiếp"}
                 <ChevronRight className="h-5 w-5" />
               </button>
             </div>

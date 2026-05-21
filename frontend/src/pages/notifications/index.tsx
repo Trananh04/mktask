@@ -12,11 +12,11 @@ export default function NotificationPage({}) {
   if (!user || !currentOrganizationId) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <SEO title="Notifications" />
+        <SEO title="Thông báo" />
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h1>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Không có quyền truy cập</h1>
           <p className="text-gray-600">
-            Please log in and select an organization to view notifications.
+            Vui lòng đăng nhập và chọn tổ chức để xem thông báo.
           </p>
         </div>
       </div>
@@ -25,7 +25,7 @@ export default function NotificationPage({}) {
 
   return (
     <>
-      <SEO title="Notifications" />
+      <SEO title="Thông báo" />
       <NotificationScreen userId={user.id} organizationId={currentOrganizationId} />
     </>
   );

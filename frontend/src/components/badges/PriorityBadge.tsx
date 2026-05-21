@@ -17,27 +17,27 @@ const PriorityBadge: React.FC<Props> = ({ priority, className, ...props }) => {
       case "highest":
         return {
           color: "#dc2626",
-          label: "Highest",
+          label: "Cao nhất",
         };
       case "high":
         return {
           color: "#ea580c",
-          label: "High",
+          label: "Cao",
         };
       case "medium":
         return {
           color: "#d97706",
-          label: "Medium",
+          label: "Trung bình",
         };
       case "low":
         return {
           color: "#16a34a",
-          label: "Low",
+          label: "Thấp",
         };
       default:
         return {
           color: "#6b7280",
-          label: "No Priority",
+          label: "Chưa đặt",
         };
     }
   };

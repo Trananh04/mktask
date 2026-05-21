@@ -372,11 +372,11 @@ export function ProjectAnalytics({ projectSlug }: ProjectAnalyticsProps) {
               size="sm"
               onClick={() => router.push(`/${workspaceSlug}/${projectSlug}/members`)}
             >
-              Members
+              Thành viên
             </Button>
             {isAuth && (
               <Button type="button" size="sm" onClick={() => setIsNewTaskModalOpen(true)}>
-                Tạo task
+                Tạo công việc
               </Button>
             )}
             <Tooltip content={t("dashboard_settings")} position="top" color="primary">

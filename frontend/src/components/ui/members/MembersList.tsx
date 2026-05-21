@@ -156,27 +156,27 @@ export const MembersList: React.FC<MembersListProps> = ({
   const getEmptyStateContent = () => {
     if (searchTerm) {
       return {
-        title: emptyStateTitle || "No members found matching your search",
-        description: emptyStateDescription || "Try adjusting your search terms",
+        title: emptyStateTitle || "Không tìm thấy thành viên phù hợp",
+        description: emptyStateDescription || "Hãy thử điều chỉnh từ khóa tìm kiếm",
       };
     }
 
     return {
-      title: emptyStateTitle || `No members found in this ${entityType}`,
+      title: emptyStateTitle || "Chưa có thành viên",
       description:
         emptyStateDescription ||
-        `Start by inviting team members to collaborate on this ${entityType}`,
+        "Hãy mời thành viên để cùng cộng tác.",
     };
   };
 
   const getMemberActionTooltip = (member: Member, isCurrentUser: boolean, isOwner: boolean) => {
     if (isCurrentUser) {
-      return `Leave ${entityType.charAt(0).toUpperCase() + entityType.slice(1)}`;
+      return "Rời khỏi";
     }
     if (isOwner) {
-      return `${entityType.charAt(0).toUpperCase() + entityType.slice(1)} owner cannot be removed`;
+      return "Không thể gỡ chủ sở hữu";
     }
-    return "Remove Member";
+    return "Gỡ thành viên";
   };
 
   return (
@@ -185,7 +185,7 @@ export const MembersList: React.FC<MembersListProps> = ({
         <div className="flex items-center justify-between">
           <CardTitle className="text-md font-semibold text-[var(--foreground)] flex items-center gap-2">
             <HiUsers className="w-5 h-5 text-[var(--muted-foreground)]" />
-            Team Members ({activeMembers.length})
+            Thành viên ({activeMembers.length})
           </CardTitle>
           <div className="flex items-center gap-2">
             {/* Source Filter */}
@@ -194,11 +194,11 @@ export const MembersList: React.FC<MembersListProps> = ({
               onValueChange={(value) => setSourceFilter(value as UserSource | "")}
             >
               <SelectTrigger className="h-9 w-48 border-input bg-background text-[var(--foreground)]">
-                <SelectValue placeholder="Filter by source" />
+                <SelectValue placeholder="Lọc theo nguồn" />
               </SelectTrigger>
               <SelectContent className="border-none bg-[var(--card)]">
                 <SelectItem value="" className="hover:bg-[var(--hover-bg)]">
-                  All Sources
+                  Tất cả nguồn
                 </SelectItem>
                 {getAllUserSources().map((source) => (
                   <SelectItem
@@ -222,7 +222,7 @@ export const MembersList: React.FC<MembersListProps> = ({
                 value={searchTerm}
                 onChange={(e) => onSearchChange(e.target.value)}
                 className="pl-10 h-9 w-64 border-input bg-background text-[var(--foreground)]"
-                placeholder="Search members..."
+                placeholder="Tìm thành viên..."
               />
               {searchTerm && (
                 <button
@@ -241,11 +241,11 @@ export const MembersList: React.FC<MembersListProps> = ({
         {/* Table Header */}
         <div className="px-4 py-3 bg-[var(--muted)]/30 border-b border-[var(--border)]">
           <div className="grid grid-cols-12 gap-3 text-xs font-medium text-[var(--muted-foreground)] uppercase tracking-wide">
-            <div className="col-span-4">Member</div>
-            <div className="col-span-2">Status</div>
-            <div className="col-span-2">Joined</div>
-            <div className="col-span-2">Role</div>
-            <div className="col-span-2">Action</div>
+            <div className="col-span-4">Thành viên</div>
+            <div className="col-span-2">Trạng thái</div>
+            <div className="col-span-2">Ngày tham gia</div>
+            <div className="col-span-2">Vai trò</div>
+            <div className="col-span-2">Thao tác</div>
           </div>
         </div>
 
@@ -288,13 +288,13 @@ export const MembersList: React.FC<MembersListProps> = ({
                               {member.firstName} {member.lastName}
                               {isCurrentUser && (
                                 <span className="text-xs text-[var(--muted-foreground)] ml-2">
-                                  (You)
+                                  (Bạn)
                                 </span>
                               )}
                             </div>
                             {member.source && isExternalUser(member.source) && (
                               <Tooltip
-                                content="External user created from shared inbox email"
+                                content="Người dùng bên ngoài được tạo từ email hộp thư chung"
                                 position="top"
                               >
                                 <Badge

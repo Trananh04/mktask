@@ -89,12 +89,23 @@ export default function TaskHierarchy({
     }
   };
 
+  const getPriorityLabel = (priority: string) => {
+    const labels: Record<string, string> = {
+      LOWEST: "Thấp nhất",
+      LOW: "Thấp",
+      MEDIUM: "Trung bình",
+      HIGH: "Cao",
+      HIGHEST: "Cao nhất",
+    };
+    return labels[priority] || priority;
+  };
+
   return (
     <div className="space-y-6">
       {/* Parent Task */}
       {parentTask && (
         <div>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Parent Task</h3>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Công việc cha</h3>
           <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-700">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
@@ -107,7 +118,7 @@ export default function TaskHierarchy({
                     <span className="text-gray-600 dark:text-gray-400">{parentTask.title}</span>
                   </div>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Progress: {getTaskProgress(parentTask)}%
+                    Tiến độ: {getTaskProgress(parentTask)}%
                   </p>
                 </div>
               </div>
@@ -127,21 +138,21 @@ export default function TaskHierarchy({
       {/* Current Task Actions */}
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Task Hierarchy</h3>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Phân cấp công việc</h3>
           <div className="flex space-x-2">
             {!task.parentTaskId && (
               <Button variant="outline" onClick={() => setShowCreateSubtask(true)}>
-                Create Subtask
+                Tạo công việc con
               </Button>
             )}
             {task.parentTaskId && (
               <Button variant="outline" onClick={() => onPromoteToParent(task.id)}>
-                Promote to Parent
+                Đưa lên công việc cha
               </Button>
             )}
             {!task.parentTaskId && (
               <Button variant="outline" onClick={() => setShowConvertModal(true)}>
-                Convert to Subtask
+                Chuyển thành công việc con
               </Button>
             )}
           </div>
@@ -159,11 +170,11 @@ export default function TaskHierarchy({
                 </div>
                 <div className="flex items-center space-x-4 mt-1">
                   <span className={`text-sm ${getPriorityColor(task.priority)}`}>
-                    {task.priority} Priority
+                    {getPriorityLabel(task.priority)} ưu tiên
                   </span>
                   {subtasks.length > 0 && (
                     <span className="text-sm text-gray-500 dark:text-gray-400">
-                      {subtasks.length} subtasks • {getTaskProgress(task)}% complete
+                      {subtasks.length} công việc con - {getTaskProgress(task)}% hoàn thành
                     </span>
                   )}
                 </div>
@@ -185,7 +196,7 @@ export default function TaskHierarchy({
       {subtasks.length > 0 && (
         <div>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            Subtasks ({subtasks.length})
+            Công việc con ({subtasks.length})
           </h3>
           <div className="space-y-2">
             {subtasks.map((subtask) => (
@@ -204,11 +215,11 @@ export default function TaskHierarchy({
                     </div>
                     <div className="flex items-center space-x-4 mt-1">
                       <span className={`text-xs ${getPriorityColor(subtask.priority)}`}>
-                        {subtask.priority}
+                        {getPriorityLabel(subtask.priority)}
                       </span>
                       {subtask.dueDate && (
                         <span className="text-xs text-gray-500 dark:text-gray-400">
-                          Due: {formatDateForDisplay(subtask.dueDate)}
+                          Hạn: {formatDateForDisplay(subtask.dueDate)}
                         </span>
                       )}
                     </div>
@@ -231,7 +242,7 @@ export default function TaskHierarchy({
                   <button
                     onClick={() => setTaskToPromote(subtask)}
                     className="text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 p-1"
-                    title="Promote to parent task"
+                    title="Đưa lên công việc cha"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path
@@ -254,26 +265,26 @@ export default function TaskHierarchy({
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full p-6">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-              Create Subtask
+              Tạo công việc con
             </h3>
 
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Title *
+                  Tiêu đề *
                 </label>
                 <input
                   type="text"
                   value={subtaskData.title}
                   onChange={(e) => setSubtaskData((prev) => ({ ...prev, title: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  placeholder="Enter subtask title..."
+                  placeholder="Nhập tiêu đề công việc con..."
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Description
+                  Mô tả
                 </label>
                 <textarea
                   value={subtaskData.description}
@@ -282,13 +293,13 @@ export default function TaskHierarchy({
                   }
                   rows={3}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  placeholder="Enter subtask description..."
+                  placeholder="Nhập mô tả công việc con..."
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Priority
+                  Độ ưu tiên
                 </label>
                 <select
                   value={subtaskData.priority}
@@ -297,17 +308,17 @@ export default function TaskHierarchy({
                   }
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 >
-                  <option value="LOWEST">Lowest</option>
-                  <option value="LOW">Low</option>
-                  <option value="MEDIUM">Medium</option>
-                  <option value="HIGH">High</option>
-                  <option value="HIGHEST">Highest</option>
+                  <option value="LOWEST">Thấp nhất</option>
+                  <option value="LOW">Thấp</option>
+                  <option value="MEDIUM">Trung bình</option>
+                  <option value="HIGH">Cao</option>
+                  <option value="HIGHEST">Cao nhất</option>
                 </select>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Due Date
+                  Hạn hoàn thành
                 </label>
                 <input
                   type="date"
@@ -320,10 +331,10 @@ export default function TaskHierarchy({
 
             <div className="flex justify-end space-x-3 mt-6">
               <Button variant="secondary" onClick={() => setShowCreateSubtask(false)}>
-                Cancel
+                Hủy
               </Button>
               <Button onClick={handleCreateSubtask} disabled={!subtaskData.title.trim()}>
-                Create Subtask
+                Tạo công việc con
               </Button>
             </div>
           </div>
@@ -335,17 +346,17 @@ export default function TaskHierarchy({
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full p-6">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-              Convert to Subtask
+              Chuyển thành công việc con
             </h3>
 
             <div className="space-y-4">
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                Select a parent task to convert this task into a subtask.
+                Chọn công việc cha để chuyển công việc này thành công việc con.
               </p>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Parent Task
+                  Công việc cha
                 </label>
                 <select
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
@@ -356,7 +367,7 @@ export default function TaskHierarchy({
                     }
                   }}
                 >
-                  <option value="">Select a parent task...</option>
+                  <option value="">Chọn công việc cha...</option>
                   {potentialParents.map((t) => (
                     <option key={t.id} value={t.id}>
                       {t.slug} - {t.title}
@@ -368,7 +379,7 @@ export default function TaskHierarchy({
 
             <div className="flex justify-end space-x-3 mt-6">
               <Button variant="secondary" onClick={() => setShowConvertModal(false)}>
-                Cancel
+                Hủy
               </Button>
             </div>
           </div>
@@ -381,10 +392,10 @@ export default function TaskHierarchy({
           isOpen={true}
           onClose={() => setTaskToPromote(null)}
           onConfirm={() => handlePromoteTask(taskToPromote)}
-          title="Promote to Parent Task"
-          message={`Are you sure you want to promote "${taskToPromote.title}" to a parent task? This will remove it from its current parent.`}
-          confirmText="Promote"
-          cancelText="Cancel"
+          title="Đưa lên công việc cha"
+          message={`Bạn có chắc muốn đưa "${taskToPromote.title}" lên thành công việc cha? Công việc này sẽ được gỡ khỏi công việc cha hiện tại.`}
+          confirmText="Xác nhận"
+          cancelText="Hủy"
           type="info"
         />
       )}

@@ -26,7 +26,7 @@ export default function AppBootstrapper({ children }: AppBootstrapperProps) {
   } = useAuth();
 
   const [phase, setPhase] = useState<InitPhase>("SYSTEM_CHECK");
-  const [statusText, setStatusText] = useState("Checking system status");
+  const [statusText, setStatusText] = useState("Đang kiểm tra hệ thống");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [hasOrganization, setHasOrganization] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
@@ -165,13 +165,13 @@ export default function AppBootstrapper({ children }: AppBootstrapperProps) {
       if (needsFullBootstrap) {
         // Phase 1: System Check
         setPhase("SYSTEM_CHECK");
-        setStatusText("Verifying system integrity");
+        setStatusText("Đang xác minh hệ thống");
         const systemReady = await handleSystemCheck();
         if (!systemReady) return;
 
         // Phase 2: Auth Check
         setPhase("AUTH_CHECK");
-        setStatusText("Authenticating session");
+        setStatusText("Đang xác thực phiên đăng nhập");
       }
 
       const { isAuth, redirectPath, isOrg } = await handleAuthCheck();
@@ -209,7 +209,7 @@ export default function AppBootstrapper({ children }: AppBootstrapperProps) {
   useEffect(() => {
     if (isAuthenticated) {
       const user = getCurrentUser();
-      const targetLang = user?.language || "en";
+      const targetLang = user?.language || "vi";
       if (targetLang !== i18n.language) {
         i18n.changeLanguage(targetLang);
       }

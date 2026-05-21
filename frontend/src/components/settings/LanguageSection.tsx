@@ -22,9 +22,9 @@ export default function LanguageSection() {
     if (currentUser) {
       try {
         await updateUser(currentUser.id, { language: value });
-        toast.success(t("language_section.update_success", "Language updated successfully"));
+        toast.success(t("language_section.update_success", "Cập nhật ngôn ngữ thành công"));
       } catch (error) {
-        toast.error(t("language_section.update_failed", "Failed to update language"));
+        toast.error(t("language_section.update_failed", "Không thể cập nhật ngôn ngữ"));
       }
     }
   };

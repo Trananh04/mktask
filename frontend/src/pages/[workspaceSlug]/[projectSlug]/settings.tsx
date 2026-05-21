@@ -477,16 +477,16 @@ function ProjectSettingsContent() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="taskPrefix">Task Prefix</Label>
+                      <Label htmlFor="taskPrefix">Tiền tố công việc</Label>
                       <Input
                         id="taskPrefix"
                         value={formData.taskPrefix}
                         onChange={(e) => handleInputChange("taskPrefix", e.target.value)}
-                        placeholder="e.g. PROJ"
+                        placeholder="VD: PROJ"
                         disabled={saving || !hasAccess}
                       />
                       <p className="text-xs text-[var(--muted-foreground)]">
-                        Short identifier used for tasks (e.g. PROJ-1). Up to 8 chars, letters and numbers only.
+                        Mã ngắn dùng cho công việc (VD: PROJ-1). Tối đa 8 ký tự, chỉ gồm chữ cái và số.
                       </p>
                     </div>
 

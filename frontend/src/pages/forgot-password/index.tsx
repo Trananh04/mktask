@@ -35,10 +35,10 @@ function ForgotPasswordForm() {
       if (response.success) {
         setIsSuccess(true);
       } else {
-        setError(response.message || "Failed to send reset email. Please try again.");
+        setError(response.message || "Không thể gửi email đặt lại mật khẩu. Vui lòng thử lại.");
       }
     } catch (err: any) {
-      setError(err.message || "Failed to send reset email. Please try again.");
+      setError(err.message || "Không thể gửi email đặt lại mật khẩu. Vui lòng thử lại.");
     } finally {
       setIsLoading(false);
     }
@@ -63,8 +63,8 @@ function ForgotPasswordForm() {
         {/* Success Header */}
         <div className="login-form-header">
           <div className="login-form-header-content">
-            <h1 className="login-form-title">Check your email</h1>
-            <p className="login-form-subtitle">We've sent a password reset link to {email}</p>
+            <h1 className="login-form-title">Kiểm tra email của bạn</h1>
+            <p className="login-form-subtitle">Chúng tôi đã gửi liên kết đặt lại mật khẩu tới {email}</p>
           </div>
         </div>
 
@@ -77,10 +77,10 @@ function ForgotPasswordForm() {
             <CheckCircle2 className="login-field-icon text-green-600" />
             <AlertDescription className="font-medium">
               <span className="login-error-title text-green-800 dark:text-green-200">
-                Email Sent Successfully
+                Đã gửi email thành công
               </span>
               <span className="login-error-message text-green-700 dark:text-green-300">
-                Please check your inbox and click the reset link.
+                Vui lòng kiểm tra hộp thư và nhấn vào liên kết đặt lại mật khẩu.
               </span>
             </AlertDescription>
           </Alert>
@@ -95,7 +95,7 @@ function ForgotPasswordForm() {
           <Link href="/login">
             <Button variant="outline" className="login-signup-button">
               <ArrowLeft className="login-button-arrow" />
-              Back to Sign In
+              Quay lại đăng nhập
             </Button>
           </Link>
         </motion.div>
@@ -115,7 +115,7 @@ function ForgotPasswordForm() {
             }}
             className="login-signup-button"
           >
-            Try Different Email
+            Dùng email khác
             <ArrowRight className="login-button-arrow" />
           </Button>
         </motion.div>
@@ -128,9 +128,9 @@ function ForgotPasswordForm() {
           className="login-footer"
         >
           <p className="login-footer-text">
-            Didn't receive the email? Check your spam folder or{" "}
+            Chưa nhận được email? Hãy kiểm tra thư rác hoặc{" "}
             <Link href="/support" className="login-footer-link">
-              contact support
+              liên hệ hỗ trợ
             </Link>
           </p>
         </motion.div>
@@ -148,9 +148,9 @@ function ForgotPasswordForm() {
       {/* Header */}
       <div className="login-form-header">
         <div className="login-form-header-content">
-          <h1 className="login-form-title">Reset your password</h1>
+          <h1 className="login-form-title">Đặt lại mật khẩu</h1>
           <p className="login-form-subtitle">
-            Enter your email address and we'll send you a reset link
+            Nhập địa chỉ email để nhận liên kết đặt lại mật khẩu
           </p>
         </div>
       </div>
@@ -164,7 +164,7 @@ function ForgotPasswordForm() {
           <Alert variant="destructive" className="login-error-alert">
             <AlertCircle className="login-field-icon" />
             <AlertDescription className="font-medium">
-              <span className="login-error-title">Reset Failed</span>
+              <span className="login-error-title">Đặt lại thất bại</span>
               <span className="login-error-message">{error}</span>
             </AlertDescription>
           </Alert>
@@ -182,7 +182,7 @@ function ForgotPasswordForm() {
         >
           <Label htmlFor="email" className="login-field-label">
             <Mail className="login-field-icon" />
-            <span>Email Address</span>
+            <span>Địa chỉ email</span>
           </Label>
           <Input
             id="email"
@@ -192,7 +192,7 @@ function ForgotPasswordForm() {
             required
             value={email}
             onChange={handleChange}
-            placeholder="Enter your email address"
+            placeholder="Nhập địa chỉ email"
             className="login-input"
           />
         </motion.div>
@@ -211,11 +211,11 @@ function ForgotPasswordForm() {
             {isLoading ? (
               <>
                 <Loader2 className="login-loading-spinner" />
-                Sending reset link...
+                Đang gửi liên kết...
               </>
             ) : (
               <>
-                Send Reset Link
+                Gửi liên kết đặt lại
                 <ArrowRight className="login-button-arrow" />
               </>
             )}
@@ -234,7 +234,7 @@ function ForgotPasswordForm() {
           <div className="login-divider-border" />
         </div>
         <div className="login-divider-text-container">
-          <span className="login-divider-text">Remember your password?</span>
+          <span className="login-divider-text">Bạn nhớ mật khẩu rồi?</span>
         </div>
       </motion.div>
 
@@ -247,7 +247,7 @@ function ForgotPasswordForm() {
         <Link href="/login">
           <Button variant="outline" className="login-signup-button">
             <ArrowLeft className="login-button-arrow" />
-            Back to Sign In
+            Quay lại đăng nhập
           </Button>
         </Link>
       </motion.div>
@@ -260,9 +260,9 @@ function ForgotPasswordForm() {
         className="login-footer"
       >
         <p className="login-footer-text">
-          Need help?{" "}
+          Cần hỗ trợ?{" "}
           <Link href="/support" className="login-footer-link">
-            Contact our support team
+            Liên hệ đội hỗ trợ
           </Link>
         </p>
       </motion.div>
@@ -279,7 +279,7 @@ export default function ForgotPasswordPage() {
 
   return (
     <AuthRedirect redirectTo={redirectTo}>
-      <SEO title="Forgot Password" />
+      <SEO title="Quên mật khẩu" />
       <div className="min-h-screen bg-[var(--background)]">
         <div className="min-h-screen flex bg-[var(--background)]">
           <div className="lg:w-1/2 relative">

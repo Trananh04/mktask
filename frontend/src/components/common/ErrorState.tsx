@@ -19,7 +19,7 @@ const ErrorState: React.FC<ErrorStateProps> = ({ error, onRetry, retryText }) =>
 
       {/* Title */}
       <h1 className="text-md font-bold text-[var(--foreground)] mb-3">
-        Error: {error || "An unexpected error occurred. Please try again"}
+        Lỗi: {error || "Đã xảy ra lỗi không mong muốn. Vui lòng thử lại"}
       </h1>
 
       {/* Buttons */}
@@ -30,7 +30,7 @@ const ErrorState: React.FC<ErrorStateProps> = ({ error, onRetry, retryText }) =>
             className="sm:w-auto w-full flex items-center justify-center gap-2"
           >
             <RotateCcw />
-            {retryText || "Retry"}
+            {retryText || "Thử lại"}
           </Button>
         )}
         <Button
@@ -38,7 +38,7 @@ const ErrorState: React.FC<ErrorStateProps> = ({ error, onRetry, retryText }) =>
           onClick={() => (window.location.href = "/dashboard")}
           className="sm:w-auto w-full flex items-center justify-center gap-2 border-[var(--border)]"
         >
-          <HiHome size={18} /> Go To Dashboard
+          <HiHome size={18} /> Về bảng điều khiển
         </Button>
       </div>
     </div>

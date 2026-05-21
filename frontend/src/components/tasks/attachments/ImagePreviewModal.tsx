@@ -81,12 +81,12 @@ export function ImagePreviewModal({
               </p>
             </div>
             <div className="flex items-center gap-2 ml-4">
-              <Tooltip content="Download Image">
+              <Tooltip content="Tải ảnh xuống">
                 <ActionButton onClick={onDownload} secondary className="h-9 px-3">
                   <ArrowDownToLine className="w-4 h-4" />
                 </ActionButton>
               </Tooltip>
-              <Tooltip content="Close Preview">
+              <Tooltip content="Đóng xem trước">
                 <ActionButton
                   onClick={onClose}
                   variant="outline"
@@ -109,7 +109,7 @@ export function ImagePreviewModal({
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="flex flex-col items-center gap-3">
                 <div className="w-10 h-10 border-2 border-[var(--primary)] border-t-transparent rounded-full animate-spin" />
-                <p className="text-sm text-[var(--muted-foreground)]">Loading image...</p>
+                <p className="text-sm text-[var(--muted-foreground)]">Đang tải ảnh...</p>
               </div>
             </div>
           )}
@@ -118,10 +118,10 @@ export function ImagePreviewModal({
             <div className="flex flex-col items-center justify-center p-8">
               <HiPhoto className="w-20 h-20 text-[var(--muted-foreground)] mb-4" />
               <p className="text-base font-medium text-[var(--foreground)] mb-2">
-                Failed to load image
+                Không thể tải ảnh
               </p>
               <p className="text-sm text-[var(--muted-foreground)]">
-                The image could not be displayed
+                Không thể hiển thị ảnh
               </p>
             </div>
           ) : (

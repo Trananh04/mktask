@@ -54,24 +54,24 @@ export function SetupForm() {
 
   const validateForm = (): string | null => {
     if (!formData.email || !formData.password || !formData.firstName || !formData.lastName) {
-      return "Please fill in all required fields";
+      return "Vui lòng điền đầy đủ các trường bắt buộc";
     }
 
     if (formData.password.length < 8) {
-      return "Password must be at least 8 characters long";
+      return "Mật khẩu phải có ít nhất 8 ký tự";
     }
 
     if (!confirmPassword) {
-      return "Please confirm your password";
+      return "Vui lòng xác nhận mật khẩu";
     }
 
     if (formData.password !== confirmPassword) {
-      return "Passwords do not match";
+      return "Mật khẩu xác nhận không khớp";
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) {
-      return "Please enter a valid email address";
+      return "Vui lòng nhập địa chỉ email hợp lệ";
     }
 
     return null;
@@ -95,11 +95,11 @@ export function SetupForm() {
       if (response.access_token) {
         router.push("/dashboard");
       } else {
-        router.push("/login?message=Registration successful! Please log in.");
+        router.push("/login?message=Đăng ký thành công. Vui lòng đăng nhập.");
       }
     } catch (err: any) {
       const errorMessage =
-        err.response?.data?.message || err.message || "Failed to create super admin";
+        err.response?.data?.message || err.message || "Không thể tạo quản trị viên cấp cao";
       setError(errorMessage);
     } finally {
       setIsLoading(false);
@@ -123,13 +123,13 @@ export function SetupForm() {
           >
             <CheckCircle className="setup-success-icon" />
           </motion.div>
-          <h2 className="setup-success-title">Setup Complete!</h2>
+          <h2 className="setup-success-title">Thiết lập hoàn tất!</h2>
           <p className="setup-success-message">
-            Super admin account has been created successfully.
+            Tài khoản quản trị viên cấp cao đã được tạo thành công.
           </p>
           <div className="setup-success-redirect">
             <Loader2 className="setup-redirect-spinner" />
-            <span>Redirecting to login page...</span>
+            <span>Đang chuyển đến trang đăng nhập...</span>
           </div>
         </div>
       </motion.div>
@@ -202,7 +202,7 @@ export function SetupForm() {
           <div className="setup-field-container">
             <Label htmlFor="firstName" className="setup-field-label">
               <User className="setup-field-icon" />
-              <span>First Name</span>
+              <span>Tên</span>
             </Label>
             <Input
               id="firstName"
@@ -211,7 +211,7 @@ export function SetupForm() {
               required
               value={formData.firstName}
               onChange={(e) => handleInputChange("firstName", e.target.value)}
-              placeholder="John"
+              placeholder="Anh"
               className="setup-input"
               disabled={isLoading}
             />
@@ -220,7 +220,7 @@ export function SetupForm() {
           <div className="setup-field-container">
             <Label htmlFor="lastName" className="setup-field-label">
               <User className="setup-field-icon" />
-              <span>Last Name</span>
+              <span>Họ</span>
             </Label>
             <Input
               id="lastName"
@@ -229,7 +229,7 @@ export function SetupForm() {
               required
               value={formData.lastName}
               onChange={(e) => handleInputChange("lastName", e.target.value)}
-              placeholder="Doe"
+              placeholder="Trần"
               className="setup-input"
               disabled={isLoading}
             />
@@ -245,7 +245,7 @@ export function SetupForm() {
         >
           <Label htmlFor="email" className="setup-field-label">
             <Mail className="setup-field-icon" />
-            <span>Email Address</span>
+            <span>Địa chỉ email</span>
           </Label>
           <Input
             id="email"
@@ -270,7 +270,7 @@ export function SetupForm() {
         >
           <Label htmlFor="username" className="setup-field-label">
             <User className="setup-field-icon" />
-            <span>Username (Optional)</span>
+            <span>Tên người dùng (không bắt buộc)</span>
           </Label>
           <Input
             id="username"
@@ -293,7 +293,7 @@ export function SetupForm() {
         >
           <Label htmlFor="password" className="setup-field-label">
             <Lock className="setup-field-icon" />
-            <span>Password</span>
+            <span>Mật khẩu</span>
           </Label>
           <div className="setup-password-container">
             <Input
@@ -304,7 +304,7 @@ export function SetupForm() {
               required
               value={formData.password}
               onChange={(e) => handleInputChange("password", e.target.value)}
-              placeholder="Enter a secure password"
+              placeholder="Nhập mật khẩu an toàn"
               className="setup-password-input"
               disabled={isLoading}
             />
@@ -314,13 +314,13 @@ export function SetupForm() {
               size="sm"
               onClick={() => setShowPassword(!showPassword)}
               className="setup-password-toggle"
-              aria-label={showPassword ? "Hide password" : "Show password"}
+              aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
               disabled={isLoading}
             >
               {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </Button>
           </div>
-          <p className="setup-password-hint">Password must be at least 8 characters long</p>
+          <p className="setup-password-hint">Mật khẩu phải có ít nhất 8 ký tự</p>
         </motion.div>
 
         {/* Confirm Password Field */}
@@ -332,7 +332,7 @@ export function SetupForm() {
         >
           <Label htmlFor="confirmPassword" className="setup-field-label">
             <Lock className="setup-field-icon" />
-            <span>Confirm Password</span>
+            <span>Xác nhận mật khẩu</span>
           </Label>
           <div className="setup-password-container">
             <Input
@@ -343,7 +343,7 @@ export function SetupForm() {
               required
               value={confirmPassword}
               onChange={(e) => handleConfirmPasswordChange(e.target.value)}
-              placeholder="Re-enter your password"
+              placeholder="Nhập lại mật khẩu"
               className="setup-password-input"
               disabled={isLoading}
             />
@@ -353,7 +353,7 @@ export function SetupForm() {
               size="sm"
               onClick={() => setShowConfirmPassword(!showConfirmPassword)}
               className="setup-password-toggle"
-              aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+              aria-label={showConfirmPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
               disabled={isLoading}
             >
               {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -371,11 +371,11 @@ export function SetupForm() {
             {isLoading ? (
               <>
                 <Loader2 className="setup-loading-spinner" />
-                Creating Admin Tài khoản...
+                Đang tạo tài khoản quản trị...
               </>
             ) : (
               <>
-                Create Super Admin Tài khoản
+                Tạo tài khoản quản trị viên cấp cao
                 <ArrowRight className="setup-button-arrow" />
               </>
             )}
@@ -391,7 +391,7 @@ export function SetupForm() {
         className="setup-footer"
       >
         <p className="setup-footer-text">
-          This will create the first administrative user for your mktask instance.
+          Thao tác này sẽ tạo người dùng quản trị đầu tiên cho hệ thống mktask của bạn.
         </p>
       </motion.div>
     </motion.div>

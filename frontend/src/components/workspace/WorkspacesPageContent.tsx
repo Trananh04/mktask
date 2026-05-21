@@ -296,7 +296,7 @@ export default function WorkspacesPageContent({ organizationId }: WorkspacesPage
                         }
                       } catch (err) {
                         console.error("Unarchive error:", err);
-                        toast.error(t("unarchive_failed", "Failed to unarchive workspace"));
+                        toast.error(t("unarchive_failed", "Không thể khôi phục không gian làm việc"));
                       } finally {
                         setUnarchiving(null);
                       }
@@ -304,7 +304,7 @@ export default function WorkspacesPageContent({ organizationId }: WorkspacesPage
                   >
                     {unarchiving === ws.id
                       ? t("unarchiving", "Unarchiving...")
-                      : t("unarchive", "Unarchive")}
+                      : t("unarchive", "Khôi phục")}
                   </Button>
                 </div>
               ))}

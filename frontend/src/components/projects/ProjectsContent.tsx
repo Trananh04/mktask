@@ -620,7 +620,7 @@ const ProjectsContent: React.FC<ProjectsContentProps> = ({
   }
 
   const displayTitle =
-    contextType === "workspace" && workspace ? t("workspace_projects", { name: workspace.name, defaultValue: `${workspace.name} Dá»± Ã¡n` }) : title;
+    contextType === "workspace" && workspace ? t("workspace_projects", { name: workspace.name, defaultValue: `${workspace.name} Dự án` }) : title;
 
   return (
     <div className="dashboard-container">
@@ -716,7 +716,7 @@ const ProjectsContent: React.FC<ProjectsContentProps> = ({
         {/* Content Area */}
         {showContent && (
           <>
-            {/* Dá»± Ã¡n Grid */}
+            {/* Project Grid */}
             {projects.length === 0 ? (
               searchInput || totalActiveFilters > 0 ? (
                 <EmptyState
@@ -767,7 +767,7 @@ const ProjectsContent: React.FC<ProjectsContentProps> = ({
                         description={project.description}
                         trailing={
                           hasAccess && (
-                            <Tooltip content={t("invite_member", "Invite member")} position="top" color="primary">
+                            <Tooltip content={t("invite_member", "Mời thành viên")} position="top" color="primary">
                               <button
                                 onClick={(e) => {
                                   e.preventDefault();
@@ -775,7 +775,7 @@ const ProjectsContent: React.FC<ProjectsContentProps> = ({
                                   handleInviteMember(project);
                                 }}
                                 className="p-1.5 rounded-md hover:bg-[var(--accent)] text-[var(--muted-foreground)] hover:text-[var(--primary)] transition-colors"
-                                aria-label="Invite member"
+                                aria-label="Mời thành viên"
                               >
                                 <HiUserPlus size={16} />
                               </button>
@@ -818,10 +818,10 @@ const ProjectsContent: React.FC<ProjectsContentProps> = ({
                           size="sm"
                           className="border-[var(--border)] bg-[var(--background)] hover:bg-[var(--muted)] transition-all duration-200 disabled:opacity-50"
                         >
-                          {t("previous", "Previous")}
+                          {t("previous", "Trước")}
                         </Button>
                         <span className="text-sm text-[var(--muted-foreground)] tabular-nums">
-                          {t("page_info", { page: currentPage, defaultValue: `Page ${currentPage}` })}
+                          {t("page_info", { page: currentPage, defaultValue: `Trang ${currentPage}` })}
                         </span>
                         <Button
                           onClick={() => goToPage(currentPage + 1)}
@@ -833,7 +833,7 @@ const ProjectsContent: React.FC<ProjectsContentProps> = ({
                           {isFetching ? (
                             <div className="w-4 h-4 border-2 border-[var(--primary)] border-t-transparent rounded-full animate-spin" />
                           ) : (
-                            t("next", "Next")
+                            t("next", "Tiếp")
                           )}
                         </Button>
                       </div>
@@ -857,11 +857,11 @@ const ProjectsContent: React.FC<ProjectsContentProps> = ({
           </>
         )}
 
-        {/* Archived Dá»± Ã¡n Section */}
+        {/* Archived Projects Section */}
         {hasAccess && archivedProjects.length > 0 && (
           <div className="mt-6">
             <h3 className="text-sm font-medium text-[var(--muted-foreground)] mb-3">
-              {t("archived_projects", "Archived Dá»± Ã¡n")}
+              {t("archived_projects", "Dự án đã lưu trữ")}
             </h3>
             <div className="space-y-3">
               {archivedProjects.map((project: any) => {
@@ -878,8 +878,8 @@ const ProjectsContent: React.FC<ProjectsContentProps> = ({
                     <Tooltip
                       content={
                         isWorkspaceArchived
-                          ? t("unarchive_workspace_first", "Unarchive the parent workspace first")
-                          : t("unarchive_project", "Unarchive project")
+                          ? t("unarchive_workspace_first", "Hãy khôi phục không gian làm việc cha trước")
+                          : t("unarchive_project", "Khôi phục dự án")
                       }
                       position="top"
                       color={isWorkspaceArchived ? "danger" : "primary"}
@@ -902,7 +902,7 @@ const ProjectsContent: React.FC<ProjectsContentProps> = ({
                               await fetchData(1, true);
                             }
                           } catch (err: any) {
-                            toast.error(err?.message || t("unarchive_failed", "Failed to unarchive project"));
+                            toast.error(err?.message || t("unarchive_failed", "Không thể khôi phục dự án"));
                           } finally {
                             setUnarchivingId(null);
                           }
@@ -910,7 +910,7 @@ const ProjectsContent: React.FC<ProjectsContentProps> = ({
                       >
                         {unarchivingId === project.id
                           ? t("unarchiving", "Unarchiving...")
-                          : t("unarchive", "Unarchive")}
+                          : t("unarchive", "Khôi phục")}
                       </Button>
                     </Tooltip>
                   </div>

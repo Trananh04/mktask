@@ -61,10 +61,10 @@ export const ProjectInviteMemberModal = ({
           <DialogHeader>
             <DialogTitle className="text-[var(--foreground)] flex items-center gap-2">
               <HiMail className="w-5 h-5 text-[var(--primary)]" />
-              Invite Member to Project
+              Mời thành viên vào dự án
             </DialogTitle>
             <DialogDescription className="text-[var(--muted-foreground)]">
-              Send an invitation to join this project.
+              Gửi lời mời tham gia dự án này.
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -73,25 +73,25 @@ export const ProjectInviteMemberModal = ({
                 htmlFor="invite-email"
                 className="text-sm font-medium text-[var(--foreground)]"
               >
-                Email Address
+                Địa chỉ email
               </Label>
               <Input
                 id="invite-email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter email address"
+                placeholder="Nhập địa chỉ email"
                 className="mt-1 border-none bg-background text-[var(--foreground)]"
                 required
               />
               {email && !isEmailValid && (
                 <p className="text-xs text-[var(--destructive)] mt-1">
-                  Please enter a valid email address
+                  Vui lòng nhập địa chỉ email hợp lệ
                 </p>
               )}
             </div>
             <div>
-              <Label className="text-sm font-medium text-[var(--foreground)]">Role</Label>
+              <Label className="text-sm font-medium text-[var(--foreground)]">Vai trò</Label>
               <Select value={role} onValueChange={setRole}>
                 <SelectTrigger
                   className="projects-workspace-button border-none mt-1"
@@ -102,7 +102,7 @@ export const ProjectInviteMemberModal = ({
                     e.currentTarget.style.boxShadow = "none";
                   }}
                 >
-                  <SelectValue placeholder="Select a role">
+                  <SelectValue placeholder="Chọn vai trò">
                     {role && <span className="text-[var(--foreground)]">{role}</span>}
                   </SelectValue>
                 </SelectTrigger>
@@ -121,7 +121,7 @@ export const ProjectInviteMemberModal = ({
               </Select>
               {!role && (
                 <p className="text-xs text-[var(--muted-foreground)] mt-1">
-                  Please select a role for the member
+                  Vui lòng chọn vai trò cho thành viên
                 </p>
               )}
             </div>{" "}
@@ -133,7 +133,7 @@ export const ProjectInviteMemberModal = ({
                 disabled={inviting}
                 className="w-20"
               >
-                Cancel
+                Hủy
               </ActionButton>
               <ActionButton
                 primary
@@ -141,7 +141,7 @@ export const ProjectInviteMemberModal = ({
                 disabled={inviting || !email.trim() || !isEmailValid || !role}
                 className="w-28"
               >
-                {inviting ? "Inviting..." : "Send Invite"}
+                {inviting ? "Đang mời..." : "Gửi lời mời"}
               </ActionButton>
             </DialogFooter>
           </form>

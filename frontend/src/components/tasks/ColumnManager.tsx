@@ -57,7 +57,7 @@ export function ColumnManager({
   // List view
   return (
     <DropdownMenu>
-      <Tooltip content="Manage Columns" position="top" color="primary">
+      <Tooltip content="Quản lý cột" position="top" color="primary">
         <DropdownMenuTrigger asChild>
           <Button
             variant="outline"
@@ -70,7 +70,7 @@ export function ColumnManager({
       </Tooltip>
       <DropdownMenuContent align="end" className="w-64 bg-[var(--card)] border-[var(--border)]">
         <DropdownMenuLabel className="text-xs font-semibold  flex justify-between items-center">
-          <span>Manage View Columns</span>
+          <span>Quản lý cột hiển thị</span>
           {onResetColumns && (
             <Button
               variant="ghost"
@@ -82,12 +82,12 @@ export function ColumnManager({
               }}
             >
               <RotateCcw size={12} />
-              Reset
+              Đặt lại
             </Button>
           )}
         </DropdownMenuLabel>
         <div className="px-2 py-1 text-xs text-muted-foreground">
-          Customize which columns are visible in your view
+          Tùy chỉnh những cột hiển thị trong chế độ xem
         </div>
         <DropdownMenuSeparator />
 

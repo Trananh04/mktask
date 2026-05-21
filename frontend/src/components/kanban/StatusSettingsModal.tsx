@@ -73,7 +73,7 @@ const StatusSettingsModal: React.FC<StatusSettingsModalProps> = ({
       const data = await getTaskStatusByProject(projectId);
       setStatusList(data || []);
     } catch {
-      toast.error("Failed to fetch statuses");
+      toast.error("Không thể tải trạng thái");
     } finally {
       setLoading(false);
     }
@@ -89,11 +89,11 @@ const StatusSettingsModal: React.FC<StatusSettingsModalProps> = ({
       });
       setStatusList([...statusList, created]);
       onStatusUpdated();
-      toast.success("Status created");
+      toast.success("Đã tạo trạng thái");
       setIsAdding(false);
       setNewName("");
     } catch {
-      toast.error("Failed to create status");
+      toast.error("Không thể tạo trạng thái");
     } finally {
       setCreating(false);
     }
@@ -114,7 +114,7 @@ const StatusSettingsModal: React.FC<StatusSettingsModalProps> = ({
       });
       setStatusList((prev) => prev.map((s) => (s.id === editingId ? updated : s)));
       onStatusUpdated();
-      toast.success("Status updated");
+      toast.success("Đã cập nhật trạng thái");
       cancelEdit();
     } catch {
       toast.error("Failed to update status");
@@ -133,10 +133,10 @@ const StatusSettingsModal: React.FC<StatusSettingsModalProps> = ({
       setStatusList((prev) => prev.filter((s) => s.id !== id));
       onStatusUpdated();
       setWorkFlowStatusToDelete(null);
-      toast.success("Status deleted successfully!");
+      toast.success("Đã xóa trạng thái");
     } catch (error) {
       setWorkFlowStatusToDelete(null);
-      toast.error(error.message || "Failed to delete status");
+      toast.error(error.message || "Không thể xóa trạng thái");
     }
   };
 
@@ -163,9 +163,9 @@ const StatusSettingsModal: React.FC<StatusSettingsModalProps> = ({
     try {
       await updateTaskStatusPositions(reordered.map(({ id, position }) => ({ id, position })));
       onStatusUpdated();
-      toast.success("Order updated");
+      toast.success("Đã cập nhật thứ tự");
     } catch {
-      toast.error("Failed to save order");
+      toast.error("Không thể lưu thứ tự");
       fetchStatuses(); // revert
     }
     setDraggedId(null);
@@ -189,7 +189,7 @@ const StatusSettingsModal: React.FC<StatusSettingsModalProps> = ({
           value={editName}
           onChange={(e) => setEditName(e.target.value)}
           className="kanban-status-row-edit-input"
-          placeholder="Status name"
+          placeholder="Tên trạng thái"
           onKeyDown={(e) => {
             if (e.key === "Enter") saveEdit();
             if (e.key === "Escape") cancelEdit();
@@ -241,13 +241,13 @@ const StatusSettingsModal: React.FC<StatusSettingsModalProps> = ({
               onClick={() => startEdit(s)}
               className="cursor-pointer hover:bg-[var(--muted)]"
             >
-              <HiPencil size={14} /> Edit
+              <HiPencil size={14} /> Sửa
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => setWorkFlowStatusToDelete(s.id)}
               className="kanban-status-row-menu-delete"
             >
-              <HiTrash size={14} /> Delete
+              <HiTrash size={14} /> Xóa
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -259,16 +259,16 @@ const StatusSettingsModal: React.FC<StatusSettingsModalProps> = ({
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="kanban-status-modal-content">
           <DialogHeader>
-            <DialogTitle className="kanban-status-modal-title">Workflow Settings</DialogTitle>
+            <DialogTitle className="kanban-status-modal-title">Cài đặt quy trình</DialogTitle>
             <DialogDescription className="kanban-status-modal-description">
-              Drag rows to reorder. Use the menu to edit or delete.
+              Kéo các dòng để sắp xếp lại. Dùng menu để sửa hoặc xóa.
             </DialogDescription>
           </DialogHeader>
 
           {/* -------- status list -------- */}
           <div className="kanban-status-modal-list">
             {loading ? (
-              <div className="kanban-status-modal-loading">Loading…</div>
+              <div className="kanban-status-modal-loading">Đang tải...</div>
             ) : (
               <>
                 {statusList.map(StatusRow)}
@@ -280,7 +280,7 @@ const StatusSettingsModal: React.FC<StatusSettingsModalProps> = ({
                     <div className="kanban-add-status-color" />
                     <input
                       className="kanban-add-status-input"
-                      placeholder="New status…"
+                      placeholder="Trạng thái mới..."
                       value={newName}
                       onChange={(e) => setNewName(e.target.value)}
                       onKeyDown={(e) => {
@@ -298,10 +298,10 @@ const StatusSettingsModal: React.FC<StatusSettingsModalProps> = ({
                       disabled={!newName.trim()}
                       onClick={addStatus}
                     >
-                      {creating ? "…" : "Add"}
+                      {creating ? "..." : "Thêm"}
                     </ActionButton>
                     <ActionButton type="button" secondary onClick={() => setIsAdding(false)}>
-                      Cancel
+                      Hủy
                     </ActionButton>
                   </div>
                 ) : (
@@ -311,7 +311,7 @@ const StatusSettingsModal: React.FC<StatusSettingsModalProps> = ({
                     onClick={() => setIsAdding(true)}
                   >
                     <HiPlus size={15} />
-                    Add status
+                    Thêm trạng thái
                   </Button>
                 )}
               </>
@@ -320,9 +320,9 @@ const StatusSettingsModal: React.FC<StatusSettingsModalProps> = ({
 
           {/* -------- footer -------- */}
           <div className="kanban-status-modal-footer">
-            {statusList.length} status{statusList.length !== 1 && "es"} configured
+            {statusList.length} trạng thái đã cấu hình
             <ActionButton type="submit" primary onClick={onClose}>
-              Done
+              Xong
             </ActionButton>
           </div>
         </DialogContent>
@@ -331,10 +331,10 @@ const StatusSettingsModal: React.FC<StatusSettingsModalProps> = ({
         isOpen={!!workFlowStatusToDelete}
         onClose={() => setWorkFlowStatusToDelete(null)}
         onConfirm={() => removeStatus(workFlowStatusToDelete!)}
-        title="Delete Status"
-        message="Delete the status? This action cannot be undone."
-        confirmText="Delete"
-        cancelText="Cancel"
+        title="Xóa trạng thái"
+        message="Bạn có chắc muốn xóa trạng thái này? Không thể hoàn tác hành động này."
+        confirmText="Xóa"
+        cancelText="Hủy"
       />
     </>
   );

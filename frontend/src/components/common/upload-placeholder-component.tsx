@@ -17,7 +17,7 @@ export function UploadPlaceholderComponent({
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium text-[var(--foreground)] truncate">
-            Uploading image...
+            Đang tải ảnh lên...
           </p>
           <p className="text-xs text-[var(--muted-foreground)] truncate">
             {filename}

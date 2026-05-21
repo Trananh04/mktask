@@ -125,9 +125,9 @@ export default function ProfileSection() {
     try {
       await handleTimezoneChange(tz, false);
       await updateUser(currentUser.id, { timezone: tz });
-      toast.success(`Timezone updated to ${tz}`);
+      toast.success(`Đã cập nhật múi giờ thành ${tz}`);
     } catch {
-      toast.error("Failed to update timezone");
+      toast.error("Không thể cập nhật múi giờ");
     }
   };
 
@@ -473,7 +473,7 @@ export default function ProfileSection() {
               {/* Timezone */}
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-[var(--foreground)]">
-                  {t("profile_section.timezone", "Timezone")}
+                  {t("profile_section.timezone", "Múi giờ")}
                 </Label>
                 <div className="flex gap-2 items-center">
                   <Popover open={tzPopoverOpen} onOpenChange={setTzPopoverOpen}>
@@ -615,7 +615,7 @@ export default function ProfileSection() {
               {/* Timezone */}
               <div>
                 <h4 className="text-sm font-medium text-[var(--muted-foreground)]">
-                  {t("profile_section.timezone", "Timezone")}
+                  {t("profile_section.timezone", "Múi giờ")}
                 </h4>
                 <p className="text-[var(--foreground)] text-sm font-mono">{timezone || "UTC"}</p>
               </div>

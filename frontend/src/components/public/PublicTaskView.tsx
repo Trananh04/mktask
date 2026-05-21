@@ -22,7 +22,7 @@ export default function PublicTaskView({ task, token }: PublicTaskViewProps) {
   const { resolvedTheme } = useTheme();
 
   const formatDate = (dateString?: string) => {
-    if (!dateString) return 'No due date';
+    if (!dateString) return 'Chưa có hạn hoàn thành';
     return formatDateForDisplay(dateString, {
       year: 'numeric',
       month: 'long',
@@ -33,7 +33,7 @@ export default function PublicTaskView({ task, token }: PublicTaskViewProps) {
   const handleDownload = async (attachment: { id: string, fileName: string }) => {
     try {
       const fileUrl = await shareApi.getAttachmentUrl(token, attachment.id);
-      if (!fileUrl) throw new Error('Attachment URL not found');
+      if (!fileUrl) throw new Error('Không tìm thấy URL tệp đính kèm');
 
       const apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000/api';
 
@@ -42,7 +42,7 @@ export default function PublicTaskView({ task, token }: PublicTaskViewProps) {
         : `${apiUrl}/uploads${fileUrl}`;
 
       const response = await fetch(fullUrl);
-      if (!response.ok) throw new Error('Failed to fetch file');
+      if (!response.ok) throw new Error('Không thể tải tệp');
 
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
@@ -55,7 +55,7 @@ export default function PublicTaskView({ task, token }: PublicTaskViewProps) {
       window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Download error:', error);
-      toast.error('Failed to download attachment');
+      toast.error('Không thể tải tệp đính kèm');
     }
   };
 
@@ -70,7 +70,7 @@ export default function PublicTaskView({ task, token }: PublicTaskViewProps) {
                 {task.title}
               </h1>
               <Badge variant="outline" className="font-normal text-xs bg-[var(--muted)] text-[var(--muted-foreground)] border-[var(--border)]">
-                Shared View
+                Chế độ chia sẻ
               </Badge>
             </div>
           </div>
@@ -96,7 +96,7 @@ export default function PublicTaskView({ task, token }: PublicTaskViewProps) {
           <div className="lg:col-span-2 space-y-8">
             {/* Description */}
             <div className="space-y-2">
-              <Label className="text-base text-[var(--foreground)] font-semibold">Description</Label>
+              <Label className="text-base text-[var(--foreground)] font-semibold">Mô tả</Label>
               {task.description ? (
                 <div className="prose dark:prose-invert max-w-none text-[var(--foreground)] text-sm leading-relaxed p-4 rounded-md border border-[var(--border)] bg-[var(--background)]">
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>
@@ -105,7 +105,7 @@ export default function PublicTaskView({ task, token }: PublicTaskViewProps) {
                 </div>
               ) : (
                 <div className="text-sm text-[var(--muted-foreground)] italic p-4 rounded-md border border-[var(--border)] bg-[var(--muted)]/20">
-                  No description provided.
+                  Chưa có mô tả.
                 </div>
               )}
             </div>
@@ -115,7 +115,7 @@ export default function PublicTaskView({ task, token }: PublicTaskViewProps) {
               <div className="space-y-4">
                 <h3 className="text-sm font-semibold flex items-center gap-2 text-[var(--foreground)]">
                   <HiPaperClip className="h-4 w-4" />
-                  Attachments ({task.attachments.length})
+                  Tệp đính kèm ({task.attachments.length})
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {task.attachments.map((file) => (
@@ -153,7 +153,7 @@ export default function PublicTaskView({ task, token }: PublicTaskViewProps) {
 
             {/* Priority */}
             <div>
-              <Label className="text-sm text-[var(--foreground)] block mb-2">Priority</Label>
+              <Label className="text-sm text-[var(--foreground)] block mb-2">Độ ưu tiên</Label>
               <PriorityBadge
                 priority={task.priority}
                 className="text-[13px] min-w-[120px] min-h-[29.33px] justify-start"
@@ -162,7 +162,7 @@ export default function PublicTaskView({ task, token }: PublicTaskViewProps) {
 
             {/* Status */}
             <div>
-              <Label className="text-sm text-[var(--foreground)] block mb-2">Status</Label>
+              <Label className="text-sm text-[var(--foreground)] block mb-2">Trạng thái</Label>
               <Badge
                 style={{ backgroundColor: task.status.color + '20', color: task.status.color }}
                 variant="outline"
@@ -174,7 +174,7 @@ export default function PublicTaskView({ task, token }: PublicTaskViewProps) {
 
             {/* Due Date */}
             <div>
-              <Label className="text-sm text-[var(--foreground)] block mb-2">Due Date</Label>
+              <Label className="text-sm text-[var(--foreground)] block mb-2">Hạn hoàn thành</Label>
               <div className="flex items-center gap-2 text-[var(--foreground)] text-sm bg-[var(--muted)]/20 p-2 rounded-md border border-[var(--border)]">
                 <HiCalendar className="h-4 w-4 opacity-70" />
                 <span>{formatDate(task.dueDate)}</span>
@@ -200,7 +200,7 @@ export default function PublicTaskView({ task, token }: PublicTaskViewProps) {
             {/* Assignees */}
             {task.assignees && task.assignees.length > 0 && (
               <div>
-                <Label className="text-sm text-[var(--foreground)] block mb-2">Assignees</Label>
+                <Label className="text-sm text-[var(--foreground)] block mb-2">Người phụ trách</Label>
                 <div className="space-y-3 mt-2">
                   {task.assignees.map((assignee, i) => (
                     <div key={i} className="flex items-center gap-3">

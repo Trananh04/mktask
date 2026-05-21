@@ -50,21 +50,21 @@ export function DangerZone({
                 <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center shadow-sm">
                   <HiExclamationTriangle className="w-5 h-5 text-white" />
                 </div>
-                <CardTitle className="text-lg font-semibold text-red-700">Danger Zone</CardTitle>
+                <CardTitle className="text-lg font-semibold text-red-700">Khu vực nguy hiểm</CardTitle>
               </div>
               <CardDescription className="text-sm text-red-600/80 mt-2 pl-12 leading-relaxed">
-                Irreversible and destructive actions. Please proceed with extreme caution.
+                Các hành động ở đây không thể hoàn tác. Vui lòng cân nhắc thật kỹ.
               </CardDescription>
             </div>
             <Badge
               variant="secondary"
               className="text-xs bg-red-300/10 hover:bg-red-400/20 text-red-700 rounded-md border border-red-800/50 px-2 py-1"
             >
-              Critical
+              Nghiêm trọng
             </Badge>
           </div>
         ) : (
-          <CardTitle className="text-lg font-semibold text-red-700">Danger Zone</CardTitle>
+          <CardTitle className="text-lg font-semibold text-red-700">Khu vực nguy hiểm</CardTitle>
         )}
       </CardHeader>
 
@@ -120,12 +120,12 @@ export function DangerZone({
               {loading ? (
                 <div className="flex items-center gap-2 py-0.5">
                   <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                  <span>Deleting...</span>
+                  <span>Đang xóa...</span>
                 </div>
               ) : (
                 <div className="flex items-center gap-2 py-0.5">
                   {isCritical && <HiExclamationTriangle className="w-4 h-4" />}
-                  <span>Delete {actionTitle}</span>
+                  <span>Xóa {actionTitle}</span>
                 </div>
               )}
             </Button>

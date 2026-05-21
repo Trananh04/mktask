@@ -36,16 +36,16 @@ export class AdminService {
       newTasksThisWeek,
       activeUsers,
     ] = await Promise.all([
-      this.prisma.user.count(),
-      this.prisma.organization.count(),
-      this.prisma.workspace.count(),
-      this.prisma.project.count(),
-      this.prisma.task.count(),
-      this.prisma.user.count({ where: { createdAt: { gte: startOfWeek } } }),
-      this.prisma.organization.count({ where: { createdAt: { gte: startOfWeek } } }),
-      this.prisma.project.count({ where: { createdAt: { gte: startOfWeek } } }),
-      this.prisma.task.count({ where: { createdAt: { gte: startOfWeek } } }),
-      this.prisma.user.count({ where: { status: UserStatus.ACTIVE } }),
+      this.prisma.user.count({ where: { deletedAt: null } }),
+      this.prisma.organization.count({ where: { archive: false } }),
+      this.prisma.workspace.count({ where: { archive: false, organization: { archive: false } } }),
+      this.prisma.project.count({ where: { archive: false, workspace: { archive: false, organization: { archive: false } } } }),
+      this.prisma.task.count({ where: { isArchived: false, project: { archive: false, workspace: { archive: false, organization: { archive: false } } } } }),
+      this.prisma.user.count({ where: { deletedAt: null, createdAt: { gte: startOfWeek } } }),
+      this.prisma.organization.count({ where: { archive: false, createdAt: { gte: startOfWeek } } }),
+      this.prisma.project.count({ where: { archive: false, workspace: { archive: false, organization: { archive: false } }, createdAt: { gte: startOfWeek } } }),
+      this.prisma.task.count({ where: { isArchived: false, project: { archive: false, workspace: { archive: false, organization: { archive: false } } }, createdAt: { gte: startOfWeek } } }),
+      this.prisma.user.count({ where: { deletedAt: null, status: UserStatus.ACTIVE } }),
     ]);
 
     return {
@@ -328,7 +328,7 @@ export class AdminService {
   }
 
   async getOrganizations(page: number = 1, limit: number = 20, search?: string) {
-    const where: any = {};
+    const where: any = { archive: false };
 
     if (search) {
       where.OR = [

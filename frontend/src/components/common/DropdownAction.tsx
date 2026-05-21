@@ -349,7 +349,7 @@ export default function DropdownAction({
               <div className="relative">
                 <HiMagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--muted-foreground)]" />
                 <Input
-                  placeholder="Search..."
+                  placeholder="Tìm kiếm..."
                   className="pl-10 h-7 bg-[var(--background)] border-[var(--border)] text-sm"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -369,7 +369,7 @@ export default function DropdownAction({
               <div className="w-6 h-6 bg-[var(--destructive)]/10 rounded-full flex items-center justify-center">
                 <HiXMark className="w-3 h-3 text-[var(--destructive)]" />
               </div>
-              <span className="text-xs">{itemType === "status" ? "Clear Status" : "Unassign"}</span>
+              <span className="text-xs">{itemType === "status" ? "Xóa trạng thái" : "Bỏ phân công"}</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator className="my-1" />
           </>
@@ -377,8 +377,7 @@ export default function DropdownAction({
 
         {isLoading ? (
           <div className="p-4 text-center text-sm text-[var(--muted-foreground)]">
-            Loading {itemType === "user" ? "users" : itemType === "status" ? "statuses" : itemType === "sprint" ? "sprints" : "members"}
-            ...
+            Đang tải {itemType === "user" ? "người dùng" : itemType === "status" ? "trạng thái" : itemType === "sprint" ? "sprint" : "thành viên"}...
           </div>
         ) : filteredItems.length > 0 ? (
           filteredItems.map((item) => {
@@ -435,8 +434,7 @@ export default function DropdownAction({
           })
         ) : (
           <div className="p-4 text-center text-sm text-[var(--muted-foreground)]">
-            No {itemType === "user" ? "users" : itemType === "status" ? "statuses" : itemType === "sprint" ? "sprints" : "members"}{" "}
-            found.
+            Không tìm thấy {itemType === "user" ? "người dùng" : itemType === "status" ? "trạng thái" : itemType === "sprint" ? "sprint" : "thành viên"}.
           </div>
         )}
       </DropdownMenuContent>

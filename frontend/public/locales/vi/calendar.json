@@ -4,39 +4,39 @@
   "createTask": "Tạo công việc",
   "noTasks": {
     "title": "Không tìm thấy công việc",
-    "description": "tạo your first công việc for {{name}} to see it on the calendar"
+    "description": "Tạo công việc đầu tiên cho {{name}} để hiển thị trên lịch"
   },
   "errors": {
-    "invalidSlug": "không hợp lệ không gian làm việc or dự án slug",
+    "invalidSlug": "Slug không gian làm việc hoặc dự án không hợp lệ",
     "workspaceNotFound": "Không tìm thấy không gian làm việc",
-    "projectNotFound": "dự án not found",
-    "failedLoadData": "không thể load data",
-    "projectOrWorkspaceNotFound": "dự án or không gian làm việc not found"
+    "projectNotFound": "Không tìm thấy dự án",
+    "failedLoadData": "Không thể tải dữ liệu",
+    "projectOrWorkspaceNotFound": "Không tìm thấy dự án hoặc không gian làm việc"
   },
   "view": {
-    "noTasksScheduled": "Không có công việc scheduled",
-    "noTasksScheduledDescription": "công việc with due dates will appear on the calendar. tạo công việc with specific due dates to visualize your schedule.",
+    "noTasksScheduled": "Không có công việc đã lên lịch",
+    "noTasksScheduledDescription": "Công việc có ngày đến hạn sẽ hiển thị trên lịch. Hãy tạo công việc có ngày đến hạn để theo dõi lịch trình.",
     "days": {
-      "sun": "Sun",
-      "mon": "Mon",
-      "tue": "Tue",
-      "wed": "Wed",
-      "thu": "Thu",
-      "fri": "Fri",
-      "sat": "Sat"
+      "sun": "CN",
+      "mon": "T2",
+      "tue": "T3",
+      "wed": "T4",
+      "thu": "T5",
+      "fri": "T6",
+      "sat": "T7"
     },
-    "untitledTask": "Untiêu đềd công việc",
-    "more": "more",
-    "time": "Time",
-    "weekOf": "Week of {{date}}",
-    "daysWithTasks": "{{count}} days with công việc this month",
-    "tasksThisWeek": "{{count}} công việc this week",
-    "month": "Month",
-    "week": "Week",
+    "untitledTask": "Công việc chưa có tiêu đề",
+    "more": "nữa",
+    "time": "Thời gian",
+    "weekOf": "Tuần của {{date}}",
+    "daysWithTasks": "{{count}} ngày có công việc trong tháng này",
+    "tasksThisWeek": "{{count}} công việc trong tuần này",
+    "month": "Tháng",
+    "week": "Tuần",
     "today": "Hôm nay",
-    "noTasksThisDay": "Không có công việc scheduled for this day",
+    "noTasksThisDay": "Không có công việc nào trong ngày này",
     "noStatus": "Không có trạng thái",
-    "overdue": "Overdue",
+    "overdue": "Quá hạn",
     "assignee": "Người phụ trách"
   }
 }

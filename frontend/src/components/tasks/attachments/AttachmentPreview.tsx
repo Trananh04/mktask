@@ -76,7 +76,7 @@ export const AttachmentPreview = forwardRef<AttachmentPreviewRef, AttachmentPrev
         const newWindow = window.open(url, "_blank");
 
         if (!newWindow) {
-          toast.error("Please allow popups to preview files");
+          toast.error("Vui lòng cho phép cửa sổ bật lên để xem trước tệp");
         }
 
         // Cleanup after a delay to ensure the file opens
@@ -85,7 +85,7 @@ export const AttachmentPreview = forwardRef<AttachmentPreviewRef, AttachmentPrev
         }, 1000);
       } catch (err) {
         console.error("Failed to open file:", err);
-        toast.error("Failed to open file in browser");
+        toast.error("Không thể mở tệp trong trình duyệt");
       } finally {
         setIsLoading(false);
       }
@@ -103,7 +103,7 @@ export const AttachmentPreview = forwardRef<AttachmentPreviewRef, AttachmentPrev
       try {
         // Preview blob for both images and videos
         const blob = await previewFile(attachment.id);
-        if (!blob) throw new Error("No preview available");
+        if (!blob) throw new Error("Không có bản xem trước");
 
         const url = URL.createObjectURL(blob);
 
@@ -113,7 +113,7 @@ export const AttachmentPreview = forwardRef<AttachmentPreviewRef, AttachmentPrev
         setIsModalOpen(true);
       } catch (err) {
         console.error("Failed to load preview:", err);
-        toast.error("Failed to load file preview"); // generic message
+        toast.error("Không thể tải bản xem trước tệp"); // generic message
       } finally {
         setIsLoading(false);
       }

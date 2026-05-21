@@ -223,7 +223,7 @@ export default function CreateTask({ projectSlug, workspace, projects }: CreateT
       } catch (error) {
         console.error("Failed to fetch project members:", error);
         setMembers([]);
-        toast.error("Failed to load project members");
+        toast.error("Không thể tải thành viên dự án");
       } finally {
         // setMembersLoading(false);
       }
@@ -245,7 +245,7 @@ export default function CreateTask({ projectSlug, workspace, projects }: CreateT
       } catch (error) {
         console.error("Failed to fetch project statuses:", error);
         setAvailableStatuses([]);
-        toast.error("Failed to load project statuses");
+        toast.error("Không thể tải trạng thái dự án");
       }
     };
 
@@ -269,7 +269,7 @@ export default function CreateTask({ projectSlug, workspace, projects }: CreateT
       } catch (error) {
         console.error("Failed to fetch project sprints:", error);
         setSprints([]);
-        toast.error("Failed to load project sprints");
+        toast.error("Không thể tải sprint của dự án");
       } finally {
         setLoadingSprints(false);
       }
@@ -380,9 +380,9 @@ export default function CreateTask({ projectSlug, workspace, projects }: CreateT
   const handleSubmit = async (e: React.FormEvent | React.MouseEvent) => {
     e.preventDefault();
     if (!isFormValid()) {
-      if (!formData.title.trim()) toast.error("Please enter a task title.");
-      else if (!selectedProject?.id) toast.error("Please select a project.");
-      else toast.error("Please fill in all required fields.");
+      if (!formData.title.trim()) toast.error("Vui lòng nhập tiêu đề công việc.");
+      else if (!selectedProject?.id) toast.error("Vui lòng chọn dự án.");
+      else toast.error("Vui lòng điền đầy đủ các trường bắt buộc.");
       return;
     }
 
@@ -446,14 +446,14 @@ export default function CreateTask({ projectSlug, workspace, projects }: CreateT
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="title">
-                    Task Title <span className="projects-form-label-required">*</span>
+                    Tiêu đề công việc <span className="projects-form-label-required">*</span>
                   </Label>
                   <Input
                     id="title"
                     name="title"
                     value={formData.title}
                     onChange={(e) => handleFormDataChange("title", e.target.value)}
-                    placeholder="What needs to be done?"
+                    placeholder="Cần làm việc gì?"
                     className="border-[var(--border)] bg-[var(--background)]"
                   />
                 </div>
@@ -464,7 +464,7 @@ export default function CreateTask({ projectSlug, workspace, projects }: CreateT
               <CardHeader className="flex items-center justify-between pb-2">
                 <TaskSectionHeader
                   icon={HiPaperClip}
-                  title={`Attachment(s) ${attachments.length > 0 ? `(${attachments.length})` : ""}`}
+                  title={`Tệp đính kèm ${attachments.length > 0 ? `(${attachments.length})` : ""}`}
                 />
                 <div>
                   <Input
@@ -480,7 +480,7 @@ export default function CreateTask({ projectSlug, workspace, projects }: CreateT
                     className="py-2 relative h-9 px-4 bg-[var(--primary)] cursor-pointer rounded-md hover:bg-[var(--primary)]/90 text-[var(--primary-foreground)] shadow-sm hover:shadow-md transition-all duration-200 font-medium"
                   >
                     <Plus className="w-4 h-4" />
-                    <span>Add Attachment</span>
+                    <span>Thêm tệp đính kèm</span>
                   </Label>
                 </div>
               </CardHeader>
@@ -499,7 +499,7 @@ export default function CreateTask({ projectSlug, workspace, projects }: CreateT
                                 onChange={toggleSelectAllAttachments}
                                 className="w-4 h-4 rounded border-[var(--border)] accent-[var(--primary)] cursor-pointer"
                               />
-                              Select All ({selectedIndices.size}/{attachments.length})
+                              Chọn tất cả ({selectedIndices.size}/{attachments.length})
                             </label>
                             <div className="flex items-center gap-2 ml-auto">
                               {selectedIndices.size > 0 && (
@@ -509,7 +509,7 @@ export default function CreateTask({ projectSlug, workspace, projects }: CreateT
                                 >
                                   <div className="flex items-center gap-1.5">
                                     <HiTrash className="w-3.5 h-3.5" />
-                                    Remove {selectedIndices.size} selected
+                                    Gỡ {selectedIndices.size} tệp đã chọn
                                   </div>
                                 </ActionButton>
                               )}
@@ -518,7 +518,7 @@ export default function CreateTask({ projectSlug, workspace, projects }: CreateT
                                 secondary
                                 className="h-8 px-3 text-xs cursor-pointer"
                               >
-                                Cancel
+                                Hủy
                               </ActionButton>
                             </div>
                           </div>
@@ -583,7 +583,7 @@ export default function CreateTask({ projectSlug, workspace, projects }: CreateT
                                 type="button"
                                 onClick={() => removeAttachment(index)}
                                 className="p-1.5 hover:bg-red-100 dark:hover:bg-red-900/20 rounded transition-colors cursor-pointer"
-                                title="Remove"
+                                title="Gỡ"
                               >
                                 <HiTrash className="w-4 h-4 text-[var(--destructive)]" />
                               </button>
@@ -594,7 +594,7 @@ export default function CreateTask({ projectSlug, workspace, projects }: CreateT
                     </div>
                   </div>
                 ) : (
-                  <div className="flex items-center justify-center pt-5">No Attachment(s) </div>
+                  <div className="flex items-center justify-center pt-5">Chưa có tệp đính kèm</div>
                 )}
               </CardContent>
             </Card>
@@ -635,7 +635,7 @@ export default function CreateTask({ projectSlug, workspace, projects }: CreateT
 
             <Card className="border-none bg-[var(--card)] gap-0 rounded-md">
               <CardHeader className="pb-0 flex flex-row items-center justify-between">
-                <TaskSectionHeader icon={HiDocumentText} title="Description" />
+                <TaskSectionHeader icon={HiDocumentText} title="Mô tả" />
                 {isGeneratingDescription && (
                   <div className="flex items-center gap-1.5 text-xs text-[var(--primary)] animate-pulse">
                     <HiSparkles className="w-3.5 h-3.5" />
@@ -656,7 +656,7 @@ export default function CreateTask({ projectSlug, workspace, projects }: CreateT
         <div className="lg:col-span-1 space-y-6">
           <Card className="border-none bg-[var(--card)] gap-0 rounded-md">
             <CardHeader>
-              <TaskSectionHeader icon={HiCog} title="Workspace & Project" />
+              <TaskSectionHeader icon={HiCog} title="Không gian làm việc & dự án" />
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
@@ -680,7 +680,7 @@ export default function CreateTask({ projectSlug, workspace, projects }: CreateT
 
               <div className="space-y-2">
                 <Label htmlFor="project">
-                  Project <span className="projects-form-label-required">*</span>
+                  Dự án <span className="projects-form-label-required">*</span>
                 </Label>
                 {projects.length === 1 && projects[0] ? (
                   <Input
@@ -713,12 +713,12 @@ export default function CreateTask({ projectSlug, workspace, projects }: CreateT
 
           <Card className="border-none bg-[var(--card)] gap-0 rounded-md">
             <CardHeader>
-              <TaskSectionHeader icon={HiCog} title="Task Configuration" />
+              <TaskSectionHeader icon={HiCog} title="Cấu hình công việc" />
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="status">
-                  Status
+                  Trạng thái
                   {/* <span className="projects-form-label-required">*</span> */}
                 </Label>
                 <Select
@@ -727,7 +727,7 @@ export default function CreateTask({ projectSlug, workspace, projects }: CreateT
                   disabled={availableStatuses.length === 0}
                 >
                   <SelectTrigger className="w-full border-[var(--border)] bg-[var(--background)]">
-                    <SelectValue placeholder="Select a status" />
+                    <SelectValue placeholder="Chọn trạng thái" />
                   </SelectTrigger>
                   <SelectContent className="border-[var(--border)] bg-[var(--popover)]">
                     {availableStatuses.length > 0 ? (
@@ -742,26 +742,26 @@ export default function CreateTask({ projectSlug, workspace, projects }: CreateT
                       ))
                     ) : (
                       <SelectItem value="__loading" disabled>
-                        Loading statuses...
+                        Đang tải trạng thái...
                       </SelectItem>
                     )}
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
-                  If left empty, the default project status will be automatically selected.
+                  Nếu để trống, trạng thái mặc định của dự án sẽ được tự động chọn.
                 </p>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="priority">
-                  Priority <span className="projects-form-label-required">*</span>
+                  Độ ưu tiên <span className="projects-form-label-required">*</span>
                 </Label>
                 <Select
                   value={formData.priority}
                   onValueChange={(value) => handleFormDataChange("priority", value)}
                 >
                   <SelectTrigger className="w-full border-[var(--border)] bg-[var(--background)]">
-                    <SelectValue placeholder="Select priority" />
+                    <SelectValue placeholder="Chọn độ ưu tiên" />
                   </SelectTrigger>
                   <SelectContent className="border-[var(--border)] bg-[var(--popover)]">
                     {TaskPriorities.map((priority) => (
@@ -779,22 +779,22 @@ export default function CreateTask({ projectSlug, workspace, projects }: CreateT
 
               <div className="space-y-2">
                 <Label htmlFor="type">
-                  Task Type <span className="projects-form-label-required">*</span>
+                  Loại công việc <span className="projects-form-label-required">*</span>
                 </Label>
                 <Select
                   value={formData.type || "TASK"}
                   onValueChange={(value) => handleFormDataChange("type", value)}
                 >
                   <SelectTrigger className="w-full border-[var(--border)] bg-[var(--background)]">
-                    <SelectValue placeholder="Select type" />
+                    <SelectValue placeholder="Chọn loại" />
                   </SelectTrigger>
                   <SelectContent className="border-[var(--border)] bg-[var(--popover)]">
                     {[
-                      { value: "TASK", name: "Task" },
+                      { value: "TASK", name: "Công việc" },
                       { value: "BUG", name: "Bug" },
                       { value: "EPIC", name: "Epic" },
                       { value: "STORY", name: "Story" },
-                      { value: "SUBTASK", name: "Subtask" },
+                      { value: "SUBTASK", name: "Công việc con" },
                     ].map((type) => (
                       <SelectItem
                         className="hover:bg-[var(--hover-bg)]"
@@ -811,7 +811,7 @@ export default function CreateTask({ projectSlug, workspace, projects }: CreateT
               {formData.type === "SUBTASK" && (
                 <div className="space-y-2">
                   <Label htmlFor="parentTask">
-                    Parent Task <span className="projects-form-label-required">*</span>
+                    Công việc cha <span className="projects-form-label-required">*</span>
                   </Label>
                   <Popover open={openParentTask} onOpenChange={setOpenParentTask}>
                     <PopoverTrigger asChild>
@@ -826,10 +826,10 @@ export default function CreateTask({ projectSlug, workspace, projects }: CreateT
                           {formData.parentTaskId
                             ? parentTasks.find((task) => task.id === formData.parentTaskId)?.title || formData.parentTaskId
                             : !selectedProject?.id
-                              ? "Select project first"
+                              ? "Chọn dự án trước"
                               : loadingParentTasks
-                                ? "Loading..."
-                                : "Select parent task"}
+                                ? "Đang tải..."
+                                : "Chọn công việc cha"}
                         </span>
                         <HiChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
@@ -837,12 +837,12 @@ export default function CreateTask({ projectSlug, workspace, projects }: CreateT
                     <PopoverContent className="w-[400px] p-0 border-[var(--border)] bg-[var(--popover)]" align="start">
                       <Command shouldFilter={false}>
                         <CommandInput
-                          placeholder="Search parent task..."
+                          placeholder="Tìm công việc cha..."
                           value={parentTaskSearch}
                           onValueChange={setParentTaskSearch}
                         />
                         <CommandList>
-                          <CommandEmpty>No parent task found.</CommandEmpty>
+                          <CommandEmpty>Không tìm thấy công việc cha.</CommandEmpty>
                           <CommandGroup>
                             {filteredParentTasks.map((task) => (
                               <CommandItem
@@ -873,7 +873,7 @@ export default function CreateTask({ projectSlug, workspace, projects }: CreateT
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="storyPoints">Story Points</Label>
+                <Label htmlFor="storyPoints">Điểm ước lượng</Label>
                 <Input
                   id="storyPoints"
                   name="storyPoints"
@@ -881,7 +881,7 @@ export default function CreateTask({ projectSlug, workspace, projects }: CreateT
                   min="0"
                   value={formData.storyPoints}
                   onChange={(e) => handleFormDataChange("storyPoints", e.target.value)}
-                  placeholder="e.g. 5"
+                  placeholder="VD: 5"
                   className="w-full border-[var(--border)] bg-[var(--background)]"
                 />
               </div>
@@ -897,10 +897,10 @@ export default function CreateTask({ projectSlug, workspace, projects }: CreateT
                     <SelectValue
                       placeholder={
                         !selectedProject?.id
-                          ? "Select project first"
+                          ? "Chọn dự án trước"
                           : loadingSprints
-                            ? "Loading..."
-                            : "Select sprint (optional)"
+                            ? "Đang tải..."
+                            : "Chọn sprint (không bắt buộc)"
                       }
                     />
                   </SelectTrigger>
@@ -912,7 +912,7 @@ export default function CreateTask({ projectSlug, workspace, projects }: CreateT
                         value={sprint.id}
                       >
                         <div className="flex items-center gap-2">
-                          {sprint.name} {sprint.isDefault === true && "(Default)"}
+                          {sprint.name} {sprint.isDefault === true && "(Mặc định)"}
                         </div>
                       </SelectItem>
                     ))}
@@ -921,7 +921,7 @@ export default function CreateTask({ projectSlug, workspace, projects }: CreateT
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="startDate">Start Date</Label>
+                <Label htmlFor="startDate">Ngày bắt đầu</Label>
                 <Input
                   id="startDate"
                   name="startDate"
@@ -947,7 +947,7 @@ export default function CreateTask({ projectSlug, workspace, projects }: CreateT
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="dueDate">Due Date</Label>
+                <Label htmlFor="dueDate">Hạn hoàn thành</Label>
                 <Input
                   id="dueDate"
                   name="dueDate"
@@ -978,7 +978,7 @@ export default function CreateTask({ projectSlug, workspace, projects }: CreateT
 
           <Card className="border-none bg-[var(--card)] gap-0 rounded-md">
             <CardHeader className="flex">
-              <TaskSectionHeader icon={HiUsers} title="Assignment" />
+              <TaskSectionHeader icon={HiUsers} title="Phân công" />
               {/* <span className="projects-form-label-required">*</span> */}
             </CardHeader>
             <CardContent className="space-y-4">
@@ -986,34 +986,34 @@ export default function CreateTask({ projectSlug, workspace, projects }: CreateT
                 <div className="text-center py-4">
                   <div className="animate-spin h-4 w-4 border-2 border-[var(--primary)] border-t-transparent rounded-full mx-auto mb-2" />
                   <p className="text-sm text-[var(--muted-foreground)]">
-                    Loading project members...
+                    Đang tải thành viên dự án...
                   </p>
                 </div>
               ) : members.length === 0 ? (
-                <p className="text-sm text-red-500 text-center">No project members found.</p>
+                <p className="text-sm text-red-500 text-center">Không tìm thấy thành viên dự án.</p>
               ) : (
                 <>
                   <MemberSelect
-                    label="Assignees"
+                    label="Người phụ trách"
                     selectedMembers={assignees}
                     onChange={setAssignees}
                     members={members}
                     projectId={selectedProject?.id}
                     disabled={!selectedProject?.id || members.length === 0}
                     placeholder={
-                      !selectedProject?.id ? "Select a project first" : "Select assignees..."
+                      !selectedProject?.id ? "Chọn dự án trước" : "Chọn người phụ trách..."
                     }
                   />
 
                   <MemberSelect
-                    label="Reporters"
+                    label="Người báo cáo"
                     selectedMembers={reporters}
                     onChange={setReporters}
                     members={members}
                     projectId={selectedProject?.id}
                     disabled={!selectedProject?.id || members.length === 0}
                     placeholder={
-                      !selectedProject?.id ? "Select a project first" : "Select reporters..."
+                      !selectedProject?.id ? "Chọn dự án trước" : "Chọn người báo cáo..."
                     }
                   />
                 </>
@@ -1031,12 +1031,12 @@ export default function CreateTask({ projectSlug, workspace, projects }: CreateT
             secondary
             className="h-8 px-3 cursor-pointer"
           >
-            Cancel
+            Hủy
           </ActionButton>
           <ActionButton
             id="create-task-submit"
             data-automation-id="create-task-submit"
-            aria-label="Create Task"
+            aria-label="Tạo công việc"
             onClick={handleSubmit}
             type="button"
             disabled={isSubmitting}
@@ -1045,10 +1045,10 @@ export default function CreateTask({ projectSlug, workspace, projects }: CreateT
             {isSubmitting ? (
               <div className="flex items-center">
                 <div className="animate-spin mr-2 h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
-                Creating task...
+                Đang tạo công việc...
               </div>
             ) : (
-              "Create Task"
+              "Tạo công việc"
             )}
           </ActionButton>
         </div>

@@ -88,7 +88,7 @@ export const BulkActionBar: React.FC<BulkActionBarProps> = ({
               {finalSelectedCount}
             </div>
             <span className="text-xs font-medium text-[var(--foreground)] pr-1">
-              {finalSelectedCount === 1 ? "Task" : "Tasks"} selected
+              {finalSelectedCount} công việc đã chọn
             </span>
 
             {(allSelected || allDelete) && (
@@ -101,7 +101,7 @@ export const BulkActionBar: React.FC<BulkActionBarProps> = ({
                 }}
                 className="text-[11px] text-primary hover:text-primary/80 font-bold bg-primary/5 hover:bg-primary/10 px-2 py-1 rounded-md transition-all uppercase tracking-tight"
               >
-                {!allDelete ? `Select all ${totalTask}` : "Clear Selection"}
+                {!allDelete ? `Chọn tất cả ${totalTask}` : "Bỏ chọn"}
               </button>
             )}
           </div>
@@ -117,7 +117,7 @@ export const BulkActionBar: React.FC<BulkActionBarProps> = ({
                     className="h-9 px-3 gap-2 hover:bg-primary/[0.08] text-[var(--foreground)] font-medium transition-all group"
                   >
                     <CheckCircle className="size-4 text-primary group-hover:scale-110 transition-transform" />
-                    <span className="text-xs">Update Status</span>
+                    <span className="text-xs">Cập nhật trạng thái</span>
                     <ChevronDown className="size-3.5 opacity-50" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -127,7 +127,7 @@ export const BulkActionBar: React.FC<BulkActionBarProps> = ({
                   className="w-[220px] p-1.5 bg-[var(--card)]/95 backdrop-blur-sm border-[var(--border)] rounded-xl shadow-2xl animate-in zoom-in-95 duration-200"
                 >
                   <div className="px-2 py-2 mb-1.5 text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-70 border-b border-[var(--border)]/50">
-                    Change Status to
+                    Chuyển trạng thái thành
                   </div>
                   <div className="max-h-[280px] overflow-y-auto pr-1 space-y-0.5 custom-scrollbar">
                     {availableStatuses.map((status) => (
@@ -156,7 +156,7 @@ export const BulkActionBar: React.FC<BulkActionBarProps> = ({
                   </div>
                   {availableStatuses.length === 0 && (
                     <div className="px-2 py-3 text-center text-xs text-muted-foreground italic bg-muted/30 rounded-lg">
-                      No statuses available
+                      Không có trạng thái khả dụng
                     </div>
                   )}
                 </DropdownMenuContent>
@@ -171,7 +171,7 @@ export const BulkActionBar: React.FC<BulkActionBarProps> = ({
                 className="h-9 px-3 gap-2 text-destructive hover:bg-destructive/10 font-medium transition-all group"
               >
                 <Trash2 className="size-4 group-hover:scale-110 transition-transform" />
-                <span className="text-xs">Delete</span>
+                <span className="text-xs">Xóa</span>
               </Button>
             )}
 
@@ -193,12 +193,10 @@ export const BulkActionBar: React.FC<BulkActionBarProps> = ({
         isOpen={showDeleteConfirmation}
         onClose={handleCancelDelete}
         onConfirm={handleConfirmDelete}
-        title="Permanently Delete Tasks?"
-        message={`This will permanently remove ${finalSelectedCount} selected ${
-          finalSelectedCount === 1 ? "task" : "tasks"
-        }. This action is destructive and cannot be reversed.`}
-        confirmText="Yes, Delete"
-        cancelText="Cancel"
+        title="Xóa vĩnh viễn công việc?"
+        message={`Thao tác này sẽ xóa vĩnh viễn ${finalSelectedCount} công việc đã chọn. Không thể hoàn tác hành động này.`}
+        confirmText="Xóa"
+        cancelText="Hủy"
         type="danger"
       />
 
@@ -207,12 +205,10 @@ export const BulkActionBar: React.FC<BulkActionBarProps> = ({
           isOpen={!!selectedStatusId}
           onClose={handleCancelStatus}
           onConfirm={handleConfirmStatus}
-          title="Update Task Status"
-          message={`Confirm switching ${finalSelectedCount} ${
-            finalSelectedCount === 1 ? "task" : "tasks"
-          } to the "${selectedStatus?.name}" status.`}
-          confirmText={`Update to ${selectedStatus?.name}`}
-          cancelText="Cancel"
+          title="Cập nhật trạng thái công việc"
+          message={`Xác nhận chuyển ${finalSelectedCount} công việc sang trạng thái "${selectedStatus?.name}".`}
+          confirmText={`Cập nhật thành ${selectedStatus?.name}`}
+          cancelText="Hủy"
           type="info"
         />
       )}

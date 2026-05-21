@@ -171,7 +171,7 @@ const TaskAttachments: React.FC<TaskAttachmentsProps> = ({
   return (
     <div className="task-attachments-container">
       <div className="space-y-4">
-        <SectionHeader icon={HiPaperClip} title="Attachments" />
+        <SectionHeader icon={HiPaperClip} title="Tệp đính kèm" />
 
         {!loadingAttachments && (
           <>
@@ -187,7 +187,7 @@ const TaskAttachments: React.FC<TaskAttachmentsProps> = ({
                         onChange={toggleSelectAll}
                         className="w-4 h-4 rounded border-[var(--border)] accent-[var(--primary)] cursor-pointer"
                       />
-                      Select All ({selectedIds.size}/{deletableAttachments.length})
+                      Chọn tất cả ({selectedIds.size}/{deletableAttachments.length})
                     </label>
                     <div className="flex items-center gap-2 ml-auto">
                       {selectedIds.size > 0 && (
@@ -199,12 +199,12 @@ const TaskAttachments: React.FC<TaskAttachmentsProps> = ({
                           {isDeletingMultiple ? (
                             <div className="flex items-center gap-2">
                               <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                              Deleting...
+                              Đang xóa...
                             </div>
                           ) : (
                             <div className="flex items-center gap-1.5">
                               <HiTrash className="w-3.5 h-3.5" />
-                              Delete {selectedIds.size} selected
+                              Xóa {selectedIds.size} tệp đã chọn
                             </div>
                           )}
                         </ActionButton>
@@ -214,7 +214,7 @@ const TaskAttachments: React.FC<TaskAttachmentsProps> = ({
                         secondary
                         className="h-8 px-3 text-xs cursor-pointer"
                       >
-                        Cancel
+                        Hủy
                       </ActionButton>
                     </div>
                   </div>
@@ -225,7 +225,7 @@ const TaskAttachments: React.FC<TaskAttachmentsProps> = ({
                       secondary
                       className="h-8 px-3 text-xs cursor-pointer"
                     >
-                      Select
+                      Chọn
                     </ActionButton>
                   </div>
                 )}
@@ -283,7 +283,7 @@ const TaskAttachments: React.FC<TaskAttachmentsProps> = ({
                           className="flex items-center gap-2 flex-shrink-0"
                           onClick={(e) => e.stopPropagation()}
                         >
-                          <Tooltip content="View" position="top" color="primary">
+                          <Tooltip content="Xem" position="top" color="primary">
                             <ActionButton
                               variant="outline"
                               onClick={() => previewRefs.current[attachment.id]?.openPreview()}
@@ -297,7 +297,7 @@ const TaskAttachments: React.FC<TaskAttachmentsProps> = ({
                               )}
                             </ActionButton>
                           </Tooltip>
-                          <Tooltip content="Download" position="top" color="primary">
+                          <Tooltip content="Tải xuống" position="top" color="primary">
                             <ActionButton
                               variant="outline"
                               onClick={() => onDownloadAttachment(attachment.id, attachment.fileName)}
@@ -308,7 +308,7 @@ const TaskAttachments: React.FC<TaskAttachmentsProps> = ({
                             </ActionButton>
                           </Tooltip>
                           {attachment.createdBy === currentUser?.id && (
-                            <Tooltip content="Delete" position="top" color="primary">
+                            <Tooltip content="Xóa" position="top" color="primary">
                               <ActionButton
                                 onClick={() => onDeleteAttachment(attachment.id)}
                                 secondary
@@ -366,10 +366,10 @@ const TaskAttachments: React.FC<TaskAttachmentsProps> = ({
                     {isUploading ? (
                       <div className="flex items-center gap-2">
                         <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                        Uploading...
+                        Đang tải lên...
                       </div>
                     ) : (
-                      <div className="text-center">Add Attachment</div>
+                      <div className="text-center">Thêm tệp đính kèm</div>
                     )}
                   </ActionButton>
                 </div>

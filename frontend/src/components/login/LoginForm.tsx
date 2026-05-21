@@ -60,16 +60,16 @@ export function LoginForm() {
             const redirectPath = await checkOrganizationAndRedirect();
             window.location.href = redirectPath;
           } else {
-            setError("Failed to process SSO login");
+            setError("Không thể xử lý đăng nhập SSO");
           }
         })
-        .catch(() => setError("SSO authentication failed. Please try again."));
+        .catch(() => setError("Xác thực SSO thất bại. Vui lòng thử lại."));
     }
 
     const ssoError = params.get("error");
     if (ssoError === "sso_failed" || ssoError === "sso_invalid_state") {
       window.history.replaceState({}, document.title, "/login");
-      setError(params.get("message") || "SSO authentication failed. Please try again.");
+      setError(params.get("message") || "Xác thực SSO thất bại. Vui lòng thử lại.");
     }
   }, []);
 
@@ -99,11 +99,11 @@ export function LoginForm() {
       const status = err?.response?.status;
 
       if (isNetworkError) {
-        setError("Cannot connect to server. Please check your network or try again later.");
+        setError("Không thể kết nối máy chủ. Vui lòng kiểm tra mạng hoặc thử lại sau.");
       } else if (status === 401) {
-        setError("Invalid email or password. Please try again.");
+        setError("Email hoặc mật khẩu không đúng. Vui lòng thử lại.");
       } else {
-        setError("Login failed. Please try again.");
+        setError("Đăng nhập thất bại. Vui lòng thử lại.");
       }
 
       console.error(err);
@@ -141,14 +141,14 @@ export function LoginForm() {
           <h1 className="login-form-title">
             {/* Show as flex row on max-md, block on md+ */}
             <div className="md:hidden">
-              Welcome back to
+              Chào mừng trở lại
               <span className="flex items-center justify-center ">mktask </span>
             </div>
 
             {/* Block for md+ */}
-            <span className="hidden md:block">Welcome back</span>
+            <span className="hidden md:block">Chào mừng trở lại</span>
           </h1>
-          <p className="login-form-subtitle">Login to continue your productive journey</p>
+          <p className="login-form-subtitle">Đăng nhập để tiếp tục công việc của bạn</p>
         </div>
       </div>
 
@@ -160,7 +160,7 @@ export function LoginForm() {
         >
           <Alert variant="destructive" className="login-error-alert">
             <AlertDescription className="font-medium">
-              <span className="login-error-title">Authentication Failed</span>
+              <span className="login-error-title">Xác thực thất bại</span>
               <span className="login-error-message">{error}</span>
             </AlertDescription>
           </Alert>
@@ -178,7 +178,7 @@ export function LoginForm() {
         >
           <Label htmlFor="email" className="login-field-label">
             <Mail className="login-field-icon" />
-            <span>Email Address</span>
+            <span>Địa chỉ email</span>
           </Label>
           <Input
             id="email"
@@ -188,7 +188,7 @@ export function LoginForm() {
             required
             value={formData.email}
             onChange={handleChange}
-            placeholder="Enter your email address"
+            placeholder="Nhập địa chỉ email"
             className="login-input"
           />
         </motion.div>
@@ -202,7 +202,7 @@ export function LoginForm() {
         >
           <Label htmlFor="password" className="login-field-label">
             <Lock className="login-field-icon" />
-            <span>Password</span>
+            <span>Mật khẩu</span>
           </Label>
           <div className="login-password-container">
             <Input
@@ -213,7 +213,7 @@ export function LoginForm() {
               required
               value={formData.password}
               onChange={handleChange}
-              placeholder="Enter your password"
+              placeholder="Nhập mật khẩu"
               className="login-password-input"
             />
             <Button
@@ -222,7 +222,7 @@ export function LoginForm() {
               size="sm"
               onClick={() => setShowPassword(!showPassword)}
               className="login-password-toggle"
-              aria-label={showPassword ? "Hide password" : "Show password"}
+              aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
             >
               {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </Button>
@@ -250,11 +250,11 @@ export function LoginForm() {
               className="login-remember-me-checkbox"
             />
             <Label htmlFor="rememberMe" className="login-remember-me-label">
-              Remember me
+              Ghi nhớ đăng nhập
             </Label>
           </div>
           <Link href="/forgot-password" className="login-forgot-password-link">
-            Forgot password?
+            Quên mật khẩu?
           </Link>
         </motion.div>
 
@@ -268,11 +268,11 @@ export function LoginForm() {
             {isLoading ? (
               <>
                 <Loader2 className="login-loading-spinner" />
-                Logging you in...
+                Đang đăng nhập...
               </>
             ) : (
               <>
-                Log In
+                Đăng nhập
                 <ArrowRight className="login-button-arrow" />
               </>
             )}
@@ -290,7 +290,7 @@ export function LoginForm() {
             className="login-divider-container"
           >
             <div className="login-divider-text-container">
-              <span className="login-divider-text">Or continue with</span>
+              <span className="login-divider-text">Hoặc tiếp tục với</span>
             </div>
           </motion.div>
           <motion.div
@@ -310,9 +310,9 @@ export function LoginForm() {
               }}
             >
               <Shield className="w-4 h-4 mr-2" />
-              {ssoConfig.providerName || "Sign in with SSO"}
+              {ssoConfig.providerName || "Đăng nhập bằng SSO"}
               {!ssoConfig.configured && (
-                <span className="text-xs ml-1 opacity-60">(not configured)</span>
+                <span className="text-xs ml-1 opacity-60">(chưa cấu hình)</span>
               )}
             </Button>
           </motion.div>
@@ -343,7 +343,7 @@ export function LoginForm() {
           >
             <Link href="/register">
               <Button variant="outline" className="login-signup-button">
-                Create New Tài khoản
+                Tạo tài khoản mới
                 <ArrowRight className="login-button-arrow" />
               </Button>
             </Link>
@@ -359,13 +359,13 @@ export function LoginForm() {
         className="login-footer"
       >
         <p className="login-footer-text">
-          By signing in, you agree to our{" "}
+          Khi đăng nhập, bạn đồng ý với{" "}
           <Link href="/terms-of-service" className="login-footer-link">
-            Terms of Service
+            Điều khoản dịch vụ
           </Link>{" "}
-          and{" "}
+          và{" "}
           <Link href="/privacy-policy" className="login-footer-link">
-            Privacy Policy
+            Chính sách quyền riêng tư
           </Link>
         </p>
       </motion.div>

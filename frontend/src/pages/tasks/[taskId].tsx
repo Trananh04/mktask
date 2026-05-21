@@ -21,7 +21,7 @@ function TaskDetailContent() {
   const fetchData = async () => {
     try {
       const taskData = await getTaskBySlug(taskId as string, isAuthenticated());
-      if (!taskData) throw new Error("Task not found");
+      if (!taskData) throw new Error("Không tìm thấy công việc");
 
       const enhancedTask = {
         ...taskData,
@@ -37,7 +37,7 @@ function TaskDetailContent() {
       setTask(enhancedTask);
     } catch (error) {
       console.error("Error fetching data:", error);
-      setError(error?.message ? error.message : "Failed to load task data");
+      setError(error?.message ? error.message : "Không thể tải dữ liệu công việc");
     } finally {
       setIsLoading(false);
     }
@@ -46,7 +46,7 @@ function TaskDetailContent() {
   useEffect(() => {
     if (!taskId) {
       if (router.isReady) {
-         setError("Invalid URL parameters");
+         setError("Tham số URL không hợp lệ");
          setIsLoading(false);
       }
       return;

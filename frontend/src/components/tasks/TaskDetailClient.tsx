@@ -807,8 +807,8 @@ export default function TaskDetailClient({
 
       setConfirmModal({
         isOpen: true,
-        title: `Delete ${attachmentIds.length} Attachments`,
-        message: `Are you sure you want to delete ${attachmentIds.length} selected attachments? This action cannot be undone.`,
+        title: `Xóa ${attachmentIds.length} tệp đính kèm`,
+        message: `Bạn có chắc muốn xóa ${attachmentIds.length} tệp đã chọn? Không thể hoàn tác hành động này.`,
         type: "danger",
         onConfirm: async () => {
           try {
@@ -817,7 +817,7 @@ export default function TaskDetailClient({
             );
             const updatedAttachments = await getTaskAttachments(taskId, isAuth);
             setAttachments(updatedAttachments || []);
-            toast.success(`Successfully deleted ${attachmentIds.length} attachments`);
+            toast.success(`Đã xóa ${attachmentIds.length} tệp đính kèm`);
           } catch (error) {
             toast.error(t("detail.deleteAttachmentError"));
           }

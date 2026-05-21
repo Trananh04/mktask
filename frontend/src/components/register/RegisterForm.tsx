@@ -90,19 +90,19 @@ export function RegisterForm() {
     setError("");
 
     if (!isPasswordValid) {
-      setError("Password must meet all requirements");
+      setError("Mật khẩu chưa đáp ứng yêu cầu");
       setIsLoading(false);
       return;
     }
 
     if (!passwordsMatch) {
-      setError("Passwords do not match");
+      setError("Mật khẩu xác nhận không khớp");
       setIsLoading(false);
       return;
     }
 
     if (!formData.acceptTerms) {
-      setError("You must accept the terms and conditions");
+      setError("Bạn cần đồng ý với điều khoản sử dụng");
       setIsLoading(false);
       return;
     }
@@ -124,10 +124,10 @@ export function RegisterForm() {
         const redirectPath = await checkOrganizationAndRedirect();
         router.push(redirectPath);
       } else {
-        router.push("/login?message=Registration successful! Please log in.");
+        router.push("/login?message=Đăng ký thành công. Vui lòng đăng nhập.");
       }
     } catch (err: any) {
-      const message = err.message || "An error occurred during registration. Please try again.";
+      const message = err.message || "Đã xảy ra lỗi khi đăng ký. Vui lòng thử lại.";
       setError(message);
 
       // If registration was disabled and the invitation token didn't help,
@@ -164,7 +164,7 @@ export function RegisterForm() {
           </div>
         </div>
 
-        <h1 className="signup-form-title">Create Tài khoản</h1>
+        <h1 className="signup-form-title">Tạo tài khoản</h1>
         <p className="signup-form-subtitle">Tham gia cùng các đội nhóm đang sử dụng mktask</p>
       </div>
 
@@ -197,7 +197,7 @@ export function RegisterForm() {
           <div className="signup-field-container">
             <Label htmlFor="firstName" className="signup-field-label">
               <User className="signup-field-icon" />
-              <span>First Name</span>
+              <span>Tên</span>
             </Label>
             <Input
               id="firstName"
@@ -207,13 +207,13 @@ export function RegisterForm() {
               required
               value={formData.firstName}
               onChange={handleChange}
-              placeholder="John"
+              placeholder="Anh"
               className="signup-input"
             />
           </div>
           <div className="signup-field-container">
             <Label htmlFor="lastName" className="signup-field-label-simple">
-              Last Name
+              Họ
             </Label>
             <Input
               id="lastName"
@@ -223,7 +223,7 @@ export function RegisterForm() {
               required
               value={formData.lastName}
               onChange={handleChange}
-              placeholder="Doe"
+              placeholder="Trần"
               className="signup-input"
             />
           </div>
@@ -238,7 +238,7 @@ export function RegisterForm() {
         >
           <Label htmlFor="email" className="signup-field-label">
             <Mail className="signup-field-icon" />
-            <span>Email Address</span>
+            <span>Địa chỉ email</span>
           </Label>
           <Input
             id="email"
@@ -248,7 +248,7 @@ export function RegisterForm() {
             required
             value={formData.email}
             onChange={handleChange}
-            placeholder="john.doe@company.com"
+            placeholder="ten@congty.com"
             className="signup-input"
           />
         </motion.div>
@@ -262,7 +262,7 @@ export function RegisterForm() {
         >
           <Label htmlFor="password" className="signup-field-label">
             <Lock className="signup-field-icon" />
-            <span>Password</span>
+            <span>Mật khẩu</span>
           </Label>
           <div className="signup-password-container">
             <Input
@@ -273,7 +273,7 @@ export function RegisterForm() {
               required
               value={formData.password}
               onChange={handleChange}
-              placeholder="Create a strong password"
+              placeholder="Tạo mật khẩu mạnh"
               className={`signup-password-input ${
                 formData.password && !isPasswordValid ? "border-red-500 ring-1 ring-red-500" : ""
               }`}
@@ -284,7 +284,7 @@ export function RegisterForm() {
               size="sm"
               onClick={() => setShowPassword(!showPassword)}
               className="signup-password-toggle"
-              aria-label={showPassword ? "Hide password" : "Show password"}
+              aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
             >
               {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </Button>
@@ -372,7 +372,7 @@ export function RegisterForm() {
         >
           <Label htmlFor="confirmPassword" className="signup-field-label">
             <Lock className="signup-field-icon" />
-            <span>Confirm Password</span>
+            <span>Xác nhận mật khẩu</span>
           </Label>
           <div className="signup-password-container">
             <Input
@@ -383,7 +383,7 @@ export function RegisterForm() {
               required
               value={formData.confirmPassword}
               onChange={handleChange}
-              placeholder="Confirm your password"
+              placeholder="Nhập lại mật khẩu"
               className={`signup-password-input ${
                 formData.confirmPassword && !passwordsMatch
                   ? "border-red-500 ring-1 ring-red-500"
@@ -396,7 +396,7 @@ export function RegisterForm() {
               size="sm"
               onClick={() => setShowConfirmPassword(!showConfirmPassword)}
               className="signup-password-toggle"
-              aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+              aria-label={showConfirmPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
             >
               {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </Button>
@@ -416,7 +416,7 @@ export function RegisterForm() {
                     : "signup-password-match-icon-invalid"
                 }
               />
-              <span>{passwordsMatch ? "Passwords match" : "Passwords do not match"}</span>
+              <span>{passwordsMatch ? "Mật khẩu khớp" : "Mật khẩu không khớp"}</span>
             </motion.div>
           )}
         </motion.div>
@@ -442,13 +442,13 @@ export function RegisterForm() {
             className="signup-terms-checkbox"
           />
           <Label htmlFor="acceptTerms" className="signup-terms-label">
-            I agree to the{" "}
+            Tôi đồng ý với{" "}
             <Link href="/terms-of-service" className="signup-terms-link">
-              Terms of Service
+              Điều khoản dịch vụ
             </Link>{" "}
-            and{" "}
+            và{" "}
             <Link href="/privacy-policy" className="signup-terms-link">
-              Privacy Policy
+              Chính sách quyền riêng tư
             </Link>
           </Label>
         </motion.div>
@@ -473,11 +473,11 @@ export function RegisterForm() {
             {isLoading ? (
               <>
                 <Loader2 className="signup-loading-spinner" />
-                Creating account...
+                Đang tạo tài khoản...
               </>
             ) : (
               <>
-                Create Tài khoản
+                Tạo tài khoản
                 <ArrowRight className="signup-button-arrow" />
               </>
             )}
@@ -497,7 +497,7 @@ export function RegisterForm() {
             <div className="signup-divider-border" />
           </div>
           <div className="signup-divider-text-container">
-            <span className="signup-divider-text">Already have an account?</span>
+            <span className="signup-divider-text">Bạn đã có tài khoản?</span>
           </div>
         </div>
       </motion.div>
@@ -510,7 +510,7 @@ export function RegisterForm() {
       >
         <Link href="/login">
           <Button variant="outline" className="signup-signin-button">
-            Log In to Existing Tài khoản
+            Đăng nhập vào tài khoản hiện có
             <ArrowRight className="signup-button-arrow" />
           </Button>
         </Link>
@@ -524,13 +524,13 @@ export function RegisterForm() {
         className="signup-footer"
       >
         <p className="signup-footer-text">
-          By creating an account, you agree to our{" "}
+          Khi tạo tài khoản, bạn đồng ý với{" "}
           <Link href="/terms-of-service" className="signup-footer-link">
-            Terms of Service
+            Điều khoản dịch vụ
           </Link>{" "}
-          and{" "}
+          và{" "}
           <Link href="/privacy-policy" className="signup-footer-link">
-            Privacy Policy
+            Chính sách quyền riêng tư
           </Link>
         </p>
       </motion.div>

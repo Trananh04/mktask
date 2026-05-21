@@ -48,10 +48,10 @@ const TaskActivities: React.FC<TaskActivitiesProps> = ({ taskId, setLoading }) =
         setTotalPages(response.pagination.totalPages);
         setPage(pageNum);
       } else {
-        setError("Failed to fetch activities");
+        setError("Không thể tải hoạt động");
       }
     } catch (err) {
-      setError("An error occurred while fetching activities");
+      setError("Đã xảy ra lỗi khi tải hoạt động");
       console.error("Error fetching activities:", err);
     } finally {
       setLoadingActivities(false);
@@ -74,37 +74,37 @@ const TaskActivities: React.FC<TaskActivitiesProps> = ({ taskId, setLoading }) =
 
     switch (activity.type) {
       case "TASK_CREATED":
-        return `${name} added the task`;
+        return `${name} đã tạo công việc`;
 
       case "TASK_UPDATED":
-        return `${name} updated the task`;
+        return `${name} đã cập nhật công việc`;
 
       case "TASK_COMMENTED":
-        return `${name} commented`;
+        return `${name} đã bình luận`;
 
       case "TASK_DELETED":
-        return `${name} deleted the task`;
+        return `${name} đã xóa công việc`;
 
       case "TASK_ASSIGNED":
-        return `${name} changed assignee`;
+        return `${name} đã thay đổi người phụ trách`;
 
       case "TASK_LABEL_ADDED":
-        return `${name} label added`;
+        return `${name} đã thêm nhãn`;
 
       case "TASK_LABEL_REMOVED":
-        return `${name} label removed`;
+        return `${name} đã gỡ nhãn`;
 
       case "TASK_STATUS_CHANGED":
-        return `${name} changed status`;
+        return `${name} đã thay đổi trạng thái`;
 
       case "TASK_ATTACHMENT_ADDED":
-        return `${name} added task attachment`;
+        return `${name} đã thêm tệp đính kèm`;
 
       case "TASK_ATTACHMENT_REMOVED":
-        return `${name} removed task attachment`;
+        return `${name} đã gỡ tệp đính kèm`;
 
       default:
-        return `${name} updated the task`;
+        return `${name} đã cập nhật công việc`;
     }
   };
 
@@ -118,15 +118,15 @@ const TaskActivities: React.FC<TaskActivitiesProps> = ({ taskId, setLoading }) =
     const diffInMonths = Math.floor(diffInDays / 30);
 
     if (diffInMinutes < 1) {
-      return "Just now";
+      return "Vừa xong";
     } else if (diffInMinutes < 60) {
-      return `${diffInMinutes} ${diffInMinutes === 1 ? "minute" : "minutes"} ago`;
+      return `${diffInMinutes} phút trước`;
     } else if (diffInHours < 24) {
-      return `${diffInHours} ${diffInHours === 1 ? "hour" : "hours"} ago`;
+      return `${diffInHours} giờ trước`;
     } else if (diffInDays < 30) {
-      return `${diffInDays} ${diffInDays === 1 ? "day" : "days"} ago`;
+      return `${diffInDays} ngày trước`;
     } else if (diffInMonths < 12) {
-      return `${diffInMonths} ${diffInMonths === 1 ? "month" : "months"} ago`;
+      return `${diffInMonths} tháng trước`;
     } else {
       return formatDateTimeForDisplay(date);
     }
@@ -144,7 +144,7 @@ const TaskActivities: React.FC<TaskActivitiesProps> = ({ taskId, setLoading }) =
           <div className="p-1 rounded-md">
             <HiOutlineBolt className="w-4 h-4 text-[var(--primary)]" />
           </div>
-          <h3 className="text-sm font-semibold text-[var(--foreground)]">Activities</h3>
+          <h3 className="text-sm font-semibold text-[var(--foreground)]">Hoạt động</h3>
         </div>
         <div className="space-y-3">
           {[...Array(3)].map((_, i) => (
@@ -196,7 +196,7 @@ const TaskActivities: React.FC<TaskActivitiesProps> = ({ taskId, setLoading }) =
           <div className="flex items-center gap-2 text-[var(--muted-foreground)] text-sm">
             <HiOutlineBolt className="size-4" />
             <h4 className="font-medium text-[var(--muted-foreground)] text-sm tracking-wide">
-              No activities yet
+              Chưa có hoạt động
             </h4>
           </div>
         </div>
@@ -243,7 +243,7 @@ const TaskActivities: React.FC<TaskActivitiesProps> = ({ taskId, setLoading }) =
                   className="text-xs text-[var(--primary)] font-medium py-2 px-4 rounded-md hover:bg-[var(--accent)] focus:outline-none cursor-pointer transition-colors"
                   onClick={toggleShowAll}
                 >
-                  View more ({activities.length - INITIAL_DISPLAY_COUNT} more)
+                  Xem thêm ({activities.length - INITIAL_DISPLAY_COUNT})
                 </button>
               )}
 
@@ -252,7 +252,7 @@ const TaskActivities: React.FC<TaskActivitiesProps> = ({ taskId, setLoading }) =
                   className="text-xs text-[var(--primary)] font-medium py-2 px-4 rounded-md hover:bg-[var(--accent)] focus:outline-none cursor-pointer transition-colors"
                   onClick={toggleShowAll}
                 >
-                  Show less
+                  Thu gọn
                 </button>
               )}
 
@@ -262,7 +262,7 @@ const TaskActivities: React.FC<TaskActivitiesProps> = ({ taskId, setLoading }) =
                   onClick={loadMore}
                   disabled={loadingActivities}
                 >
-                  {loadingActivities ? "Loading..." : "Load more activities"}
+                  {loadingActivities ? "Đang tải..." : "Tải thêm hoạt động"}
                 </button>
               )}
             </div>

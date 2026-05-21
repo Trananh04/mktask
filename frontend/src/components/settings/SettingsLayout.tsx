@@ -37,7 +37,7 @@ export default function SettingsLayout({
             if (orgId) {
               setCurrentOrganization({
                 id: orgId,
-                name: "Selected Tổ chức",
+                name: "Tổ chức đã chọn",
                 plan: "Miễn phí",
               });
             }
@@ -45,7 +45,7 @@ export default function SettingsLayout({
         } else if (orgId) {
           setCurrentOrganization({
             id: orgId,
-            name: "Selected Tổ chức",
+            name: "Tổ chức đã chọn",
             plan: "Miễn phí",
           });
         }
@@ -77,7 +77,7 @@ export default function SettingsLayout({
       id: "account",
       title: "Tài khoản",
       icon: "⚙️",
-      description: "Tài khoản settings and security",
+      description: "Cài đặt và bảo mật tài khoản",
     },
     {
       id: "notifications",
@@ -101,7 +101,7 @@ export default function SettingsLayout({
       id: "organization",
       title: "Tổ chức",
       icon: "🏢",
-      description: "Tổ chức settings and members",
+      description: "Cài đặt và thành viên tổ chức",
     },
     {
       id: "projects",
@@ -119,7 +119,7 @@ export default function SettingsLayout({
       id: "security",
       title: "Bảo mật",
       icon: "🔒",
-      description: "Bảo mật and privacy settings",
+      description: "Cài đặt bảo mật và quyền riêng tư",
     },
     {
       id: "billing",
@@ -131,7 +131,7 @@ export default function SettingsLayout({
       id: "advanced",
       title: "Nâng cao",
       icon: "⚡",
-      description: "Nâng cao configuration options",
+      description: "Tùy chọn cấu hình nâng cao",
     },
   ];
 
@@ -174,7 +174,7 @@ export default function SettingsLayout({
             {currentOrganization && (
               <div className="settings-org-context settings-org-context-dark">
                 <h3 className="settings-org-context-title settings-org-context-title-dark">
-                  Current Tổ chức
+                  Tổ chức hiện tại
                 </h3>
                 <div className="settings-org-context-content">
                   <div className="settings-org-context-avatar settings-org-context-avatar-dark">
@@ -187,7 +187,7 @@ export default function SettingsLayout({
                       {currentOrganization.name}
                     </div>
                     <div className="settings-org-context-plan settings-org-context-plan-dark">
-                      {currentOrganization.plan} Plan
+                      Gói {currentOrganization.plan}
                     </div>
                   </div>
                 </div>

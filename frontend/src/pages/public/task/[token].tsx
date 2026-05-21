@@ -27,9 +27,9 @@ export default function PublicTaskPage() {
       setTask(data);
     } catch (err: any) {
       if (err.response?.status === 404) {
-        setError(err.response?.data?.message || 'Link expired or not found');
+        setError(err.response?.data?.message || 'Liên kết đã hết hạn hoặc không tồn tại');
       } else {
-        setError('Failed to load task');
+        setError('Không thể tải công việc');
       }
     } finally {
       setLoading(false);
@@ -59,16 +59,16 @@ export default function PublicTaskPage() {
           </div>
 
           <h1 className="text-2xl font-bold text-[var(--foreground)]">
-            {error?.toLowerCase().includes('expire') ? 'Link Expired' : 'Access Denied'}
+            {error?.toLowerCase().includes('hết hạn') || error?.toLowerCase().includes('expire') ? 'Liên kết đã hết hạn' : 'Không có quyền truy cập'}
           </h1>
 
           <p className="text-[var(--muted-foreground)]">
-            {error || 'This shared link is invalid or has been revoked.'}
+            {error || 'Liên kết chia sẻ không hợp lệ hoặc đã bị thu hồi.'}
           </p>
 
           <Button asChild className="w-full">
             <Link href="/">
-              Go to Homepage
+              Về trang chủ
             </Link>
           </Button>
         </div>

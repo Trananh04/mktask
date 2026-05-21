@@ -78,7 +78,7 @@ export default function AuthRedirect({
       <div className="flex items-center justify-center min-h-screen bg-[var(--background)]">
         <div className="flex flex-col items-center space-y-4">
           <div className="animate-spin rounded-full h-8 w-8 border-2 border-[var(--border)] border-t-[var(--primary)]"></div>
-          <p className="text-sm text-[var(--muted-foreground)]">Checking authentication...</p>
+          <p className="text-sm text-[var(--muted-foreground)]">Đang kiểm tra đăng nhập...</p>
         </div>
       </div>
     );
@@ -88,7 +88,7 @@ export default function AuthRedirect({
       <div className="flex items-center justify-center min-h-screen bg-[var(--background)]">
         <div className="flex flex-col items-center space-y-4">
           <div className="animate-spin rounded-full h-8 w-8 border-2 border-[var(--border)] border-t-[var(--primary)]"></div>
-          <p className="text-sm text-[var(--muted-foreground)]">Redirecting...</p>
+          <p className="text-sm text-[var(--muted-foreground)]">Đang chuyển hướng...</p>
         </div>
       </div>
     );

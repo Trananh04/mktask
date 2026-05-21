@@ -51,7 +51,7 @@ function ResetPasswordForm() {
     const checkToken = async () => {
       if (!token || typeof token !== "string") {
         setIsValidToken(false);
-        setError("Invalid or missing reset token");
+        setError("Liên kết đặt lại mật khẩu không hợp lệ hoặc bị thiếu");
         return;
       }
 
@@ -61,11 +61,11 @@ function ResetPasswordForm() {
           setIsValidToken(response?.valid);
         } else {
           setIsValidToken(false);
-          setError(response.message || "Invalid or expired reset token");
+          setError(response.message || "Liên kết đặt lại mật khẩu không hợp lệ hoặc đã hết hạn");
         }
       } catch (err: any) {
         setIsValidToken(false);
-        setError(err.message || "Failed to validate reset token");
+        setError(err.message || "Không thể kiểm tra liên kết đặt lại mật khẩu");
       }
     };
 
@@ -99,13 +99,13 @@ function ResetPasswordForm() {
     // }
 
     if (!passwordsMatch) {
-      setError("Passwords do not match");
+      setError("Mật khẩu xác nhận không khớp");
       setIsLoading(false);
       return;
     }
 
     if (!token || typeof token !== "string") {
-      setError("Invalid reset token");
+      setError("Liên kết đặt lại mật khẩu không hợp lệ");
       setIsLoading(false);
       return;
     }
@@ -122,10 +122,10 @@ function ResetPasswordForm() {
       if (response.success) {
         setIsSuccess(true);
       } else {
-        setError(response.message || "Failed to reset password. Please try again.");
+        setError(response.message || "Không thể đặt lại mật khẩu. Vui lòng thử lại.");
       }
     } catch (err: any) {
-      setError(err.message || "Failed to reset password. Please try again.");
+      setError(err.message || "Không thể đặt lại mật khẩu. Vui lòng thử lại.");
     } finally {
       setIsLoading(false);
     }
@@ -141,9 +141,9 @@ function ResetPasswordForm() {
         {/* Invalid Token Header */}
         <div className="login-form-header">
           <div className="login-form-header-content">
-            <h1 className="login-form-title">Invalid Reset Link</h1>
+            <h1 className="login-form-title">Liên kết đặt lại không hợp lệ</h1>
             <p className="login-form-subtitle">
-              This password reset link is invalid or has expired
+              Liên kết đặt lại mật khẩu không hợp lệ hoặc đã hết hạn
             </p>
           </div>
         </div>
@@ -156,10 +156,9 @@ function ResetPasswordForm() {
           <Alert variant="destructive" className="login-error-alert">
             <AlertCircle className="login-field-icon" />
             <AlertDescription className="font-medium">
-              <span className="login-error-title">Reset Link Expired</span>
+              <span className="login-error-title">Liên kết đã hết hạn</span>
               <span className="login-error-message">
-                This link may have expired or been used already. Password reset links are only valid
-                for 24 hours.
+                Liên kết này có thể đã hết hạn hoặc đã được sử dụng. Liên kết đặt lại mật khẩu chỉ có hiệu lực trong 24 giờ.
               </span>
             </AlertDescription>
           </Alert>
@@ -173,7 +172,7 @@ function ResetPasswordForm() {
         >
           <Link href="/forgot-password">
             <Button className="login-submit-button">
-              Request New Reset Link
+              Yêu cầu liên kết mới
               <ArrowRight className="login-button-arrow" />
             </Button>
           </Link>
@@ -186,7 +185,7 @@ function ResetPasswordForm() {
         >
           <Link href="/login">
             <Button variant="outline" className="login-signup-button">
-              Back to Sign In
+              Quay lại đăng nhập
             </Button>
           </Link>
         </motion.div>
@@ -205,8 +204,8 @@ function ResetPasswordForm() {
         {/* Success Header */}
         <div className="login-form-header">
           <div className="login-form-header-content">
-            <h1 className="login-form-title">Password Reset Successful</h1>
-            <p className="login-form-subtitle">Your password has been successfully updated</p>
+            <h1 className="login-form-title">Đặt lại mật khẩu thành công</h1>
+            <p className="login-form-subtitle">Mật khẩu của bạn đã được cập nhật</p>
           </div>
         </div>
 
@@ -218,10 +217,9 @@ function ResetPasswordForm() {
           <Alert className="login-error-alert border-green-200 bg-green-50 text-green-800 dark:border-green-800/30 dark:bg-green-900/20">
             <CheckCircle2 className="login-field-icon text-green-600" />
             <AlertDescription className="font-medium">
-              <span className="login-error-title text-green-800 dark:text-green-200">All Set!</span>
+              <span className="login-error-title text-green-800 dark:text-green-200">Hoàn tất!</span>
               <span className="login-error-message text-green-700 dark:text-green-300">
-                Your password has been successfully reset. You can now sign in with your new
-                password.
+                Mật khẩu đã được đặt lại. Bạn có thể đăng nhập bằng mật khẩu mới.
               </span>
             </AlertDescription>
           </Alert>
@@ -235,7 +233,7 @@ function ResetPasswordForm() {
         >
           <Link href="/login">
             <Button className="login-submit-button">
-              Sign In Now
+              Đăng nhập ngay
               <ArrowRight className="login-button-arrow" />
             </Button>
           </Link>
@@ -249,9 +247,9 @@ function ResetPasswordForm() {
           className="login-footer"
         >
           <p className="login-footer-text">
-            Having trouble signing in?{" "}
+            Gặp khó khăn khi đăng nhập?{" "}
             <Link href="/support" className="login-footer-link">
-              Contact support
+              Liên hệ hỗ trợ
             </Link>
           </p>
         </motion.div>
@@ -269,8 +267,8 @@ function ResetPasswordForm() {
       {/* Header */}
       <div className="login-form-header">
         <div className="login-form-header-content">
-          <h1 className="login-form-title">Set New Password</h1>
-          <p className="login-form-subtitle">Create a strong password for your account</p>
+          <h1 className="login-form-title">Đặt mật khẩu mới</h1>
+          <p className="login-form-subtitle">Tạo mật khẩu mạnh cho tài khoản của bạn</p>
         </div>
       </div>
 
@@ -283,7 +281,7 @@ function ResetPasswordForm() {
           <Alert variant="destructive" className="login-error-alert">
             <AlertCircle className="login-field-icon" />
             <AlertDescription className="font-medium">
-              <span className="login-error-title">Password Reset Failed</span>
+              <span className="login-error-title">Đặt lại mật khẩu thất bại</span>
               <span className="login-error-message">{error}</span>
             </AlertDescription>
           </Alert>
@@ -301,7 +299,7 @@ function ResetPasswordForm() {
         >
           <Label htmlFor="password" className="login-field-label">
             <Lock className="login-field-icon" />
-            <span>New Password</span>
+            <span>Mật khẩu mới</span>
           </Label>
           <div className="login-password-container">
             <Input
@@ -312,7 +310,7 @@ function ResetPasswordForm() {
               required
               value={formData.password}
               onChange={handleChange}
-              placeholder="Create a strong password"
+              placeholder="Tạo mật khẩu mạnh"
               className="login-password-input"
             />
             <Button
@@ -321,7 +319,7 @@ function ResetPasswordForm() {
               size="sm"
               onClick={() => setShowPassword(!showPassword)}
               className="login-password-toggle"
-              aria-label={showPassword ? "Hide password" : "Show password"}
+              aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
             >
               {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </Button>
@@ -409,7 +407,7 @@ function ResetPasswordForm() {
         >
           <Label htmlFor="confirmPassword" className="login-field-label">
             <Lock className="login-field-icon" />
-            <span>Confirm New Password</span>
+            <span>Xác nhận mật khẩu mới</span>
           </Label>
           <div className="login-password-container">
             <Input
@@ -420,7 +418,7 @@ function ResetPasswordForm() {
               required
               value={formData.confirmPassword}
               onChange={handleChange}
-              placeholder="Confirm your new password"
+              placeholder="Nhập lại mật khẩu mới"
               className="login-password-input"
             />
             <Button
@@ -429,7 +427,7 @@ function ResetPasswordForm() {
               size="sm"
               onClick={() => setShowConfirmPassword(!showConfirmPassword)}
               className="login-password-toggle"
-              aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+              aria-label={showConfirmPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
             >
               {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </Button>
@@ -449,7 +447,7 @@ function ResetPasswordForm() {
                     : "signup-password-match-icon-invalid"
                 }
               />
-              <span>{passwordsMatch ? "Passwords match" : "Passwords do not match"}</span>
+              <span>{passwordsMatch ? "Mật khẩu khớp" : "Mật khẩu không khớp"}</span>
             </motion.div>
           )}
         </motion.div>
@@ -468,11 +466,11 @@ function ResetPasswordForm() {
             {isLoading ? (
               <>
                 <Loader2 className="login-loading-spinner" />
-                Updating password...
+                Đang cập nhật mật khẩu...
               </>
             ) : (
               <>
-                Reset Password
+                Đặt lại mật khẩu
                 <ArrowRight className="login-button-arrow" />
               </>
             )}
@@ -488,9 +486,9 @@ function ResetPasswordForm() {
         className="login-footer"
       >
         <p className="login-footer-text">
-          Remember your password?{" "}
+          Bạn nhớ mật khẩu rồi?{" "}
           <Link href="/login" className="login-footer-link">
-            Back to Sign In
+            Quay lại đăng nhập
           </Link>
         </p>
       </motion.div>

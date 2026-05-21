@@ -78,11 +78,18 @@ const getActionVariant = (variant?: string) => {
   }
 };
 
+const entityTypeLabels: Record<EntityInfo["type"], string> = {
+  organization: "Tổ chức",
+  workspace: "Không gian làm việc",
+  project: "Dự án",
+  task: "Công việc",
+};
+
 export default function DangerZoneModal({
   children,
   open,
   onOpenChange,
-  triggerText = "Danger Zone",
+  triggerText = "Khu vực nguy hiểm",
   triggerVariant = "destructive",
   entity,
   actions,
@@ -103,7 +110,7 @@ export default function DangerZoneModal({
   const entityDisplayName = entity.displayName || entity.name;
   const confirmationText =
     selectedAction?.confirmationMessage ||
-    `Type **${entity.name}** to confirm ${selectedAction?.name || "action"}`;
+    `Nhập **${entity.name}** để xác nhận thao tác`;
 
   const resetForm = useCallback(() => {
     setSelectedAction(null);
@@ -164,7 +171,7 @@ export default function DangerZoneModal({
       e.preventDefault();
 
       if (!selectedAction || !isConfirmationValid()) {
-        setError(`Please type "${entity.name}" exactly to confirm`);
+        setError(`Vui lòng nhập chính xác "${entity.name}" để xác nhận`);
         return;
       }
 
@@ -173,7 +180,7 @@ export default function DangerZoneModal({
 
       try {
         await selectedAction.handler();
-        toast.success(`${entity.type} ${selectedAction.name}d successfully!`);
+        toast.success("Thao tác đã hoàn tất");
         handleOpenChange(false);
 
         // After organization deletion, simply reload the page
@@ -185,7 +192,7 @@ export default function DangerZoneModal({
         const errMsg =
           error instanceof Error
             ? error.message
-            : `Failed to ${selectedAction.name} ${entity.type}`;
+            : "Không thể thực hiện thao tác";
         setError(errMsg);
         toast.error(errMsg);
       } finally {
@@ -195,9 +202,9 @@ export default function DangerZoneModal({
     [selectedAction, isConfirmationValid, entity, handleOpenChange]
   );
 
-  const modalTitle =
-    title || `${entity.type.charAt(0).toUpperCase() + entity.type.slice(1)} Danger Zone`;
-  const modalDescription = description || `Perform destructive actions on ${entityDisplayName}`;
+  const modalTitle = title || `${entityTypeLabels[entity.type]} - Khu vực nguy hiểm`;
+  const modalDescription =
+    description || `Thực hiện các thao tác nhạy cảm với ${entityDisplayName}`;
 
   return (
     <Dialog open={dialogOpen} onOpenChange={handleOpenChange}>
@@ -224,7 +231,7 @@ export default function DangerZoneModal({
           // Actions List View
           <div className="space-y-4">
             <div className="text-sm text-[var(--muted-foreground)] mb-4">
-              Select an action to perform on <strong>{entityDisplayName}</strong>:
+              Chọn thao tác áp dụng cho <strong>{entityDisplayName}</strong>:
             </div>
 
             <div className="space-y-3">
@@ -254,7 +261,7 @@ export default function DangerZoneModal({
 
             <div className="projects-form-actions flex gap-2 justify-end mt-6">
               <ActionButton secondary onClick={() => handleOpenChange(false)}>
-                Cancel
+                Hủy
               </ActionButton>
             </div>
           </div>
@@ -285,7 +292,7 @@ export default function DangerZoneModal({
                       className="projects-form-label-icon"
                       style={{ color: "var(--destructive)" }}
                     />
-                    Confirmation <span className="projects-form-label-required">*</span>
+                    Xác nhận <span className="projects-form-label-required">*</span>
                   </Label>
                   <div className="space-y-2">
                     <div
@@ -325,7 +332,7 @@ export default function DangerZoneModal({
                 onClick={handleBackToActions}
                 disabled={isSubmitting}
               >
-                Back
+                Quay lại
               </ActionButton>
               <ActionButton
                 type="submit"
@@ -335,7 +342,7 @@ export default function DangerZoneModal({
                 {isSubmitting ? (
                   <div className="flex items-center gap-2">
                     <div className="animate-spin h-4 w-4 border-2 capitalize border-white border-t-transparent rounded-full" />
-                    <span>{selectedAction.name}ing...</span>
+                    <span>Đang xử lý...</span>
                   </div>
                 ) : (
                   `${selectedAction.label}`

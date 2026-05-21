@@ -132,7 +132,7 @@ export const DynamicPendingInvitations = forwardRef<
         setInvitations(Array.isArray(data) ? data : []);
       } catch (err) {
         console.error("Error fetching invitations:", err);
-        toast.error("Failed to load invitations");
+        toast.error("Không thể tải lời mời");
       } finally {
         setLoading(false);
       }
@@ -155,10 +155,10 @@ export const DynamicPendingInvitations = forwardRef<
         const result = await onResendInvite(inviteId);
 
         if (result?.emailSent) {
-          toast.success("Invitation resent successfully - email sent");
+          toast.success("Đã gửi lại lời mời qua email");
         } else {
           toast.warning(
-            "Invitation updated but email failed to send. The invitee can still use the updated invitation link."
+            "Đã cập nhật lời mời nhưng không gửi được email. Người được mời vẫn có thể dùng liên kết lời mời đã cập nhật."
           );
           if (result?.emailError) {
             console.warn("Email delivery failed:", result.emailError);
@@ -167,7 +167,7 @@ export const DynamicPendingInvitations = forwardRef<
 
         await fetchInvites(); // Refresh the list
       } catch (error: any) {
-        const errorMessage = error?.message || "Failed to resend invitation";
+        const errorMessage = error?.message || "Không thể gửi lại lời mời";
         toast.error(errorMessage);
       } finally {
         setResendingId(null);
@@ -180,10 +180,10 @@ export const DynamicPendingInvitations = forwardRef<
       try {
         setDecliningId(inviteId);
         await onDeclineInvite(inviteId);
-        toast.success("Invitation declined");
+        toast.success("Đã từ chối lời mời");
         await fetchInvites(); // Refresh the list
       } catch (error: any) {
-        const errorMessage = error?.message || "Failed to decline invitation";
+        const errorMessage = error?.message || "Không thể từ chối lời mời";
         toast.error(errorMessage);
       } finally {
         setDecliningId(null);
@@ -196,10 +196,10 @@ export const DynamicPendingInvitations = forwardRef<
 
     const getEmptyStateContent = () => {
       return {
-        title: emptyStateTitle || "No pending or declined invitations",
+        title: emptyStateTitle || "Không có lời mời đang chờ hoặc đã từ chối",
         description:
           emptyStateDescription ||
-          `Invitations to this ${entityType} will appear here until they're accepted or declined.`,
+          "Lời mời sẽ hiển thị tại đây cho đến khi được chấp nhận hoặc từ chối.",
       };
     };
 
@@ -215,7 +215,7 @@ export const DynamicPendingInvitations = forwardRef<
         <CardHeader className="px-4 py-3 flex-shrink-0 border-b border-[var(--border)]">
           <CardTitle className="text-md font-semibold text-[var(--foreground)] flex items-center gap-2">
             <HiEnvelope className="w-5 h-5 text-[var(--muted-foreground)]" />
-            <span>Invitations</span>
+            <span>Lời mời</span>
             <Badge className="bg-[var(--muted)] text-[var(--muted-foreground)] border-none text-xs">
               {totalInvites}
             </Badge>
@@ -226,7 +226,7 @@ export const DynamicPendingInvitations = forwardRef<
           {loading ? (
             <div className="p-6 text-sm text-center text-[var(--muted-foreground)]">
               <div className="w-5 h-5 border-2 border-[var(--primary)] border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-              Loading invitations...
+              Đang tải lời mời...
             </div>
           ) : totalInvites === 0 ? (
             <div className="p-4 text-center py-8">
@@ -264,13 +264,13 @@ export const DynamicPendingInvitations = forwardRef<
                             {invite.inviteeEmail}
                           </div>
                           <div className="text-[11px] text-[var(--muted-foreground)] truncate">
-                            Invited by{" "}
+                            Mời bởi{" "}
                             {invite.inviter?.firstName
                               ? `${invite.inviter.firstName} ${invite.inviter.lastName || ""}`
-                              : "Unknown"}
+                              : "Không rõ"}
                             {invite.role && (
                               <span className="ml-2">
-                                as <span className="font-medium">{invite.role}</span>
+                                với vai trò <span className="font-medium">{invite.role}</span>
                               </span>
                             )}
                           </div>
@@ -306,7 +306,7 @@ export const DynamicPendingInvitations = forwardRef<
                       {invite.status === "PENDING" &&
                         (onResendInvite || (onDeclineInvite && showDeclineOption)) && (
                           <DropdownMenu>
-                            <Tooltip content="Manage Invitation">
+                            <Tooltip content="Quản lý lời mời">
                               <DropdownMenuTrigger asChild className="bg-[var(--card)]">
                                 <Button
                                   variant="ghost"
@@ -334,7 +334,7 @@ export const DynamicPendingInvitations = forwardRef<
                                       resendingId === invite.id ? "animate-spin" : ""
                                     }`}
                                   />
-                                  Resend Invitation
+                                  Gửi lại lời mời
                                 </DropdownMenuItem>
                               )}
 
@@ -345,7 +345,7 @@ export const DynamicPendingInvitations = forwardRef<
                                   className="flex text-xs text-red-600 items-center gap-2 cursor-pointer hover:bg-[var(--accent)]"
                                 >
                                   <RxReset className="w-3 h-3" />
-                                  Decline Invitation
+                                  Từ chối lời mời
                                 </DropdownMenuItem>
                               )}
                             </DropdownMenuContent>

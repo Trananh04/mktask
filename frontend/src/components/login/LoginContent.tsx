@@ -29,14 +29,13 @@ export function LoginContent() {
           </div>
 
           <h2 className="login-hero-heading">
-            Transform your
+            Tối ưu
             <br />
-            <span className="login-hero-heading-gradient">team's workflow</span>
+            <span className="login-hero-heading-gradient">quy trình đội nhóm</span>
           </h2>
 
           <p className="login-hero-description">
-            Experience the future of project management with AI-powered tools that adapt to your
-            team's unique workflow and boost productivity.
+            Quản lý dự án hiệu quả hơn với công cụ AI thích ứng theo cách làm việc của đội nhóm.
           </p>
         </motion.div>
       </div>

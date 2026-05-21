@@ -32,7 +32,7 @@ function MemberSelect({
   onChange,
   members: initialMembers,
   disabled = false,
-  placeholder = "Select members...",
+  placeholder = "Chọn thành viên...",
   editMode = false,
   type = "assignee",
   projectId,
@@ -97,8 +97,8 @@ function MemberSelect({
         // Don't show error if request was aborted
         if (error.name !== "AbortError") {
           console.error("Failed to fetch project members:", error);
-          setSearchError("Failed to load members");
-          toast.error("Failed to load project members");
+          setSearchError("Không thể tải thành viên");
+          toast.error("Không thể tải thành viên dự án");
         }
       } finally {
         setIsSearching(false);
@@ -145,7 +145,7 @@ function MemberSelect({
         : `${selectedMembers.length} members selected`;
   } else if (label && selectedMembers.length === 0) {
     const baseLabel = label.endsWith("s") ? label.slice(0, -1) : label;
-    displayText = `Select ${baseLabel.toLowerCase()}...`;
+    displayText = `Chọn ${baseLabel.toLowerCase()}...`;
   }
 
   if (editMode) {
@@ -233,7 +233,7 @@ function MemberSelect({
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--muted-foreground)] pointer-events-none" />
                     <Input
-                      placeholder="Search members..."
+                      placeholder="Tìm thành viên..."
                       value={search}
                       onChange={(e) => setSearch(e.target.value)}
                       className="mb-2 pl-9 h-9"
@@ -246,7 +246,7 @@ function MemberSelect({
                   {searchError ? (
                     <div className="p-2 text-sm text-red-500 text-center">{searchError}</div>
                   ) : members.length === 0 ? (
-                    <div className="p-2 text-sm text-muted-foreground">No members found.</div>
+                    <div className="p-2 text-sm text-muted-foreground">Không tìm thấy thành viên.</div>
                   ) : (
                     members.map((member) => {
                       const isSelected = selectedMembers.some((m) => m.id === member.id);
@@ -328,7 +328,7 @@ function MemberSelect({
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--muted-foreground)] pointer-events-none" />
               <Input
-                placeholder="Search members..."
+                placeholder="Tìm thành viên..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="mb-2 pl-9 h-9"
@@ -341,7 +341,7 @@ function MemberSelect({
             {searchError ? (
               <div className="p-2 text-sm text-red-500 text-center">{searchError}</div>
             ) : members.length === 0 ? (
-              <div className="p-2 text-sm text-muted-foreground">No members found.</div>
+              <div className="p-2 text-sm text-muted-foreground">Không tìm thấy thành viên.</div>
             ) : (
               members.map((member) => {
                 const isSelected = selectedMembers.some((m) => m.id === member.id);

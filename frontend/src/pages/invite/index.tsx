@@ -21,7 +21,7 @@ export default function InviteRedirect() {
 
         if (!res.isValid) {
           router.replace(
-            `/invite/invalid?msg=${encodeURIComponent(res.message ?? "Invalid invitation")}`
+            `/invite/invalid?msg=${encodeURIComponent(res.message ?? "Lời mời không hợp lệ")}`
           );
           return;
         }
@@ -45,7 +45,7 @@ export default function InviteRedirect() {
             // Go to invalid page with specific message
             router.replace(
               `/invite/invalid?msg=${encodeURIComponent(
-                `This invitation was sent to ${inviteeEmail}, but you are currently logged in as ${user?.email}. Please log out and use the correct account.`
+                `Lời mời này được gửi tới ${inviteeEmail}, nhưng bạn đang đăng nhập bằng ${user?.email}. Vui lòng đăng xuất và dùng đúng tài khoản.`
               )}`
             );
           }
@@ -68,7 +68,7 @@ export default function InviteRedirect() {
     <div className="py-20 flex items-center justify-center">
       <div className="flex flex-col items-center space-y-4">
         <HiArrowPath className="w-8 h-8 text-blue-600 animate-spin" />
-        <p className="text-sm text-[var(--muted-foreground)]">Verifying invitation...</p>
+        <p className="text-sm text-[var(--muted-foreground)]">Đang xác minh lời mời...</p>
       </div>
     </div>
   );

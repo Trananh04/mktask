@@ -59,7 +59,7 @@ const PRIORITY_LABELS: Record<string, string> = {
   LOW: "Low", LOWEST: "Lowest", URGENT: "Urgent",
 };
 const TYPE_LABELS: Record<string, string> = {
-  TASK: "Task", BUG: "Bug", EPIC: "Epic", STORY: "Story", SUBTASK: "Sub-task",
+  TASK: "Công việc", BUG: "Bug", EPIC: "Epic", STORY: "Story", SUBTASK: "Công việc con",
 };
 
 function formatGroupDate(date: string | Date | null | undefined): { key: string; label: string } {
@@ -360,7 +360,7 @@ export default function TaskGanttView({
         setError(null);
       } catch (err) {
         console.error("Error processing Gantt tasks:", err);
-        setError("Failed to process tasks");
+        setError("Không thể xử lý danh sách công việc");
       } finally {
         setIsLoading(false);
       }
@@ -574,7 +574,7 @@ export default function TaskGanttView({
                   })}
                   {ganttGroups.length === 0 && (
                     <div className="flex items-center justify-center h-24 text-[var(--muted-foreground)] text-sm">
-                      No tasks found
+                      Không tìm thấy công việc
                     </div>
                   )}
                 </>

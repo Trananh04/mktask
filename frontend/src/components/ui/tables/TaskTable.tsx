@@ -275,9 +275,9 @@ function formatColumnValue(value: any, columnType: string): string {
         const end = formatDayjsDate(value.dueDate, "MMM D, YYYY");
         return `${start} - ${end}`;
       } else if (typeof value === "object" && value.startDate) {
-        return `${formatDayjsDate(value.startDate, "MMM D, YYYY")} - TBD`;
+        return `${formatDayjsDate(value.startDate, "MMM D, YYYY")} - Chưa xác định`;
       } else if (typeof value === "object" && value.dueDate) {
-        return `TBD - ${formatDayjsDate(value.dueDate, "MMM D, YYYY")}`;
+        return `Chưa xác định - ${formatDayjsDate(value.dueDate, "MMM D, YYYY")}`;
       }
       return "-";
     case "date":
@@ -358,27 +358,27 @@ const PRIORITY_ORDER: Record<string, number> = {
 };
 
 const PRIORITY_LABELS: Record<string, string> = {
-  HIGHEST: "Highest",
-  HIGH: "High",
-  MEDIUM: "Medium",
-  LOW: "Low",
-  LOWEST: "Lowest",
-  URGENT: "Urgent",
+  HIGHEST: "Cao nhất",
+  HIGH: "Cao",
+  MEDIUM: "Trung bình",
+  LOW: "Thấp",
+  LOWEST: "Thấp nhất",
+  URGENT: "Khẩn cấp",
 };
 
 const TYPE_LABELS: Record<string, string> = {
-  TASK: "Task",
+  TASK: "Công việc",
   BUG: "Bug",
   EPIC: "Epic",
   STORY: "Story",
-  SUBTASK: "Sub-task",
+  SUBTASK: "Công việc con",
 };
 
 /** Format a date value as "MMM DD, YYYY" (e.g. "Apr 29, 2026") */
 function formatGroupDate(date: string | Date | null | undefined): { key: string; label: string } {
-  if (!date) return { key: "no-date", label: "No Date" };
+  if (!date) return { key: "no-date", label: "Chưa có ngày" };
   const d = dayjs(date).tz(getUserTimezone());
-  if (!d.isValid()) return { key: "no-date", label: "No Date" };
+  if (!d.isValid()) return { key: "no-date", label: "Chưa có ngày" };
   // key uses ISO date so sorting is chronological
   return {
     key: d.format("YYYY-MM-DD"),
@@ -399,7 +399,7 @@ function groupTasks(tasks: Task[], field: GroupByField): TaskGroup[] {
       case "status": {
         const status = task.status as any;
         key = status?.id ?? "no-status";
-        label = status?.name ?? "No Status";
+        label = status?.name ?? "Chưa có trạng thái";
         break;
       }
       case "priority": {
@@ -409,7 +409,7 @@ function groupTasks(tasks: Task[], field: GroupByField): TaskGroup[] {
       }
       case "project": {
         key = task.projectId ?? "no-project";
-        label = (task.project as any)?.name ?? "No Project";
+        label = (task.project as any)?.name ?? "Chưa có dự án";
         break;
       }
       case "assignee": {
@@ -419,7 +419,7 @@ function groupTasks(tasks: Task[], field: GroupByField): TaskGroup[] {
           label = `${(firstAssignee as any).firstName ?? ""} ${(firstAssignee as any).lastName ?? ""}`.trim();
         } else {
           key = "unassigned";
-          label = "Unassigned";
+          label = "Chưa phân công";
         }
         break;
       }
@@ -431,18 +431,18 @@ function groupTasks(tasks: Task[], field: GroupByField): TaskGroup[] {
       case "dueDate": {
         const { key: dk, label: dl } = formatGroupDate(task.dueDate);
         key = dk;
-        label = dk === "no-date" ? "No Due Date" : dl;
+        label = dk === "no-date" ? "Chưa có hạn hoàn thành" : dl;
         break;
       }
       case "createdAt": {
         const { key: ck, label: cl } = formatGroupDate((task as any).createdAt);
         key = ck;
-        label = ck === "no-date" ? "No Created Date" : cl;
+        label = ck === "no-date" ? "Chưa có ngày tạo" : cl;
         break;
       }
       default:
         key = "other";
-        label = "Other";
+        label = "Khác";
     }
 
     if (!groupMap.has(key)) {
@@ -1097,14 +1097,14 @@ const TaskTable: React.FC<TaskTableProps> = ({
   const handleBulkDelete = async () => {
     const finalSelectedCount = allDelete ? (totalTask ?? 0) - excludedTaskIds.length : selectedTasks.length;
     if (finalSelectedCount === 0) {
-      toast.warning("No tasks selected for deletion");
+      toast.warning("Chưa chọn công việc để xóa");
       return;
     }
 
     try {
       const displayCount = finalSelectedCount;
       const loadingToast = toast.loading(
-        `Deleting ${displayCount} task${displayCount === 1 ? "" : "s"}...`
+        `Đang xóa ${displayCount} công việc...`
       );
 
       // Note: Backend now supports exclusions for "all: true" via excludedIds.
@@ -1119,22 +1119,21 @@ const TaskTable: React.FC<TaskTableProps> = ({
 
       if (result.deletedCount > 0) {
         toast.success(
-          `Successfully deleted ${result.deletedCount} task${result.deletedCount === 1 ? "" : "s"}`
+          `Đã xóa ${result.deletedCount} công việc`
         );
       }
 
       if (result.failedTasks && result.failedTasks.length > 0) {
         const maxErrorsToShow = 3;
         result.failedTasks.slice(0, maxErrorsToShow).forEach((failed) => {
-          toast.error(`Failed to delete task: ${failed.reason}`, {
+          toast.error(`Không thể xóa công việc: ${failed.reason}`, {
             duration: 5000,
           });
         });
 
         if (result.failedTasks.length > maxErrorsToShow) {
           toast.warning(
-            `...and ${result.failedTasks.length - maxErrorsToShow} more task${result.failedTasks.length - maxErrorsToShow === 1 ? "" : "s"
-            } could not be deleted`,
+            `...và ${result.failedTasks.length - maxErrorsToShow} công việc khác không thể xóa`,
             { duration: 5000 }
           );
         }
@@ -1159,7 +1158,7 @@ const TaskTable: React.FC<TaskTableProps> = ({
       const errorMessage =
         error?.response?.data?.message ||
         error?.message ||
-        "Failed to delete tasks. Please try again.";
+        "Không thể xóa công việc. Vui lòng thử lại.";
       toast.error(errorMessage);
     }
   };
@@ -1167,14 +1166,14 @@ const TaskTable: React.FC<TaskTableProps> = ({
   const handleBulkStatusUpdate = async (statusId: string) => {
     const finalSelectedCount = allDelete ? (totalTask ?? 0) - excludedTaskIds.length : selectedTasks.length;
     if (finalSelectedCount === 0) {
-      toast.warning("No tasks selected for status update");
+      toast.warning("Chưa chọn công việc để cập nhật trạng thái");
       return;
     }
 
     try {
       const displayCount = finalSelectedCount;
       const loadingToast = toast.loading(
-        `Updating status for ${displayCount} task${displayCount === 1 ? "" : "s"}...`
+        `Đang cập nhật trạng thái cho ${displayCount} công việc...`
       );
 
       const result = await bulkUpdateTasksStatus({
@@ -1197,22 +1196,21 @@ const TaskTable: React.FC<TaskTableProps> = ({
 
       if (result.updatedCount > 0) {
         toast.success(
-          `Successfully updated status for ${result.updatedCount} task${result.updatedCount === 1 ? "" : "s"}`
+          `Đã cập nhật trạng thái cho ${result.updatedCount} công việc`
         );
       }
 
       if (result.failedTasks && result.failedTasks.length > 0) {
         const maxErrorsToShow = 3;
         result.failedTasks.slice(0, maxErrorsToShow).forEach((failed) => {
-          toast.error(`Failed to update task status: ${failed.reason}`, {
+          toast.error(`Không thể cập nhật trạng thái công việc: ${failed.reason}`, {
             duration: 5000,
           });
         });
 
         if (result.failedTasks.length > maxErrorsToShow) {
           toast.warning(
-            `...and ${result.failedTasks.length - maxErrorsToShow} more task${result.failedTasks.length - maxErrorsToShow === 1 ? "" : "s"
-            } could not be updated`,
+            `...và ${result.failedTasks.length - maxErrorsToShow} công việc khác không thể cập nhật`,
             { duration: 5000 }
           );
         }
@@ -1229,7 +1227,7 @@ const TaskTable: React.FC<TaskTableProps> = ({
       const errorMessage =
         error?.response?.data?.message ||
         error?.message ||
-        "Failed to update tasks status. Please try again.";
+        "Không thể cập nhật trạng thái công việc. Vui lòng thử lại.";
       toast.error(errorMessage);
     }
   };
@@ -1372,7 +1370,7 @@ const TaskTable: React.FC<TaskTableProps> = ({
                   </span>
                 )}
                 {selectedAssignees.length > 1 && (
-                  <span className="text-sm ml-2">{selectedAssignees.length} assignees</span>
+                  <span className="text-sm ml-2">{selectedAssignees.length} người phụ trách</span>
                 )}
               </div>
             )}
@@ -1698,7 +1696,7 @@ const TaskTable: React.FC<TaskTableProps> = ({
 
   const handleCreateTask = async () => {
     if (!isTaskValid() || !newTaskData.title.trim()) {
-      toast.error("Please fill in all required fields (Title, Status, and Project)");
+      toast.error("Vui lòng điền đầy đủ tiêu đề, trạng thái và dự án");
       return;
     }
 
@@ -1714,13 +1712,13 @@ const TaskTable: React.FC<TaskTableProps> = ({
       }
 
       if (!projectId) {
-        toast.error("Unable to determine project context. Project ID is required.");
+        toast.error("Không xác định được dự án. Cần có ID dự án.");
         setIsSubmitting(false);
         return;
       }
 
       if (!newTaskData.statusId) {
-        toast.error("Please select a task status.");
+        toast.error("Vui lòng chọn trạng thái công việc.");
         setIsSubmitting(false);
         return;
       }
@@ -1742,10 +1740,10 @@ const TaskTable: React.FC<TaskTableProps> = ({
         await onTaskRefetch();
       }
 
-      toast.success("Task created successfully!");
+      toast.success("Đã tạo công việc thành công!");
     } catch (error) {
       console.error("Failed to create task:", error);
-      toast.error("Failed to create task. Please try again.");
+      toast.error("Không thể tạo công việc. Vui lòng thử lại.");
     } finally {
       setIsSubmitting(false);
     }
@@ -1897,7 +1895,7 @@ const TaskTable: React.FC<TaskTableProps> = ({
                     if (isTaskValid()) {
                       handleCreateTask();
                     } else {
-                      toast.error("Please fill in all required fields");
+                      toast.error("Vui lòng điền đầy đủ các trường bắt buộc");
                     }
                   } else if (e.key === "Escape") {
                     handleCancelCreating();
@@ -1905,7 +1903,7 @@ const TaskTable: React.FC<TaskTableProps> = ({
                 }}
               />
               <div className="flex items-center gap-1 ml-2">
-                <Tooltip content="Create task" position="top">
+                <Tooltip content="Tạo công việc" position="top">
                   <button
                     onClick={handleCreateTask}
                     disabled={isSubmitting || !isTaskValid() || !newTaskData.title.trim()}
@@ -2076,7 +2074,7 @@ const TaskTable: React.FC<TaskTableProps> = ({
                     }));
                   }}
                   className="absolute right-1 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 rounded z-10"
-                  title="Clear date"
+                  title="Xóa ngày"
                   disabled={isSubmitting}
                 >
                   <X className="w-4 h-4" />
@@ -2139,10 +2137,10 @@ const TaskTable: React.FC<TaskTableProps> = ({
                   {task.isRecurring && <RecurringBadge />}
                   {task.isArchived && (
                     <Badge variant="secondary" className="text-xs px-1.5 py-0 h-5 flex-shrink-0 bg-gray-100 text-gray-600">
-                      Archived
+                      Đã lưu trữ
                     </Badge>
                   )}
-                  <Tooltip content="Expand to full screen" position="top">
+                  <Tooltip content="Mở toàn màn hình" position="top">
                     <button
                       className="p-0.5 rounded opacity-0 group-hover/row:opacity-100 transition-opacity duration-150 hover:bg-[var(--accent)] cursor-pointer flex-shrink-0"
                       onClick={(e) => {
@@ -2177,7 +2175,7 @@ const TaskTable: React.FC<TaskTableProps> = ({
           <TableCell key={colId} className="tasktable-cell-project">
             <div className="flex items-center">
               <span className="tasktable-project-name">
-                {task.project?.name || "Unknown Project"}
+                {task.project?.name || "Không rõ dự án"}
               </span>
             </div>
           </TableCell>
@@ -2274,7 +2272,7 @@ const TaskTable: React.FC<TaskTableProps> = ({
                   <tbody>
                     <tr>
                       <td colSpan={columnOrder.length} className="text-center py-8 text-[var(--muted-foreground)] text-sm animate-pulse">
-                        Loading groups…
+                        Đang tải nhóm...
                       </td>
                     </tr>
                   </tbody>
@@ -2327,7 +2325,7 @@ const TaskTable: React.FC<TaskTableProps> = ({
                   <tbody>
                     <tr>
                       <td colSpan={columnOrder.length} className="text-center py-8 text-[var(--muted-foreground)] text-sm">
-                        No tasks found
+                        Không tìm thấy công việc
                       </td>
                     </tr>
                   </tbody>
@@ -2405,7 +2403,7 @@ const TaskTable: React.FC<TaskTableProps> = ({
                     <div className="flex items-center gap-2">
                       <div className="w-4 h-4 text-muted-foreground">⋮⋮</div>
                       <span className="text-sm font-medium">
-                        {localTasks.find(t => t.id === activeDragId)?.title || "Task"}
+                        {localTasks.find(t => t.id === activeDragId)?.title || "Công việc"}
                       </span>
                     </div>
                   </div>

@@ -36,7 +36,7 @@ function formatReportType(type: TaskDailyReport["type"]) {
 }
 
 function getProjectLabel(task?: TaskReportTaskSummary | null) {
-  return task?.project?.name || "Chưa có project";
+  return task?.project?.name || "Chưa có dự án";
 }
 
 function getWorkspaceLabel(task?: TaskReportTaskSummary | null) {
@@ -213,7 +213,7 @@ export default function ReportsPage() {
                         <div className="min-w-0 flex-1">
                           <div className="flex flex-wrap items-center gap-2">
                             <p className="min-w-0 break-words font-medium">
-                              {request.task?.title || "Task"}
+                              {request.task?.title || "Công việc"}
                             </p>
                             <span className="inline-flex max-w-full items-center gap-1 rounded bg-[var(--muted)] px-2 py-1 text-xs font-medium text-[var(--muted-foreground)]">
                               <FolderKanban className="h-3.5 w-3.5 shrink-0" />
@@ -238,7 +238,7 @@ export default function ReportsPage() {
                               className="mt-3 inline-flex h-8 items-center gap-1.5 rounded border border-[var(--border)] px-2.5 text-xs font-medium hover:bg-[var(--muted)]"
                             >
                               <ExternalLink className="h-3.5 w-3.5" />
-                              Xem task
+                              Xem công việc
                             </Link>
                           )}
                         </div>
@@ -288,7 +288,7 @@ export default function ReportsPage() {
                         <h3 className="truncate font-medium">{getUserName(reports[0]?.reporter)}</h3>
                         <p className="text-sm text-[var(--muted-foreground)]">
                           {reports.length} báo cáo trong ngày
-                          {getProjectCount(reports) > 0 && ` • ${getProjectCount(reports)} project`}
+                          {getProjectCount(reports) > 0 && ` • ${getProjectCount(reports)} dự án`}
                         </p>
                       </div>
                       <div className="divide-y divide-[var(--border)]">
@@ -301,7 +301,7 @@ export default function ReportsPage() {
                                     {formatReportType(report.type)}
                                   </span>
                                   <span className="min-w-0 break-words text-sm font-medium">
-                                    {report.task?.title || "Task"}
+                                    {report.task?.title || "Công việc"}
                                   </span>
                                   <span className="inline-flex max-w-full items-center gap-1 rounded bg-[var(--muted)] px-2 py-1 text-xs font-medium text-[var(--muted-foreground)]">
                                     <FolderKanban className="h-3.5 w-3.5 shrink-0" />
@@ -340,7 +340,7 @@ export default function ReportsPage() {
                                   className="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded border border-[var(--border)] px-3 text-sm font-medium hover:bg-[var(--muted)] sm:w-auto"
                                 >
                                   <ExternalLink className="h-4 w-4" />
-                                  Xem task
+                                  Xem công việc
                                 </Link>
                               )}
                               {report.status !== "REVIEWED" && (

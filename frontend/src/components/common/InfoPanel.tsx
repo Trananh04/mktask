@@ -15,7 +15,7 @@ export function InfoPanel({
   title,
   subtitle,
   viewAllHref,
-  viewAllText = "View all",
+  viewAllText = "Xem tất cả",
   children,
   className = "",
 }: InfoPanelProps) {

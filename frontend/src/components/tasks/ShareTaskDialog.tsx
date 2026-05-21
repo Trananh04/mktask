@@ -49,7 +49,7 @@ export default function ShareTaskDialog({ taskId, isOpen, onClose }: ShareTaskDi
       const data = await shareApi.getSharesForTask(taskId);
       setShares(data);
     } catch (error) {
-      toast.error('Failed to load share links');
+      toast.error('Không thể tải liên kết chia sẻ');
     } finally {
       setLoading(false);
     }
@@ -63,12 +63,12 @@ export default function ShareTaskDialog({ taskId, isOpen, onClose }: ShareTaskDi
         expiresInDays: parseInt(expiryDays),
       });
       setShares([newShare, ...shares]);
-      toast.success('Public link created');
+      toast.success('Đã tạo liên kết công khai');
       
       // Auto copy
       copyToClipboard(newShare.shareUrl, newShare.id);
     } catch (error) {
-      toast.error('Failed to create share link');
+      toast.error('Không thể tạo liên kết chia sẻ');
     } finally {
       setCreating(false);
     }
@@ -78,16 +78,16 @@ export default function ShareTaskDialog({ taskId, isOpen, onClose }: ShareTaskDi
     try {
       await shareApi.revokeShare(shareId);
       setShares(shares.filter(s => s.id !== shareId));
-      toast.success('Link revoked');
+      toast.success('Đã thu hồi liên kết');
     } catch (error) {
-      toast.error('Failed to revoke link');
+      toast.error('Không thể thu hồi liên kết');
     }
   };
 
   const copyToClipboard = (url: string, id: string) => {
     navigator.clipboard.writeText(url);
     setCopiedId(id);
-    toast.success('Link copied to clipboard');
+    toast.success('Đã sao chép liên kết');
     setTimeout(() => setCopiedId(null), 2000);
   };
 
@@ -109,27 +109,27 @@ export default function ShareTaskDialog({ taskId, isOpen, onClose }: ShareTaskDi
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="w-full sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Share to Web</DialogTitle>
+          <DialogTitle>Chia sẻ lên web</DialogTitle>
           <DialogDescription>
-            Publish this task to the web. Anyone with the link can view it.
+            Công khai công việc này trên web. Bất kỳ ai có liên kết đều có thể xem.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6 py-4 min-w-0">
           <div className="space-y-4">
             <div className="grid gap-2">
-              <Label htmlFor="expiry">Link expires in</Label>
+              <Label htmlFor="expiry">Liên kết hết hạn sau</Label>
               <div className="flex gap-2">
                 <Select value={expiryDays} onValueChange={setExpiryDays}>
                   <SelectTrigger id="expiry" className="w-[180px] h-9 border-none bg-[var(--primary)]/5 hover:bg-[var(--primary)]/10 text-[var(--foreground)] transition-all duration-200">
-                    <SelectValue placeholder="Select expiry" />
+                    <SelectValue placeholder="Chọn thời hạn" />
                   </SelectTrigger>
                   <SelectContent className='bg-[var(--card)]'>
-                    <SelectItem value="1">1 day</SelectItem>
-                    <SelectItem value="3">3 days</SelectItem>
-                    <SelectItem value="7">7 days</SelectItem>
-                    <SelectItem value="14">14 days</SelectItem>
-                    <SelectItem value="30">30 days</SelectItem>
+                    <SelectItem value="1">1 ngày</SelectItem>
+                    <SelectItem value="3">3 ngày</SelectItem>
+                    <SelectItem value="7">7 ngày</SelectItem>
+                    <SelectItem value="14">14 ngày</SelectItem>
+                    <SelectItem value="30">30 ngày</SelectItem>
                   </SelectContent>
                 </Select>
                 <ActionButton 
@@ -138,7 +138,7 @@ export default function ShareTaskDialog({ taskId, isOpen, onClose }: ShareTaskDi
                   className="flex-1"
                   secondary
                 >
-                  {creating ? 'Creating...' : 'Create Public Link'}
+                  {creating ? 'Đang tạo...' : 'Tạo liên kết công khai'}
                 </ActionButton>
               </div>
             </div>
@@ -146,7 +146,7 @@ export default function ShareTaskDialog({ taskId, isOpen, onClose }: ShareTaskDi
 
           {shares.length > 0 && (
             <div className="space-y-3">
-              <Label>Active Links ({shares.length})</Label>
+              <Label>Liên kết đang hoạt động ({shares.length})</Label>
               <ScrollArea className="h-[200px] w-full rounded-md border p-3" orientation='both'>
                 <div className="space-y-3">
                   {shares.map((share) => (
@@ -157,10 +157,10 @@ export default function ShareTaskDialog({ taskId, isOpen, onClose }: ShareTaskDi
                       <div className="flex items-center justify-between min-w-0">
                         <div className="flex items-center gap-2">
                           <Badge variant={isExpired(share.expiresAt) ? "destructive" : "secondary"}>
-                            {isExpired(share.expiresAt) ? 'Expired' : 'Active'}
+                            {isExpired(share.expiresAt) ? 'Đã hết hạn' : 'Đang hoạt động'}
                           </Badge>
                           <span className="text-xs text-muted-foreground">
-                            Expires {formatDate(share.expiresAt)}
+                            Hết hạn {formatDate(share.expiresAt)}
                           </span>
                         </div>
                         <Button
@@ -168,7 +168,7 @@ export default function ShareTaskDialog({ taskId, isOpen, onClose }: ShareTaskDi
                           size="icon"
                           className="h-6 w-6 text-destructive hover:bg-destructive/10"
                           onClick={() => handleRevokeShare(share.id)}
-                          title="Revoke link"
+                          title="Thu hồi liên kết"
                         >
                           <HiTrash className="h-4 w-4" />
                         </Button>
@@ -204,7 +204,7 @@ export default function ShareTaskDialog({ taskId, isOpen, onClose }: ShareTaskDi
 
         <DialogFooter>
           <ActionButton secondary onClick={onClose}>
-            Done
+            Xong
           </ActionButton>
         </DialogFooter>
       </DialogContent>

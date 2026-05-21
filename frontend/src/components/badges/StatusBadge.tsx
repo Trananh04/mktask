@@ -37,21 +37,21 @@ const projectStatusClassMap: Record<ProjectStatus, string> = {
 };
 
 const taskStatusLabels: Record<TaskStatus, string> = {
-  todo: "To Do",
+  todo: "Cần làm",
   backlog: "Backlog",
-  "in-progress": "In Progress",
-  "in-review": "In Review",
-  completed: "Completed",
-  done: "Done",
-  cancelled: "Cancelled",
+  "in-progress": "Đang thực hiện",
+  "in-review": "Đang duyệt",
+  completed: "Hoàn thành",
+  done: "Xong",
+  cancelled: "Đã hủy",
 };
 
 const projectStatusLabels: Record<ProjectStatus, string> = {
-  active: "Active",
-  completed: "Completed",
-  on_hold: "On Hold",
-  cancelled: "Cancelled",
-  planning: "Planning",
+  active: "Đang hoạt động",
+  completed: "Hoàn thành",
+  on_hold: "Tạm dừng",
+  cancelled: "Đã hủy",
+  planning: "Đang lập kế hoạch",
 };
 
 type Props = StatusBadgeProps & React.ComponentProps<typeof Badge>;

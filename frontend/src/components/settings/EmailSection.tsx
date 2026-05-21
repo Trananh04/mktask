@@ -28,9 +28,9 @@ export default function EmailSection() {
     setLoading(true);
     try {
       await updateUserEmail(currentUser.id, { email });
-      toast.success("Email updated successfully!");
+      toast.success("Đã cập nhật email thành công!");
     } catch {
-      toast.error("Failed to update email. Please try again.");
+      toast.error("Không thể cập nhật email. Vui lòng thử lại.");
     } finally {
       setLoading(false);
       fetchingRef.current = false;
@@ -44,17 +44,17 @@ export default function EmailSection() {
           <div className="flex-1">
             <CardTitle className="flex items-center gap-2 text-lg font-medium text-[var(--foreground)]">
               <HiEnvelope className="w-5 h-5 text-[var(--primary)]" />
-              Email Address
+              Địa chỉ email
             </CardTitle>
             <CardDescription className="text-sm text-[var(--muted-foreground)] mt-1">
-              Update your email address. This will be used for login and notifications.
+              Cập nhật địa chỉ email dùng để đăng nhập và nhận thông báo.
             </CardDescription>
           </div>
           <Badge
             variant="secondary"
             className="text-xs bg-[var(--primary)]/10 text-[var(--primary)] border-none"
           >
-            Secure
+            Bảo mật
           </Badge>
         </div>
       </CardHeader>
@@ -63,7 +63,7 @@ export default function EmailSection() {
         <div className="space-y-3">
           <div className="space-y-1">
             <Label className="text-sm font-medium text-[var(--foreground)]">
-              Email Address <span className="text-red-500">*</span>
+              Địa chỉ email <span className="text-red-500">*</span>
             </Label>
             <div className="max-w-md">
               <Input
@@ -71,11 +71,11 @@ export default function EmailSection() {
                 value={email}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
                 className="h-8 border-none bg-[var(--background)]"
-                placeholder="Enter your email address"
+                placeholder="Nhập địa chỉ email"
                 required
               />
               <p className="text-xs text-[var(--muted-foreground)] mt-1">
-                We'll send a verification email if the address is changed.
+                Chúng tôi sẽ gửi email xác minh nếu địa chỉ được thay đổi.
               </p>
             </div>
           </div>
@@ -90,10 +90,10 @@ export default function EmailSection() {
               {loading ? (
                 <div className="flex items-center gap-1">
                   <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                  Updating...
+                  Đang cập nhật...
                 </div>
               ) : (
-                "Update Email"
+                "Cập nhật email"
               )}
             </ActionButton>
           </div>

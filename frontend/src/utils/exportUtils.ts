@@ -12,12 +12,12 @@ function getExportColumns(
   const { showProject = false } = options;
 
   const defaultColumns: ColumnConfig[] = [
-    { id: "title", label: "Task", visible: true },
-    ...(showProject ? [{ id: "project", label: "Project", visible: true }] : []),
-    { id: "priority", label: "Priority", visible: true },
-    { id: "status", label: "Status", visible: true },
-    { id: "assignees", label: "Assignees", visible: true },
-    { id: "dueDate", label: "Due Date", visible: true },
+    { id: "title", label: "Công việc", visible: true },
+    ...(showProject ? [{ id: "project", label: "Dự án", visible: true }] : []),
+    { id: "priority", label: "Độ ưu tiên", visible: true },
+    { id: "status", label: "Trạng thái", visible: true },
+    { id: "assignees", label: "Người phụ trách", visible: true },
+    { id: "dueDate", label: "Hạn hoàn thành", visible: true },
   ];
 
   // Combine default columns with visible dynamic columns
@@ -46,9 +46,9 @@ function extractTaskData(task: Task, columnId: string): any {
       if (task.startDate && task.dueDate) {
         return `${dayjs(task.startDate).format("MMM D, YYYY")} - ${dayjs(task.dueDate).format("MMM D, YYYY")}`;
       } else if (task.startDate) {
-        return `${dayjs(task.startDate).format("MMM D, YYYY")} - TBD`;
+        return `${dayjs(task.startDate).format("MMM D, YYYY")} - Chưa xác định`;
       } else if (task.dueDate) {
-        return `TBD - ${dayjs(task.dueDate).format("MMM D, YYYY")}`;
+        return `Chưa xác định - ${dayjs(task.dueDate).format("MMM D, YYYY")}`;
       }
       return "-";
 
@@ -123,7 +123,7 @@ function extractTaskData(task: Task, columnId: string): any {
         if (task.assignees && task.assignees.length > 0) {
           return task.assignees.map(u => `${u.firstName} ${u.lastName}`.trim()).join(", ");
         }
-        return "Unassigned";
+        return "Chưa phân công";
       }
       return "";
   }
@@ -181,7 +181,7 @@ export const exportTasksToCSV = (
     }
   } catch (error) {
     console.error("Failed to export tasks to CSV:", error);
-    alert("Failed to export tasks. Please try again.");
+    alert("Không thể xuất công việc. Vui lòng thử lại.");
   }
 };
 
@@ -246,13 +246,13 @@ export const exportTasksToXLSX = (
 
     // Create workbook
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Tasks");
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Cong viec");
 
     // Generate and download
     XLSX.writeFile(workbook, filename);
   } catch (error) {
     console.error("Failed to export tasks to XLSX:", error);
-    alert("Failed to export tasks to Excel. Please try again.");
+    alert("Không thể xuất công việc sang Excel. Vui lòng thử lại.");
   }
 };
 
@@ -309,7 +309,7 @@ export const exportTasksToJSON = (
     }
   } catch (error) {
     console.error("Failed to export tasks to JSON:", error);
-    alert("Failed to export tasks to JSON. Please try again.");
+    alert("Không thể xuất công việc sang JSON. Vui lòng thử lại.");
   }
 };
 
@@ -332,12 +332,12 @@ export const exportTasksToPDF = (
     const safeFilename = filename.replace(/[^\w.\- ]+/g, "_");
 
     const defaultColumns: ColumnConfig[] = [
-      { id: "title", label: "Task", visible: true },
-      ...(showProject ? [{ id: "project", label: "Project", visible: true }] : []),
-      { id: "priority", label: "Priority", visible: true },
-      { id: "status", label: "Status", visible: true },
-      { id: "assignees", label: "Assignees", visible: true },
-      { id: "dueDate", label: "Due Date", visible: true },
+      { id: "title", label: "Công việc", visible: true },
+      ...(showProject ? [{ id: "project", label: "Dự án", visible: true }] : []),
+      { id: "priority", label: "Độ ưu tiên", visible: true },
+      { id: "status", label: "Trạng thái", visible: true },
+      { id: "assignees", label: "Người phụ trách", visible: true },
+      { id: "dueDate", label: "Hạn hoàn thành", visible: true },
     ];
 
     const visibleDynamicColumns = columns.filter((col) => col.visible);
@@ -367,7 +367,7 @@ export const exportTasksToPDF = (
         </style>
       </head>
       <body>
-        <h1>Tasks Export - ${new Date().toLocaleDateString()}</h1>
+        <h1>Xuất công việc - ${new Date().toLocaleDateString()}</h1>
         <table>
           <thead>
             <tr>
@@ -399,13 +399,13 @@ export const exportTasksToPDF = (
         printWindow.document.close();
       } catch (error) {
         console.error("Failed to write PDF content:", error);
-        alert("Failed to generate PDF. Please try again.");
+        alert("Không thể tạo PDF. Vui lòng thử lại.");
       }
     } else {
-      alert("Please allow popups to export as PDF");
+      alert("Vui lòng cho phép cửa sổ bật lên để xuất PDF");
     }
   } catch (error) {
     console.error("Failed to export tasks to PDF:", error);
-    alert("Failed to export tasks to PDF. Please try again.");
+    alert("Không thể xuất công việc sang PDF. Vui lòng thử lại.");
   }
 };

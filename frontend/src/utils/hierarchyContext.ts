@@ -78,7 +78,7 @@ export const withOrganizationContext = <T extends any[]>(
   return (...args: T) => {
     const organizationId = getCurrentOrganizationId();
     if (!organizationId) {
-      throw new Error("No organization selected. Please select an organization first.");
+      throw new Error("Chưa chọn tổ chức. Vui lòng chọn tổ chức trước.");
     }
     return fn(organizationId, ...args);
   };
@@ -90,7 +90,7 @@ export const withWorkspaceContext = <T extends any[]>(
   return (...args: T) => {
     const workspaceId = getCurrentWorkspaceId();
     if (!workspaceId) {
-      throw new Error("No workspace selected. Please select a workspace first.");
+      throw new Error("Chưa chọn không gian làm việc. Vui lòng chọn không gian làm việc trước.");
     }
     return fn(workspaceId, ...args);
   };
@@ -102,7 +102,7 @@ export const withProjectContext = <T extends any[]>(
   return (...args: T) => {
     const projectId = getCurrentProjectId();
     if (!projectId) {
-      throw new Error("No project selected. Please select a project first.");
+      throw new Error("Chưa chọn dự án. Vui lòng chọn dự án trước.");
     }
     return fn(projectId, ...args);
   };

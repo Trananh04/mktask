@@ -227,7 +227,7 @@ export function WorkspaceProvider({ children }: WorkspaceProviderProps) {
           ),
           taskPriority: processChartData(
             results[WorkspaceChartType.TASK_PRIORITY],
-            "Task Priority"
+            "Độ ưu tiên công việc"
           ),
           kpiMetrics: processChartData(results[WorkspaceChartType.KPI_METRICS], "KPI Metrics"),
           taskType: processChartData(results[WorkspaceChartType.TASK_TYPE], "Task Type"),
@@ -249,7 +249,7 @@ export function WorkspaceProvider({ children }: WorkspaceProviderProps) {
         }));
       } catch (err) {
         console.error("Error fetching analytics data:", err);
-        const errorMessage = err?.message ? err.message : "Failed to load workspace analytics data";
+        const errorMessage = err?.message ? err.message : "Không thể tải dữ liệu phân tích không gian làm việc";
 
         setWorkspaceState((prev) => ({
           ...prev,
@@ -275,7 +275,7 @@ export function WorkspaceProvider({ children }: WorkspaceProviderProps) {
       createWorkspace: async (workspaceData: WorkspaceData): Promise<Workspace> => {
         const organizationId = getCurrentOrganizationId();
         if (!organizationId) {
-          throw new Error("No organization selected. Please select an organization first.");
+          throw new Error("Chưa chọn tổ chức. Vui lòng chọn tổ chức trước.");
         }
 
         const createData: CreateWorkspaceData = {
@@ -347,7 +347,7 @@ export function WorkspaceProvider({ children }: WorkspaceProviderProps) {
       ): Promise<Workspace[]> => {
         const orgId = organizationId || getCurrentOrganizationId();
         if (!orgId) {
-          throw new Error("No organization selected.");
+          throw new Error("Chưa chọn tổ chức.");
         }
         return await handleApiOperation(
           () => workspaceApi.getArchivedWorkspaces(orgId),
@@ -427,7 +427,7 @@ export function WorkspaceProvider({ children }: WorkspaceProviderProps) {
       getWorkspaceBySlug: async (slug: string, organizationId?: string): Promise<Workspace> => {
         const orgId = organizationId || getCurrentOrganizationId();
         if (!orgId) {
-          throw new Error("No organization selected. Please select an organization first.");
+          throw new Error("Chưa chọn tổ chức. Vui lòng chọn tổ chức trước.");
         }
 
         const cacheKey = `${orgId}:${slug}`;

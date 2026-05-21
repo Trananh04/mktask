@@ -75,12 +75,12 @@ export function VideoPreviewModal({
               </p>
             </div>
             <div className="flex items-center gap-2 ml-4">
-              <Tooltip content="Download Video">
+              <Tooltip content="Tải video xuống">
                 <ActionButton onClick={onDownload} secondary className="h-9 px-3">
                   <ArrowDownToLine className="w-4 h-4" />
                 </ActionButton>
               </Tooltip>
-              <Tooltip content="Close Preview">
+              <Tooltip content="Đóng xem trước">
                 <ActionButton
                   onClick={onClose}
                   variant="outline"
@@ -106,7 +106,7 @@ export function VideoPreviewModal({
               onLoadedData={() => setVideoLoaded(true)}
               className="max-w-full max-h-full object-contain rounded-md shadow-md"
             >
-              Your browser does not support HTML5 video.
+              Trình duyệt của bạn không hỗ trợ video HTML5.
             </video>
           </div>
         </div>

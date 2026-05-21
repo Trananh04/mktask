@@ -29,12 +29,12 @@ interface VoiceControllerOptions {
 }
 
 const ERROR_MESSAGES: Record<string, string> = {
-  "not-allowed": "Microphone access denied. Please allow microphone permission in your browser.",
-  "no-speech": "No speech detected. Please try again.",
-  "audio-capture": "No microphone found. Please ensure a microphone is connected.",
-  network: "Network error. Please check your connection and try again.",
-  aborted: "Speech recognition was aborted.",
-  "language-not-supported": "The selected language is not supported.",
+  "not-allowed": "Không có quyền truy cập micro. Vui lòng cho phép quyền micro trong trình duyệt.",
+  "no-speech": "Không phát hiện giọng nói. Vui lòng thử lại.",
+  "audio-capture": "Không tìm thấy micro. Vui lòng kiểm tra thiết bị.",
+  network: "Lỗi mạng. Vui lòng kiểm tra kết nối và thử lại.",
+  aborted: "Nhận diện giọng nói đã bị dừng.",
+  "language-not-supported": "Ngôn ngữ đã chọn không được hỗ trợ.",
 };
 
 export class VoiceController {
@@ -214,7 +214,7 @@ export class VoiceController {
 
       this.recognition.start();
     } catch (err: any) {
-      const errorMessage = err?.message || "Failed to start speech recognition.";
+      const errorMessage = err?.message || "Không thể bắt đầu nhận diện giọng nói.";
       this.setState({ error: errorMessage, isListening: false });
       this.callbacks.onError?.(errorMessage);
       this.shouldKeepListening = false;

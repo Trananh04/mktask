@@ -370,7 +370,7 @@ export function TaskProvider({ children }: TaskProviderProps) {
         const organizationId =
           localStorage.getItem("currentOrganizationId") || taskApi.getCurrentOrganization();
         if (!organizationId) {
-          throw new Error("No organization selected. Please select an organization first.");
+          throw new Error("Chưa chọn tổ chức. Vui lòng chọn tổ chức trước.");
         }
 
         const result = await handleApiOperation(
@@ -1127,13 +1127,13 @@ export function TaskProvider({ children }: TaskProviderProps) {
         if (projectId) {
           const organizationId = getCurrentOrganizationId();
           if (!organizationId) {
-            throw new Error("No organization selected. Please select an organization first.");
+            throw new Error("Chưa chọn tổ chức. Vui lòng chọn tổ chức trước.");
           }
           await contextValue.getTasksByProject(projectId, organizationId);
         } else {
           const organizationId = getCurrentOrganizationId();
           if (!organizationId) {
-            throw new Error("No organization selected. Please select an organization first.");
+            throw new Error("Chưa chọn tổ chức. Vui lòng chọn tổ chức trước.");
           }
           await contextValue.getAllTasks(organizationId);
         }
@@ -1182,7 +1182,7 @@ export function TaskProvider({ children }: TaskProviderProps) {
       }> => {
         const orgId = organizationId || taskApi.getCurrentOrganization();
         if (!orgId) {
-          throw new Error("No organization selected. Please select an organization first.");
+          throw new Error("Chưa chọn tổ chức. Vui lòng chọn tổ chức trước.");
         }
         const result = await handleApiOperation(() =>
           taskApi.getTasksByOrganization(orgId, params)
@@ -1222,7 +1222,7 @@ export function TaskProvider({ children }: TaskProviderProps) {
       }> => {
         const orgId = organizationId || taskApi.getCurrentOrganization();
         if (!orgId) {
-          throw new Error("No organization selected. Please select an organization first.");
+          throw new Error("Chưa chọn tổ chức. Vui lòng chọn tổ chức trước.");
         }
 
         const result = await handleApiOperation(() => taskApi.getTodayAgenda(orgId, params));
@@ -1251,11 +1251,11 @@ export function TaskProvider({ children }: TaskProviderProps) {
       getCurrentTasks: async (): Promise<Task[]> => {
         const projectId = getCurrentProjectId();
         if (!projectId) {
-          throw new Error("No project selected. Please select a project first.");
+          throw new Error("Chưa chọn dự án. Vui lòng chọn dự án trước.");
         }
         const organizationId = getCurrentOrganizationId();
         if (!organizationId) {
-          throw new Error("No organization selected. Please select an organization first.");
+          throw new Error("Chưa chọn tổ chức. Vui lòng chọn tổ chức trước.");
         }
         return await methods.getTasksByProject(projectId, organizationId);
       },
@@ -1263,7 +1263,7 @@ export function TaskProvider({ children }: TaskProviderProps) {
       getCurrentOrganizationTasks: async (params?: GetTasksParams): Promise<TasksResponse> => {
         const organizationId = getCurrentOrganizationId();
         if (!organizationId) {
-          throw new Error("No organization selected. Please select an organization first.");
+          throw new Error("Chưa chọn tổ chức. Vui lòng chọn tổ chức trước.");
         }
         return await methods.getTasksByOrganization(organizationId, params);
       },
@@ -1271,7 +1271,7 @@ export function TaskProvider({ children }: TaskProviderProps) {
       getCurrentWorkspaceTasks: async (): Promise<Task[]> => {
         const workspaceId = getCurrentWorkspaceId();
         if (!workspaceId) {
-          throw new Error("No workspace selected. Please select a workspace first.");
+          throw new Error("Chưa chọn không gian làm việc. Vui lòng chọn không gian làm việc trước.");
         }
         return await methods.getTasksByWorkspace(workspaceId);
       },
@@ -1279,7 +1279,7 @@ export function TaskProvider({ children }: TaskProviderProps) {
       getCurrentProjectLabels: async (): Promise<TaskLabel[]> => {
         const projectId = getCurrentProjectId();
         if (!projectId) {
-          throw new Error("No project selected. Please select a project first.");
+          throw new Error("Chưa chọn dự án. Vui lòng chọn dự án trước.");
         }
         return await methods.getProjectLabels(projectId);
       },

@@ -223,7 +223,7 @@ export function CsvImportModal({
         if (!selected) return;
 
         if (!selected.name.endsWith(".csv")) {
-            setParseError("Please select a CSV file");
+            setParseError("Vui lòng chọn tệp CSV");
             return;
         }
 
@@ -238,7 +238,7 @@ export function CsvImportModal({
                 const { headers, rows } = parseCsv(text);
 
                 if (!headers.includes("title") && !headers.includes("name") && !headers.includes("task") && !headers.includes("summary")) {
-                    setParseError("CSV must have a 'title' column (or 'name', 'task', 'summary')");
+                    setParseError("CSV cần có cột 'title' (hoặc 'name', 'task', 'summary')");
                     return;
                 }
 
@@ -247,13 +247,13 @@ export function CsvImportModal({
                     .filter(Boolean) as ParsedTask[];
 
                 if (tasks.length === 0) {
-                    setParseError("No valid tasks found in CSV");
+                    setParseError("Không tìm thấy công việc hợp lệ trong CSV");
                     return;
                 }
 
                 setParsedTasks(tasks);
             } catch {
-                setParseError("Failed to parse CSV file");
+                setParseError("Không thể đọc tệp CSV");
             }
         };
         reader.readAsText(selected);
@@ -270,7 +270,7 @@ export function CsvImportModal({
         try {
             statuses = await getTaskStatusByProject(projectId);
         } catch {
-            toast.error("Failed to load task statuses");
+            toast.error("Không thể tải trạng thái công việc");
             setIsImporting(false);
             return;
         }
@@ -279,7 +279,7 @@ export function CsvImportModal({
             statuses.find((s: any) => s.isDefault) || statuses[0];
 
         if (!defaultStatus) {
-            toast.error("No task statuses found for this project");
+            toast.error("Không tìm thấy trạng thái công việc cho dự án này");
             setIsImporting(false);
             return;
         }
@@ -325,7 +325,7 @@ export function CsvImportModal({
                 } catch { }
             }
         } catch (err) {
-            toast.error("Failed to import tasks");
+            toast.error("Không thể nhập công việc");
         } finally {
             setIsImporting(false);
         }
@@ -343,9 +343,9 @@ export function CsvImportModal({
                             <Upload className="projects-modal-icon-content w-5 h-5" />
                         </div>
                         <div className="projects-modal-info">
-                            <DialogTitle className="projects-modal-title">Import Tasks from CSV</DialogTitle>
+                            <DialogTitle className="projects-modal-title">Nhập công việc từ CSV</DialogTitle>
                             <DialogDescription className="projects-modal-description">
-                                Upload a CSV file to create tasks in bulk
+                                Tải lên tệp CSV để tạo nhiều công việc
                             </DialogDescription>
                         </div>
                     </div>
@@ -356,7 +356,7 @@ export function CsvImportModal({
                     {needsWorkspace && (
                         <div className="projects-form-field">
                             <Label className="projects-form-label text-sm font-medium">
-                                Workspace <span className="projects-form-label-required">*</span>
+                                Không gian làm việc <span className="projects-form-label-required">*</span>
                             </Label>
                             <select
                                 value={selectedWorkspaceId}
@@ -367,7 +367,7 @@ export function CsvImportModal({
                                 disabled={loadingWorkspaces || isImporting}
                                 className="w-full h-10 rounded-md border border-[var(--border)] bg-[var(--background)] px-3 text-sm"
                             >
-                                <option value="">{loadingWorkspaces ? "Loading..." : "Select workspace"}</option>
+                                <option value="">{loadingWorkspaces ? "Đang tải..." : "Chọn không gian làm việc"}</option>
                                 {workspaces.map((ws) => (
                                     <option key={ws.id} value={ws.id}>{ws.name}</option>
                                 ))}
@@ -379,7 +379,7 @@ export function CsvImportModal({
                     {needsProject && (
                         <div className="projects-form-field">
                             <Label className="projects-form-label text-sm font-medium">
-                                Project <span className="projects-form-label-required">*</span>
+                                Dự án <span className="projects-form-label-required">*</span>
                             </Label>
                             <select
                                 value={selectedProjectId}
@@ -389,10 +389,10 @@ export function CsvImportModal({
                             >
                                 <option value="">
                                     {loadingProjects
-                                        ? "Loading..."
+                                        ? "Đang tải..."
                                         : !prefilledWorkspaceId && !selectedWorkspaceId
-                                            ? "Select workspace first"
-                                            : "Select project"}
+                                            ? "Chọn không gian làm việc trước"
+                                            : "Chọn dự án"}
                                 </option>
                                 {projects.map((p) => (
                                     <option key={p.id} value={p.id}>{p.name}</option>
@@ -413,10 +413,10 @@ export function CsvImportModal({
                                 disabled={loadingSprints || isImporting}
                                 className="w-full h-10 rounded-md border border-[var(--border)] bg-[var(--background)] px-3 text-sm"
                             >
-                                <option value="">{loadingSprints ? "Loading..." : "Default sprint"}</option>
+                                <option value="">{loadingSprints ? "Đang tải..." : "Sprint mặc định"}</option>
                                 {sprints.map((s) => (
                                     <option key={s.id} value={s.id}>
-                                        {s.name}{s.isDefault ? " (Default)" : ""}{s.status === "ACTIVE" ? " (Active)" : ""}
+                                        {s.name}{s.isDefault ? " (Mặc định)" : ""}{s.status === "ACTIVE" ? " (Đang hoạt động)" : ""}
                                     </option>
                                 ))}
                             </select>
@@ -426,12 +426,12 @@ export function CsvImportModal({
                     {/* Show pre-filled context */}
                     {prefilledWorkspaceName && (
                         <div className="text-sm text-[var(--muted-foreground)]">
-                            Workspace: <span className="font-medium text-[var(--foreground)]">{prefilledWorkspaceName}</span>
+                            Không gian làm việc: <span className="font-medium text-[var(--foreground)]">{prefilledWorkspaceName}</span>
                         </div>
                     )}
                     {prefilledProjectName && (
                         <div className="text-sm text-[var(--muted-foreground)]">
-                            Project: <span className="font-medium text-[var(--foreground)]">{prefilledProjectName}</span>
+                            Dự án: <span className="font-medium text-[var(--foreground)]">{prefilledProjectName}</span>
                         </div>
                     )}
                     {(prefilledSprintName || sprints.find(s => s.id === prefilledSprintId)?.name) && (
@@ -442,7 +442,7 @@ export function CsvImportModal({
 
                     {/* File upload */}
                     <div className="projects-form-field">
-                        <Label className="projects-form-label text-sm font-medium">CSV File</Label>
+                        <Label className="projects-form-label text-sm font-medium">Tệp CSV</Label>
                         <input
                             ref={fileInputRef}
                             type="file"
@@ -479,9 +479,9 @@ export function CsvImportModal({
                             ) : (
                                 <div className="space-y-1">
                                     <Upload className="w-8 h-8 mx-auto text-[var(--muted-foreground)]" />
-                                    <p className="text-sm text-[var(--muted-foreground)]">Click to upload CSV file</p>
+                                    <p className="text-sm text-[var(--muted-foreground)]">Nhấn để tải tệp CSV lên</p>
                                     <p className="text-xs text-[var(--muted-foreground)]">
-                                        Required column: title. Optional: description, priority, type, dueDate
+                                        Cột bắt buộc: title. Không bắt buộc: description, priority, type, dueDate
                                     </p>
                                 </div>
                             )}
@@ -500,18 +500,18 @@ export function CsvImportModal({
                     {parsedTasks.length > 0 && !importDone && (
                         <div className="space-y-2">
                             <p className="text-sm font-medium">
-                                Found {parsedTasks.length} task{parsedTasks.length > 1 ? "s" : ""} to import:
+                                Tìm thấy {parsedTasks.length} công việc để nhập:
                             </p>
                             <div className="overflow-hidden border border-[var(--border)] rounded-md">
                                 <table className="w-full text-xs table-fixed">
                                     <thead className="bg-[var(--accent)] sticky top-0">
                                         <tr>
                                             <th className="text-left p-2 font-medium w-8">#</th>
-                                            <th className="text-left p-2 font-medium w-1/4">Title</th>
-                                            <th className="text-left p-2 font-medium w-1/4">Description</th>
-                                            <th className="text-left p-2 font-medium w-1/6">Priority</th>
-                                            <th className="text-left p-2 font-medium w-1/6">Type</th>
-                                            <th className="text-left p-2 font-medium w-1/6">Due Date</th>
+                                            <th className="text-left p-2 font-medium w-1/4">Tiêu đề</th>
+                                            <th className="text-left p-2 font-medium w-1/4">Mô tả</th>
+                                            <th className="text-left p-2 font-medium w-1/6">Độ ưu tiên</th>
+                                            <th className="text-left p-2 font-medium w-1/6">Loại</th>
+                                            <th className="text-left p-2 font-medium w-1/6">Hạn hoàn thành</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -534,7 +534,7 @@ export function CsvImportModal({
                             </div>
                             {parsedTasks.length > 5 && (
                                 <p className="text-xs text-[var(--muted-foreground)] text-right">
-                                    Showing top 5 tasks out of {parsedTasks.length} total
+                                    Đang hiển thị 5 công việc đầu trong tổng số {parsedTasks.length}
                                 </p>
                             )}
                         </div>
@@ -544,7 +544,7 @@ export function CsvImportModal({
                     {isImporting && (
                         <div className="space-y-2">
                             <div className="flex justify-between text-sm">
-                                <span>Importing tasks...</span>
+                                <span>Đang nhập công việc...</span>
                                 <span>{importProgress.done}/{importProgress.total}</span>
                             </div>
                             <div className="w-full bg-[var(--accent)] rounded-full h-2">
@@ -563,7 +563,7 @@ export function CsvImportModal({
                     {importDone && (
                         <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
                             <CheckCircle2 className="w-4 h-4" />
-                            Import complete! Created {importProgress.done - importProgress.failed} task{importProgress.done - importProgress.failed !== 1 ? "s" : ""}.
+                            Nhập hoàn tất! Đã tạo {importProgress.done - importProgress.failed} công việc.
                             {importProgress.failed > 0 && ` (${importProgress.failed} failed)`}
                         </div>
                     )}
@@ -571,7 +571,7 @@ export function CsvImportModal({
                     {/* Actions */}
                     <div className="flex justify-end gap-3 pt-2">
                         <ActionButton onClick={onClose} disabled={isImporting}>
-                            {importDone ? "Close" : "Cancel"}
+                            {importDone ? "Đóng" : "Hủy"}
                         </ActionButton>
                         {!importDone && (
                             <ActionButton
@@ -579,7 +579,7 @@ export function CsvImportModal({
                                 onClick={handleImport}
                                 disabled={!canImport}
                             >
-                                {isImporting ? "Importing..." : `Import ${parsedTasks.length > 0 ? parsedTasks.length : ""} Task${parsedTasks.length !== 1 ? "s" : ""}`}
+                                {isImporting ? "Đang nhập..." : `Nhập ${parsedTasks.length > 0 ? parsedTasks.length : ""} công việc`}
                             </ActionButton>
                         )}
                     </div>

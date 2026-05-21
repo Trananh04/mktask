@@ -21,10 +21,10 @@ const extendedQuestions: QuestionType[] = [
   ...questions,
   {
     id: "organizationName",
-    question: "What's your organization name?",
-    description: "This will be the name of your first organization.",
-    inputLabel: "Organization Name",
-    placeholder: "Enter your organization name",
+    question: "Tên tổ chức của bạn là gì?",
+    description: "Đây sẽ là tên tổ chức đầu tiên của bạn.",
+    inputLabel: "Tên tổ chức",
+    placeholder: "Nhập tên tổ chức",
     type: "input" as const,
   },
 ];
@@ -75,12 +75,12 @@ function IntroQuestions({ onComplete }: { onComplete: () => void }) {
           createOrganizationAndHandleRedirect(),
         ]);
 
-        toast.success("Profile and organization created successfully!");
+        toast.success("Đã tạo hồ sơ và tổ chức thành công!");
         router.reload();
         onComplete();
       } catch (error: any) {
         console.error("Error:", error);
-        toast.error(error?.message || "Failed to complete setup. Please try again.");
+        toast.error(error?.message || "Không thể hoàn tất thiết lập. Vui lòng thử lại.");
       } finally {
         setIsSubmitting(false);
       }
@@ -106,7 +106,7 @@ function IntroQuestions({ onComplete }: { onComplete: () => void }) {
       const result = await createOrganization({
         name: orgName.trim(),
         slug,
-        description: "My organization created during onboarding",
+        description: "Tổ chức được tạo trong quá trình thiết lập ban đầu",
         settings: {
           allowInvites: true,
           requireEmailVerification: false,
@@ -132,7 +132,7 @@ function IntroQuestions({ onComplete }: { onComplete: () => void }) {
       });
       return result;
     } catch (error: any) {
-      throw new Error(error?.message || "Failed to create organization");
+      throw new Error(error?.message || "Không thể tạo tổ chức");
     }
   };
 
@@ -147,7 +147,7 @@ function IntroQuestions({ onComplete }: { onComplete: () => void }) {
 
   return (
     <div className="min-h-screen bg-[var(--background)]">
-      <SEO title="Setup Organization" />
+      <SEO title="Thiết lập tổ chức" />
       <div className="login-container">
         <div className="login-content-panel hidden md:block">
           <LoginContent />
@@ -159,7 +159,7 @@ function IntroQuestions({ onComplete }: { onComplete: () => void }) {
         <div className="w-full lg:w-1/2 px-6 py-12 overflow-y-auto">
           <div className="w-full bg-[var(--background)] pb-4 flex justify-end items-end">
             <span className="text-sm font-medium text-[var(--foreground)]">
-              Question {currentQuestion + 1} of {totalQuestions}
+              Câu hỏi {currentQuestion + 1}/{totalQuestions}
             </span>
           </div>
           <div className="px-[10%] space-y-8">
@@ -170,7 +170,7 @@ function IntroQuestions({ onComplete }: { onComplete: () => void }) {
               <p className="text-[var(--foreground)] text-sm">
                 {currentQuestionData.type === "input"
                   ? currentQuestionData.description
-                  : "Please select one option that best describes your preference."}
+                  : "Vui lòng chọn một tùy chọn phù hợp nhất với bạn."}
               </p>
             </div>
 
@@ -195,26 +195,26 @@ function IntroQuestions({ onComplete }: { onComplete: () => void }) {
                   <div className="mt-6 pt-6 border-t border-[var(--border)] space-y-6">
                     <div className="space-y-4">
                       <Label className="text-sm font-medium text-[var(--foreground)]">
-                        Workspace Name
+                        Tên không gian làm việc
                       </Label>
                       <Input
                         type="text"
                         value={workspaceName}
                         onChange={(e) => setWorkspaceName(e.target.value)}
-                        placeholder="e.g., Main Workspace"
+                        placeholder="VD: Không gian chính"
                         className="border-[var(--border)] bg-[var(--background)] p-4 text-lg"
                       />
                     </div>
 
                     <div className="space-y-4">
                       <Label className="text-sm font-medium text-[var(--foreground)]">
-                        Project Name
+                        Tên dự án
                       </Label>
                       <Input
                         type="text"
                         value={projectName}
                         onChange={(e) => setProjectName(e.target.value)}
-                        placeholder="e.g., First Project"
+                        placeholder="VD: Dự án đầu tiên"
                         className="border-[var(--border)] bg-[var(--background)] p-4 text-lg"
                       />
                     </div>
@@ -258,7 +258,7 @@ function IntroQuestions({ onComplete }: { onComplete: () => void }) {
                 }`}
               >
                 <ChevronLeft className="h-5 w-5" />
-                Previous
+                Trước
               </button>
 
               <button
@@ -273,12 +273,12 @@ function IntroQuestions({ onComplete }: { onComplete: () => void }) {
                 {isSubmitting ? (
                   <>
                     <div className="animate-spin rounded-full h-5 w-5 border-2 border-white/20 border-t-white"></div>
-                    Setting up...
+                    Đang thiết lập...
                   </>
                 ) : isLastQuestion ? (
-                  "Complete Setup"
+                  "Hoàn tất thiết lập"
                 ) : (
-                  "Next"
+                  "Tiếp"
                 )}
                 {!isLastQuestion && <ChevronRight className="h-5 w-5" />}
               </button>
@@ -343,11 +343,11 @@ export default function CreateOrganizationPage() {
       <div className="flex items-center justify-center min-h-screen bg-[var(--background)]">
         <div className="max-w-md text-center space-y-4 p-8">
           <h2 className="text-xl font-semibold text-[var(--foreground)]">
-            Organization Creation Disabled
+            Tạo tổ chức đang bị tắt
           </h2>
           <p className="text-sm text-[var(--muted-foreground)]">
-            Organization creation is currently restricted by your administrator.
-            Please contact your admin to be assigned to an organization.
+            Quản trị viên đang giới hạn việc tạo tổ chức.
+            Vui lòng liên hệ quản trị viên để được gán vào một tổ chức.
           </p>
         </div>
       </div>

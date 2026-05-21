@@ -136,9 +136,9 @@ function normalizeActivity(activity: any): ActivityFeedItem {
   const newValue = activity.newValue || {};
 
   const userName =
-    user.name || `${user.firstName || ""} ${user.lastName || ""}`.trim() || "Unknown User";
+    user.name || `${user.firstName || ""} ${user.lastName || ""}`.trim() || "Người dùng không rõ";
 
-  const description = activity.description || newValue?.title || "Activity";
+  const description = activity.description || newValue?.title || "Hoạt động";
 
   const entityType = (activity.entityType || "").toLowerCase();
 
@@ -190,7 +190,7 @@ export function ActivityFeedPanel({
   error,
   onRetry,
   onClearFilter,
-  emptyMessage = "No activity yet",
+  emptyMessage = "Chưa có hoạt động",
   workspaceSlug: fallbackWorkspaceSlug,
 }: ActivityFeedPanelProps) {
   const normalizedActivities = activities.map(normalizeActivity);
@@ -222,7 +222,7 @@ export function ActivityFeedPanel({
           </div>
           <p className="activity-empty-title">{emptyMessage}</p>
           <p className="activity-empty-description">
-            Recent activity will appear here once things start moving.
+            Hoạt động gần đây sẽ hiển thị tại đây khi có thay đổi.
           </p>
           {onClearFilter && (
             <Button
@@ -231,7 +231,7 @@ export function ActivityFeedPanel({
               onClick={onClearFilter}
               className="activity-empty-button"
             >
-              Show All Activities
+              Hiển thị tất cả hoạt động
             </Button>
           )}
         </div>
@@ -259,12 +259,12 @@ export function ActivityFeedPanel({
             <div className="activity-content-container">
               <div className="activity-content-main">
                 <span className="activity-content-user-name">
-                  {activity?.user?.name ? activity.user.name : "Unknown User"}
+                  {activity?.user?.name ? activity.user.name : "Người dùng không rõ"}
                 </span>
                 <span className="activity-content-action">
                   {activity.type === "invitation_sent" ? (
                     <>
-                      Sent invitation to{" "}
+                      Đã gửi lời mời tới{" "}
                       <span className="activity-content-user-name">
                         {activity.newValue?.user?.firstName && activity.newValue?.user?.lastName
                           ? `${activity.newValue.user.firstName} ${activity.newValue.user.lastName}`
@@ -273,9 +273,9 @@ export function ActivityFeedPanel({
                             ? `${activity.newValue.member.user.firstName} ${activity.newValue.member.user.lastName}`
                             : activity.newValue?.user?.email ||
                               activity.newValue?.member?.user?.email ||
-                              "Unknown User"}
+                              "Người dùng không rõ"}
                       </span>{" "}
-                      to join {activity.newValue?.entity?.type || "organization/workspace/project"}
+                      tham gia {activity.newValue?.entity?.type || "tổ chức/không gian làm việc/dự án"}
                     </>
                   ) : (
                     activity.action
@@ -283,12 +283,12 @@ export function ActivityFeedPanel({
                 </span>
                 {activity.entityId && activity.type !== "invitation_sent" && (() => {
                   const href = getEntityLink(activity, fallbackWorkspaceSlug);
-                  let entityLabel = activity.entityType || "Item";
+                  let entityLabel = activity.entityType || "mục";
                   // Normalize entity labels for display
-                  if (entityLabel.toLowerCase().includes("attachment")) entityLabel = "Attachment";
-                  if (entityLabel.toLowerCase().includes("comment")) entityLabel = "Comment";
+                  if (entityLabel.toLowerCase().includes("attachment")) entityLabel = "tệp đính kèm";
+                  if (entityLabel.toLowerCase().includes("comment")) entityLabel = "bình luận";
                   
-                  const label = `View ${entityLabel}`;
+                  const label = `Xem ${entityLabel}`;
                   const isSafePath = /^\/[^/]/.test(href) && !/^[a-zA-Z][a-zA-Z\d+\-.]*:/.test(href);
                   if (href !== "#" && isSafePath) {
                     return (
@@ -304,7 +304,7 @@ export function ActivityFeedPanel({
                       <button
                         className="activity-content-link"
                         onClick={() =>
-                          toast.error(`Unable to navigate to this ${activity.entityType?.toLowerCase() || "item"}. The details may have been deleted or are no longer accessible.`)
+                          toast.error("Không thể mở mục này. Chi tiết có thể đã bị xóa hoặc bạn không còn quyền truy cập.")
                         }
                       >
                         {label}

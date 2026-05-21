@@ -211,7 +211,7 @@ export function ProjectProvider({ children }: ProjectProviderProps) {
           taskStatus: processChartData(results[ProjectChartType.TASK_STATUS], "Task Status"),
           taskType: processChartData(results[ProjectChartType.TASK_TYPE], "Task Type"),
           kpiMetrics: processChartData(results[ProjectChartType.KPI_METRICS], "KPI Metrics"),
-          taskPriority: processChartData(results[ProjectChartType.TASK_PRIORITY], "Task Priority"),
+          taskPriority: processChartData(results[ProjectChartType.TASK_PRIORITY], "Độ ưu tiên công việc"),
           sprintVelocity: processChartData(
             results[ProjectChartType.SPRINT_VELOCITY],
             "Sprint Velocity"
@@ -226,7 +226,7 @@ export function ProjectProvider({ children }: ProjectProviderProps) {
         }));
       } catch (err) {
         console.error("Error fetching analytics data:", err);
-        const errorMessage = err?.message ? err.message : "Failed to load project analytics data";
+        const errorMessage = err?.message ? err.message : "Không thể tải dữ liệu phân tích dự án";
 
         setProjectState((prev) => ({
           ...prev,

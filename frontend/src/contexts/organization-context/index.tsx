@@ -262,7 +262,7 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
         console.error("Error fetching analytics data:", err);
         const errorMessage = err?.message
           ? err.message
-          : "Failed to load organization analytics data";
+          : "Không thể tải dữ liệu phân tích tổ chức";
 
         setOrganizationState((prev) => ({
           ...prev,

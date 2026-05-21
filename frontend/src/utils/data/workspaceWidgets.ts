@@ -9,7 +9,7 @@ import { Widget } from "@/types/analytics";
 export const workspaceWidgets: Widget[] = [
   {
     id: "kpi-metrics",
-    title: "KPI Metrics",
+    title: "Chỉ số KPI",
     component: KPIMetrics,
     dataKey: "kpiMetrics",
     visible: true,
@@ -18,7 +18,7 @@ export const workspaceWidgets: Widget[] = [
   },
   {
     id: "project-status",
-    title: "Project Status Distribution",
+    title: "Phân bố trạng thái dự án",
     component: ProjectStatusChart,
     dataKey: "projectStatus",
     visible: true,
@@ -27,7 +27,7 @@ export const workspaceWidgets: Widget[] = [
   },
   {
     id: "task-priority",
-    title: "Task Priority Breakdown",
+    title: "Phân bố độ ưu tiên công việc",
     component: TaskPriorityChart,
     dataKey: "taskPriority",
     visible: true,
@@ -36,7 +36,7 @@ export const workspaceWidgets: Widget[] = [
   },
   {
     id: "task-type",
-    title: "Task Type Distribution",
+    title: "Phân bố loại công việc",
     component: TaskTypeChart,
     dataKey: "taskType",
     visible: true,
@@ -45,7 +45,7 @@ export const workspaceWidgets: Widget[] = [
   },
   {
     id: "sprint-status",
-    title: "Sprint Status Overview",
+    title: "Tổng quan trạng thái sprint",
     component: SprintStatusChart,
     dataKey: "sprintStatus",
     visible: true,
@@ -54,7 +54,7 @@ export const workspaceWidgets: Widget[] = [
   },
   {
     id: "monthly-completion",
-    title: "Monthly Task Completion",
+    title: "Công việc hoàn thành theo tháng",
     component: MonthlyTaskCompletionChart,
     dataKey: "monthlyCompletion",
     visible: false,
