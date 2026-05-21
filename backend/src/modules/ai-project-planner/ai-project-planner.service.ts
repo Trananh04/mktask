@@ -14,10 +14,13 @@ import { TasksService } from '../tasks/tasks.service';
 import {
   ApplyProjectPlanRequestDto,
   ApplyProjectPlanResponseDto,
+  AiProjectReportSummaryDto,
   PlannedProjectDto,
   PlannedTaskDto,
   PlanProjectRequestDto,
   ProjectPlanDto,
+  SummarizeReportsRequestDto,
+  SummarizeReportsResponseDto,
 } from './dto/ai-project-planner.dto';
 
 type Provider = 'openrouter' | 'openai' | 'google' | 'anthropic' | 'ollama' | 'custom';
@@ -133,6 +136,149 @@ export class AiProjectPlannerService {
     }
 
     return { createdProjects, createdTasks, warnings };
+  }
+
+  async summarizeReports(
+    dto: SummarizeReportsRequestDto,
+    userId: string,
+  ): Promise<SummarizeReportsResponseDto> {
+    const raw = await this.generateReportSummaryWithAi(dto, userId);
+    return this.normalizeReportSummary(raw, dto);
+  }
+
+  private async generateReportSummaryWithAi(dto: SummarizeReportsRequestDto, userId: string) {
+    const isEnabled = await this.settingsService.get('ai_enabled', userId);
+    if (isEnabled !== 'true') {
+      throw new BadRequestException('Bạn cần bật Trợ lý AI trong cài đặt để tóm tắt báo cáo.');
+    }
+
+    const [apiKey, model, rawApiUrl] = await Promise.all([
+      this.settingsService.get('ai_api_key', userId),
+      this.settingsService.get('ai_model', userId, 'gemini-2.0-flash'),
+      this.settingsService.get(
+        'ai_api_url',
+        userId,
+        'https://generativelanguage.googleapis.com/v1beta',
+      ),
+    ]);
+    if (!rawApiUrl || !model) {
+      throw new BadRequestException('Bạn cần cấu hình Model và API URL trong cài đặt AI.');
+    }
+
+    const provider = this.detectProvider(rawApiUrl);
+    if (!apiKey && provider !== 'ollama') {
+      throw new BadRequestException('Bạn cần nhập API key trong cài đặt AI.');
+    }
+
+    const messages = [
+      {
+        role: 'system',
+        content:
+          'Bạn là trợ lý quản lý dự án cho mktask. Hãy đọc báo cáo thô của nhân viên, viết lại rõ ý, tổng hợp vấn đề và đề xuất hành động. Chỉ trả về JSON hợp lệ, không bọc markdown.',
+      },
+      {
+        role: 'user',
+        content: this.buildReportSummaryPrompt(dto),
+      },
+    ];
+
+    const data = await this.callAiProvider(
+      rawApiUrl,
+      provider,
+      String(model),
+      apiKey || undefined,
+      messages,
+    );
+    const text = this.extractAiText(provider, data);
+    return this.parseJson(text);
+  }
+
+  private buildReportSummaryPrompt(dto: SummarizeReportsRequestDto): string {
+    const compactProjects = dto.projects.map((project) => ({
+      projectId: project.projectId,
+      projectName: project.projectName,
+      workspaceName: project.workspaceName,
+      reports: project.reports.map((report) => ({
+        reporterName: report.reporterName,
+        taskTitle: report.taskTitle,
+        reportType: report.reportType,
+        status: report.status,
+        progressPercent: report.progressPercent,
+        content: report.content,
+        blockers: report.blockers,
+      })),
+      pendingRequests: project.pendingRequests || [],
+    }));
+
+    return `Ngày báo cáo: ${dto.date}
+
+Yêu cầu đầu ra JSON:
+{
+  "overallSummary": "Tóm tắt điều hành ngắn gọn bằng tiếng Việt",
+  "projects": [
+    {
+      "projectId": "id nếu có",
+      "projectName": "Tên project",
+      "rewrittenSummary": "Viết lại rõ ràng ý chính từ báo cáo thô của nhân viên. Không bịa thêm dữ kiện.",
+      "progressAssessment": "Đánh giá tiến độ dựa trên nội dung và progressPercent nếu có",
+      "issues": ["Vấn đề/vướng mắc chính"],
+      "recommendations": ["Phương án giải quyết cụ thể"],
+      "nextActions": ["Hành động tiếp theo nên làm"],
+      "riskLevel": "LOW | MEDIUM | HIGH"
+    }
+  ]
+}
+
+Quy tắc:
+- Dùng tiếng Việt tự nhiên, rõ ý, phù hợp cho manager đọc nhanh.
+- Viết lại nội dung báo cáo thô thành mô tả chuyên nghiệp hơn nhưng giữ đúng ý người báo cáo.
+- Nếu người báo cáo viết mơ hồ, hãy nêu rõ là thông tin chưa đủ và đề xuất câu hỏi cần hỏi lại.
+- Không tự tạo dữ kiện, deadline, người phụ trách hoặc trạng thái không có trong dữ liệu.
+- Mỗi project tối đa 5 issues, 5 recommendations, 5 nextActions.
+- riskLevel HIGH nếu có blocker nghiêm trọng hoặc tiến độ thấp dưới 40%; MEDIUM nếu có blocker nhẹ/chờ duyệt/chưa rõ; LOW nếu ổn.
+
+Dữ liệu báo cáo:
+${JSON.stringify(compactProjects, null, 2)}`;
+  }
+
+  private normalizeReportSummary(
+    raw: unknown,
+    dto: SummarizeReportsRequestDto,
+  ): SummarizeReportsResponseDto {
+    const source = this.asRecord(raw);
+    const rawProjects = Array.isArray(source.projects) ? source.projects : [];
+    const projects: AiProjectReportSummaryDto[] = dto.projects.map((project, index) => {
+      const aiProject = this.asRecord(rawProjects[index]) || {};
+      const issues = this.asStringArray(aiProject.issues).slice(0, 5);
+      const recommendations = this.asStringArray(aiProject.recommendations).slice(0, 5);
+      const nextActions = this.asStringArray(aiProject.nextActions).slice(0, 5);
+      const riskLevel = this.toRiskLevel(aiProject.riskLevel);
+
+      return {
+        projectId: this.asOptionalString(aiProject.projectId) || project.projectId,
+        projectName: this.asOptionalString(aiProject.projectName) || project.projectName,
+        rewrittenSummary:
+          this.asOptionalString(aiProject.rewrittenSummary) ||
+          'AI chưa viết lại được báo cáo cho project này.',
+        progressAssessment:
+          this.asOptionalString(aiProject.progressAssessment) ||
+          'Chưa có đủ dữ liệu để đánh giá tiến độ.',
+        issues: issues.length > 0 ? issues : ['Chưa phát hiện vấn đề nổi bật.'],
+        recommendations:
+          recommendations.length > 0
+            ? recommendations
+            : ['Tiếp tục theo dõi báo cáo và cập nhật tiến độ đều đặn.'],
+        nextActions: nextActions.length > 0 ? nextActions : ['Kiểm tra lại báo cáo vào cuối ngày.'],
+        riskLevel,
+      };
+    });
+
+    return {
+      overallSummary:
+        this.asOptionalString(source.overallSummary) || 'AI đã tổng hợp báo cáo theo từng project.',
+      projects,
+      generatedAt: new Date().toISOString(),
+    };
   }
 
   private async generatePlanWithAi(
@@ -603,5 +749,13 @@ ${description}`;
 
   private asOptionalString(value: unknown): string | undefined {
     return typeof value === 'string' ? value : undefined;
+  }
+
+  private asStringArray(value: unknown): string[] {
+    return Array.isArray(value) ? value.map((item) => String(item).trim()).filter(Boolean) : [];
+  }
+
+  private toRiskLevel(value: unknown): 'LOW' | 'MEDIUM' | 'HIGH' {
+    return value === 'LOW' || value === 'MEDIUM' || value === 'HIGH' ? value : 'MEDIUM';
   }
 }
