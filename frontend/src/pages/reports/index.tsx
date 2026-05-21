@@ -125,6 +125,122 @@ function buildDailySummary(
   };
 }
 
+function buildProjectSummaries(
+  reports: TaskDailyReport[],
+  pendingRequests: TaskStatusChangeRequest[]
+) {
+  const groups = new Map<
+    string,
+    {
+      projectId: string;
+      projectName: string;
+      workspaceName: string;
+      reports: TaskDailyReport[];
+      pendingRequests: TaskStatusChangeRequest[];
+    }
+  >();
+
+  for (const report of reports) {
+    const project = report.task?.project;
+    const projectId = project?.id || "no-project";
+    const existing = groups.get(projectId);
+    if (existing) {
+      existing.reports.push(report);
+      continue;
+    }
+
+    groups.set(projectId, {
+      projectId,
+      projectName: project?.name || "Chưa có dự án",
+      workspaceName: project?.workspace?.name || "Workspace",
+      reports: [report],
+      pendingRequests: [],
+    });
+  }
+
+  for (const request of pendingRequests) {
+    const project = request.task?.project;
+    const projectId = project?.id || "no-project";
+    const existing = groups.get(projectId);
+    if (existing) {
+      existing.pendingRequests.push(request);
+      continue;
+    }
+
+    groups.set(projectId, {
+      projectId,
+      projectName: project?.name || "Chưa có dự án",
+      workspaceName: project?.workspace?.name || "Workspace",
+      reports: [],
+      pendingRequests: [request],
+    });
+  }
+
+  return Array.from(groups.values()).map((group) => {
+    const reportsWithProgress = group.reports.filter(
+      (report) => typeof report.progressPercent === "number"
+    );
+    const averageProgress =
+      reportsWithProgress.length > 0
+        ? Math.round(
+            reportsWithProgress.reduce(
+              (total, report) => total + (report.progressPercent || 0),
+              0
+            ) / reportsWithProgress.length
+          )
+        : null;
+    const blockerReports = group.reports.filter((report) => report.blockers?.trim());
+    const unreviewedReports = group.reports.filter((report) => report.status !== "REVIEWED");
+    const taskNames = Array.from(
+      new Set(group.reports.map((report) => report.task?.title).filter(Boolean))
+    ) as string[];
+
+    const issues: string[] = [];
+    if (blockerReports.length > 0) {
+      issues.push(`${blockerReports.length} báo cáo có vướng mắc cần xử lý.`);
+    }
+    if (averageProgress !== null && averageProgress < 50) {
+      issues.push(`Tiến độ trung bình mới đạt ${averageProgress}%, có nguy cơ chậm.`);
+    }
+    if (group.pendingRequests.length > 0) {
+      issues.push(`${group.pendingRequests.length} yêu cầu đổi trạng thái đang chờ duyệt.`);
+    }
+    if (unreviewedReports.length > 0) {
+      issues.push(`${unreviewedReports.length} báo cáo chưa được manager xem.`);
+    }
+    if (issues.length === 0) {
+      issues.push("Chưa phát hiện vấn đề nổi bật trong báo cáo hôm nay.");
+    }
+
+    const suggestions: string[] = [];
+    if (blockerReports.length > 0) {
+      suggestions.push("Trao đổi nhanh với người báo cáo để làm rõ vướng mắc và chốt người hỗ trợ.");
+    }
+    if (averageProgress !== null && averageProgress < 50) {
+      suggestions.push("Rà lại phạm vi task, tách nhỏ đầu việc và ưu tiên các hạng mục chặn tiến độ.");
+    }
+    if (group.pendingRequests.length > 0) {
+      suggestions.push("Duyệt hoặc từ chối các yêu cầu trạng thái để bảng công việc phản ánh đúng thực tế.");
+    }
+    if (unreviewedReports.length > 0) {
+      suggestions.push("Đánh dấu đã xem sau khi kiểm tra nội dung để tránh bỏ sót thông tin.");
+    }
+    if (suggestions.length === 0) {
+      suggestions.push("Tiếp tục theo dõi tiến độ ngày mai và giữ nhịp cập nhật báo cáo đều đặn.");
+    }
+
+    return {
+      ...group,
+      averageProgress,
+      blockerReports,
+      unreviewedReports,
+      taskNames,
+      issues,
+      suggestions,
+    };
+  });
+}
+
 function StatCard({
   icon,
   label,
@@ -225,6 +341,10 @@ export default function ReportsPage() {
   const dailySummary = useMemo(
     () => buildDailySummary(dailyReports, statusRequests, reviewedCount),
     [dailyReports, statusRequests, reviewedCount]
+  );
+  const projectSummaries = useMemo(
+    () => buildProjectSummaries(dailyReports, statusRequests),
+    [dailyReports, statusRequests]
   );
 
   const reviewStatusRequest = async (
@@ -390,6 +510,103 @@ export default function ReportsPage() {
                     </div>
                   </div>
                 </div>
+              </section>
+
+              <section className="rounded-lg border border-[var(--border)] bg-[var(--card)] shadow-sm">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border)] px-5 py-4">
+                  <div>
+                    <h2 className="text-base font-semibold">Tổng hợp vấn đề theo project</h2>
+                    <p className="text-sm text-[var(--muted-foreground)]">
+                      Viết lại báo cáo thành các vấn đề chính và gợi ý phương án xử lý cho từng dự án.
+                    </p>
+                  </div>
+                  <span className="rounded-md bg-slate-100 px-2.5 py-1 text-sm font-medium text-slate-700">
+                    {projectSummaries.length} project
+                  </span>
+                </div>
+
+                {projectSummaries.length === 0 ? (
+                  <div className="px-5 py-6 text-sm text-[var(--muted-foreground)]">
+                    Chưa có dữ liệu project để tổng hợp.
+                  </div>
+                ) : (
+                  <div className="grid gap-4 p-5">
+                    {projectSummaries.map((project) => (
+                      <article
+                        key={project.projectId}
+                        className="rounded-lg border border-[var(--border)] bg-[var(--background)] p-4"
+                      >
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h3 className="text-base font-semibold">{project.projectName}</h3>
+                              <span className="rounded-md bg-[var(--muted)] px-2 py-1 text-xs text-[var(--muted-foreground)]">
+                                {project.workspaceName}
+                              </span>
+                            </div>
+                            <p className="mt-1 text-sm text-[var(--muted-foreground)]">
+                              {project.reports.length} báo cáo
+                              {project.taskNames.length > 0 &&
+                                ` - ${project.taskNames.length} task được nhắc tới`}
+                            </p>
+                          </div>
+                          <div className="rounded-md bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700">
+                            {project.averageProgress === null
+                              ? "Chưa có tiến độ"
+                              : `${project.averageProgress}% tiến độ`}
+                          </div>
+                        </div>
+
+                        <div className="mt-4 grid gap-4 lg:grid-cols-2">
+                          <div className="rounded-lg bg-amber-50 p-4">
+                            <p className="text-sm font-semibold text-amber-900">Vấn đề tổng hợp</p>
+                            <ul className="mt-2 space-y-2 text-sm leading-6 text-amber-900">
+                              {project.issues.map((issue) => (
+                                <li key={issue} className="flex gap-2">
+                                  <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-600" />
+                                  <span>{issue}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+
+                          <div className="rounded-lg bg-emerald-50 p-4">
+                            <p className="text-sm font-semibold text-emerald-900">
+                              Gợi ý phương án xử lý
+                            </p>
+                            <ul className="mt-2 space-y-2 text-sm leading-6 text-emerald-900">
+                              {project.suggestions.map((suggestion) => (
+                                <li key={suggestion} className="flex gap-2">
+                                  <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-600" />
+                                  <span>{suggestion}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        </div>
+
+                        {project.blockerReports.length > 0 && (
+                          <div className="mt-4 rounded-lg border border-red-100 bg-red-50 p-4">
+                            <p className="text-sm font-semibold text-red-800">
+                              Chi tiết vướng mắc
+                            </p>
+                            <div className="mt-2 space-y-2">
+                              {project.blockerReports.map((report) => (
+                                <div key={report.id} className="text-sm leading-6 text-red-800">
+                                  <span className="font-medium">
+                                    {getUserName(report.reporter)}
+                                  </span>
+                                  {report.task?.title && ` - ${report.task.title}`}:{" "}
+                                  {report.blockers}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </article>
+                    ))}
+                  </div>
+                )}
               </section>
 
               <section className="rounded-lg border border-[var(--border)] bg-[var(--card)] shadow-sm">
