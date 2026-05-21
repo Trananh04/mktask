@@ -11,6 +11,7 @@ import {
   ExternalLink,
   FolderKanban,
   RefreshCw,
+  TrendingUp,
   Users,
   X,
 } from "lucide-react";
@@ -71,6 +72,57 @@ function getTaskHref(task?: TaskReportTaskSummary | null) {
 
 function getProjectCount(reports: TaskDailyReport[]) {
   return new Set(reports.map((report) => report.task?.project?.id).filter(Boolean)).size;
+}
+
+function buildDailySummary(
+  reports: TaskDailyReport[],
+  pendingRequests: TaskStatusChangeRequest[],
+  reviewedCount: number
+) {
+  const employeeCount = new Set(reports.map((report) => report.reporterId)).size;
+  const projectNames = Array.from(
+    new Set(reports.map((report) => report.task?.project?.name).filter(Boolean))
+  ) as string[];
+  const reportsWithProgress = reports.filter(
+    (report) => typeof report.progressPercent === "number"
+  );
+  const averageProgress =
+    reportsWithProgress.length > 0
+      ? Math.round(
+          reportsWithProgress.reduce((total, report) => total + (report.progressPercent || 0), 0) /
+            reportsWithProgress.length
+        )
+      : null;
+  const blockerReports = reports.filter((report) => report.blockers?.trim());
+  const unreviewedCount = reports.length - reviewedCount;
+
+  const health =
+    reports.length === 0
+      ? "Chưa có dữ liệu để đánh giá."
+      : blockerReports.length > 0
+        ? "Có vướng mắc cần manager theo dõi."
+        : pendingRequests.length > 0
+          ? "Có yêu cầu trạng thái đang chờ xử lý."
+          : "Tình hình trong ngày đang ổn định.";
+
+  const progressText =
+    averageProgress === null
+      ? "Chưa có số liệu tiến độ."
+      : averageProgress >= 80
+        ? `Tiến độ trung bình ${averageProgress}%, đang gần hoàn tất.`
+        : averageProgress >= 50
+          ? `Tiến độ trung bình ${averageProgress}%, đang đi đúng nhịp.`
+          : `Tiến độ trung bình ${averageProgress}%, nên kiểm tra thêm để tránh chậm.`;
+
+  return {
+    employeeCount,
+    projectNames,
+    averageProgress,
+    blockerReports,
+    unreviewedCount,
+    health,
+    progressText,
+  };
 }
 
 function StatCard({
@@ -170,6 +222,10 @@ export default function ReportsPage() {
   }, [dailyReports]);
 
   const reviewedCount = dailyReports.filter((report) => report.status === "REVIEWED").length;
+  const dailySummary = useMemo(
+    () => buildDailySummary(dailyReports, statusRequests, reviewedCount),
+    [dailyReports, statusRequests, reviewedCount]
+  );
 
   const reviewStatusRequest = async (
     request: TaskStatusChangeRequest,
@@ -261,6 +317,80 @@ export default function ReportsPage() {
                   tone="success"
                 />
               </div>
+
+              <section className="rounded-lg border border-[var(--border)] bg-[var(--card)] shadow-sm">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border)] px-5 py-4">
+                  <div>
+                    <h2 className="text-base font-semibold">Tóm tắt tự động trong ngày</h2>
+                    <p className="text-sm text-[var(--muted-foreground)]">
+                      Hệ thống tự tổng hợp báo cáo, tiến độ và các điểm cần chú ý.
+                    </p>
+                  </div>
+                  <span className="inline-flex items-center gap-1.5 rounded-md bg-slate-100 px-2.5 py-1 text-sm font-medium text-slate-700">
+                    <TrendingUp className="h-4 w-4" />
+                    {dailySummary.averageProgress === null
+                      ? "Chưa có tiến độ"
+                      : `${dailySummary.averageProgress}% trung bình`}
+                  </span>
+                </div>
+
+                <div className="grid gap-4 p-5 lg:grid-cols-[1.3fr_1fr]">
+                  <div className="space-y-3">
+                    <div className="rounded-lg bg-slate-50 p-4">
+                      <p className="text-sm font-semibold text-slate-900">Nhận định nhanh</p>
+                      <p className="mt-2 text-sm leading-6 text-slate-700">
+                        {dailyReports.length === 0
+                          ? "Hôm nay chưa có báo cáo nào được gửi. Khi nhân viên gửi báo cáo, phần này sẽ tự cập nhật."
+                          : `${dailySummary.health} Có ${dailyReports.length} báo cáo từ ${dailySummary.employeeCount} nhân viên, liên quan ${dailySummary.projectNames.length || 0} dự án.`}
+                      </p>
+                      <p className="mt-2 text-sm leading-6 text-slate-700">
+                        {dailySummary.progressText}
+                      </p>
+                    </div>
+
+                    {dailySummary.blockerReports.length > 0 && (
+                      <div className="rounded-lg bg-red-50 p-4 text-sm text-red-800">
+                        <p className="font-semibold">Vướng mắc cần chú ý</p>
+                        <ul className="mt-2 space-y-1">
+                          {dailySummary.blockerReports.slice(0, 3).map((report) => (
+                            <li key={report.id}>
+                              {getUserName(report.reporter)}: {report.blockers}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
+                    <div className="rounded-lg border border-[var(--border)] p-3">
+                      <p className="text-xs text-[var(--muted-foreground)]">Dự án có báo cáo</p>
+                      <p className="mt-1 text-lg font-semibold">
+                        {dailySummary.projectNames.length || 0}
+                      </p>
+                      <p className="mt-1 truncate text-xs text-[var(--muted-foreground)]">
+                        {dailySummary.projectNames.slice(0, 3).join(", ") || "Chưa có"}
+                      </p>
+                    </div>
+                    <div className="rounded-lg border border-[var(--border)] p-3">
+                      <p className="text-xs text-[var(--muted-foreground)]">Chưa xem</p>
+                      <p className="mt-1 text-lg font-semibold">{dailySummary.unreviewedCount}</p>
+                      <p className="mt-1 text-xs text-[var(--muted-foreground)]">
+                        báo cáo cần manager đọc
+                      </p>
+                    </div>
+                    <div className="rounded-lg border border-[var(--border)] p-3">
+                      <p className="text-xs text-[var(--muted-foreground)]">Vướng mắc</p>
+                      <p className="mt-1 text-lg font-semibold">
+                        {dailySummary.blockerReports.length}
+                      </p>
+                      <p className="mt-1 text-xs text-[var(--muted-foreground)]">
+                        task đang bị chặn
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </section>
 
               <section className="rounded-lg border border-[var(--border)] bg-[var(--card)] shadow-sm">
                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border)] px-5 py-4">
