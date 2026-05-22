@@ -116,6 +116,34 @@ function isBulkTaskCreateRequest(message: string) {
   );
 }
 
+function isAssistantGuidanceRequest(message: string) {
+  const normalized = message.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const guidancePhrases = [
+    "huong dan",
+    "cach dung",
+    "cach su dung",
+    "lam sao",
+    "lam the nao",
+    "giup toi su dung",
+    "ban lam duoc gi",
+    "tro ly ai",
+    "toi nen",
+    "nen bat dau",
+    "quy trinh",
+    "tinh nang",
+    "how do i",
+    "how to",
+    "guide me",
+    "help me use",
+    "where should i start",
+    "workflow",
+    "feature",
+    "what can you do",
+  ];
+
+  return guidancePhrases.some((phrase) => normalized.includes(phrase));
+}
+
 function extractProjectRoute(message: string) {
   const match = message.match(/\/([a-zA-Z0-9._-]+)\/([a-zA-Z0-9._-]+)(?:\/tasks)?(?:\s|$)/);
   if (!match) return null;
@@ -560,7 +588,7 @@ export default function ChatPanel() {
       const result = await aiProjectPlannerApi.apply(
         target.plannerWorkspaceId,
         target.plannerPlan,
-        true
+        false
       );
       setMessages((prev) =>
         prev.map((message, index) =>
@@ -694,12 +722,49 @@ export default function ChatPanel() {
     return true;
   };
 
+  const handleAssistantGuidance = async (message: string) => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await mcpServer.processMessage(message);
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: sanitizeErrorMessage(response),
+          timestamp: new Date(),
+        },
+      ]);
+    } catch (error: any) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: sanitizeErrorMessage(
+            error?.response?.data?.message ||
+              error?.response?.data?.error ||
+              error?.message ||
+              "I could not load the mktask guide right now."
+          ),
+          timestamp: new Date(),
+        },
+      ]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const processUserMessage = async (message: string) => {
     if (await handleBulkTaskCreateIntent(message)) {
       return;
     }
     if (isProjectPlannerRequest(message)) {
       await handleProjectPlanning(message);
+      return;
+    }
+    if (isAssistantGuidanceRequest(message)) {
+      await handleAssistantGuidance(message);
       return;
     }
     await handleBrowserAutomation(message);

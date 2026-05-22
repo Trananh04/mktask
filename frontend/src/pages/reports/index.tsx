@@ -18,6 +18,7 @@ import {
 import { PageHeader } from "@/components/common/PageHeader";
 import { SEO } from "@/components/common/SEO";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/auth-context";
 import { TokenManager } from "@/lib/api";
 import { aiProjectPlannerApi, AiProjectReportSummary } from "@/utils/api/aiProjectPlannerApi";
@@ -215,13 +216,19 @@ function buildProjectSummaries(
 
     const suggestions: string[] = [];
     if (blockerReports.length > 0) {
-      suggestions.push("Trao đổi nhanh với người báo cáo để làm rõ vướng mắc và chốt người hỗ trợ.");
+      suggestions.push(
+        "Trao đổi nhanh với người báo cáo để làm rõ vướng mắc và chốt người hỗ trợ."
+      );
     }
     if (averageProgress !== null && averageProgress < 50) {
-      suggestions.push("Rà lại phạm vi task, tách nhỏ đầu việc và ưu tiên các hạng mục chặn tiến độ.");
+      suggestions.push(
+        "Rà lại phạm vi task, tách nhỏ đầu việc và ưu tiên các hạng mục chặn tiến độ."
+      );
     }
     if (group.pendingRequests.length > 0) {
-      suggestions.push("Duyệt hoặc từ chối các yêu cầu trạng thái để bảng công việc phản ánh đúng thực tế.");
+      suggestions.push(
+        "Duyệt hoặc từ chối các yêu cầu trạng thái để bảng công việc phản ánh đúng thực tế."
+      );
     }
     if (unreviewedReports.length > 0) {
       suggestions.push("Đánh dấu đã xem sau khi kiểm tra nội dung để tránh bỏ sót thông tin.");
@@ -267,8 +274,8 @@ function StatCard({
           {icon}
         </div>
         <div className="min-w-0">
-          <p className="text-2xl font-semibold tracking-normal">{value}</p>
-          <p className="text-sm text-[var(--muted-foreground)]">{label}</p>
+          <p className="text-2xl font-bold tracking-normal">{value}</p>
+          <p className="text-sm font-medium text-[var(--muted-foreground)]">{label}</p>
         </div>
       </div>
     </div>
@@ -501,15 +508,15 @@ export default function ReportsPage() {
                 />
               </div>
 
-              <section className="rounded-lg border border-[var(--border)] bg-[var(--card)] shadow-sm">
-                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border)] px-5 py-4">
+              <section className="overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--card)] shadow-sm">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border)] bg-slate-50 px-5 py-4">
                   <div>
-                    <h2 className="text-base font-semibold">Tóm tắt tự động trong ngày</h2>
-                    <p className="text-sm text-[var(--muted-foreground)]">
+                    <h2 className="text-lg font-bold">Tổng quan ngày báo cáo</h2>
+                    <p className="text-sm font-medium text-[var(--muted-foreground)]">
                       Hệ thống tự tổng hợp báo cáo, tiến độ và các điểm cần chú ý.
                     </p>
                   </div>
-                  <span className="inline-flex items-center gap-1.5 rounded-md bg-slate-100 px-2.5 py-1 text-sm font-medium text-slate-700">
+                  <span className="inline-flex items-center gap-1.5 rounded-md bg-white px-3 py-1.5 text-sm font-semibold text-slate-700">
                     <TrendingUp className="h-4 w-4" />
                     {dailySummary.averageProgress === null
                       ? "Chưa có tiến độ"
@@ -517,22 +524,22 @@ export default function ReportsPage() {
                   </span>
                 </div>
 
-                <div className="grid gap-4 p-5 lg:grid-cols-[1.3fr_1fr]">
-                  <div className="space-y-3">
-                    <div className="rounded-lg bg-slate-50 p-4">
-                      <p className="text-sm font-semibold text-slate-900">Nhận định nhanh</p>
-                      <p className="mt-2 text-sm leading-6 text-slate-700">
+                <div className="grid gap-4 p-5 xl:grid-cols-[minmax(0,1fr)_24rem]">
+                  <div className="space-y-3 rounded-lg border border-[var(--border)] bg-[var(--background)] p-4">
+                    <div>
+                      <p className="text-sm font-bold text-slate-900">Nhận định nhanh</p>
+                      <p className="mt-2 text-sm font-medium leading-6 text-slate-700">
                         {dailyReports.length === 0
                           ? "Hôm nay chưa có báo cáo nào được gửi. Khi nhân viên gửi báo cáo, phần này sẽ tự cập nhật."
                           : `${dailySummary.health} Có ${dailyReports.length} báo cáo từ ${dailySummary.employeeCount} nhân viên, liên quan ${dailySummary.projectNames.length || 0} dự án.`}
                       </p>
-                      <p className="mt-2 text-sm leading-6 text-slate-700">
+                      <p className="mt-2 text-sm font-medium leading-6 text-slate-700">
                         {dailySummary.progressText}
                       </p>
                     </div>
 
                     {dailySummary.blockerReports.length > 0 && (
-                      <div className="rounded-lg bg-red-50 p-4 text-sm text-red-800">
+                      <div className="rounded-lg bg-red-50 p-4 text-sm font-medium text-red-800">
                         <p className="font-semibold">Vướng mắc cần chú ý</p>
                         <ul className="mt-2 space-y-1">
                           {dailySummary.blockerReports.slice(0, 3).map((report) => (
@@ -545,29 +552,33 @@ export default function ReportsPage() {
                     )}
                   </div>
 
-                  <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
-                    <div className="rounded-lg border border-[var(--border)] p-3">
-                      <p className="text-xs text-[var(--muted-foreground)]">Dự án có báo cáo</p>
-                      <p className="mt-1 text-lg font-semibold">
+                  <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
+                    <div className="rounded-lg border border-[var(--border)] bg-[var(--background)] p-3">
+                      <p className="text-xs font-bold uppercase text-[var(--muted-foreground)]">
+                        Dự án có báo cáo
+                      </p>
+                      <p className="mt-1 text-xl font-bold">
                         {dailySummary.projectNames.length || 0}
                       </p>
-                      <p className="mt-1 truncate text-xs text-[var(--muted-foreground)]">
+                      <p className="mt-1 truncate text-sm font-medium text-[var(--muted-foreground)]">
                         {dailySummary.projectNames.slice(0, 3).join(", ") || "Chưa có"}
                       </p>
                     </div>
-                    <div className="rounded-lg border border-[var(--border)] p-3">
-                      <p className="text-xs text-[var(--muted-foreground)]">Chưa xem</p>
-                      <p className="mt-1 text-lg font-semibold">{dailySummary.unreviewedCount}</p>
-                      <p className="mt-1 text-xs text-[var(--muted-foreground)]">
+                    <div className="rounded-lg border border-[var(--border)] bg-[var(--background)] p-3">
+                      <p className="text-xs font-bold uppercase text-[var(--muted-foreground)]">
+                        Chưa xem
+                      </p>
+                      <p className="mt-1 text-xl font-bold">{dailySummary.unreviewedCount}</p>
+                      <p className="mt-1 text-sm font-medium text-[var(--muted-foreground)]">
                         báo cáo cần manager đọc
                       </p>
                     </div>
-                    <div className="rounded-lg border border-[var(--border)] p-3">
-                      <p className="text-xs text-[var(--muted-foreground)]">Vướng mắc</p>
-                      <p className="mt-1 text-lg font-semibold">
-                        {dailySummary.blockerReports.length}
+                    <div className="rounded-lg border border-[var(--border)] bg-[var(--background)] p-3">
+                      <p className="text-xs font-bold uppercase text-[var(--muted-foreground)]">
+                        Vướng mắc
                       </p>
-                      <p className="mt-1 text-xs text-[var(--muted-foreground)]">
+                      <p className="mt-1 text-xl font-bold">{dailySummary.blockerReports.length}</p>
+                      <p className="mt-1 text-sm font-medium text-[var(--muted-foreground)]">
                         task đang bị chặn
                       </p>
                     </div>
@@ -575,403 +586,498 @@ export default function ReportsPage() {
                 </div>
               </section>
 
-              <section className="rounded-lg border border-[var(--border)] bg-[var(--card)] shadow-sm">
-                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border)] px-5 py-4">
-                  <div>
-                    <h2 className="text-base font-semibold">Tổng hợp vấn đề theo project</h2>
-                    <p className="text-sm text-[var(--muted-foreground)]">
-                      AI đọc báo cáo thô, viết lại rõ ý người báo cáo và gợi ý phương án xử lý.
-                    </p>
-                  </div>
-                  <span className="rounded-md bg-slate-100 px-2.5 py-1 text-sm font-medium text-slate-700">
-                    {isAiSummaryLoading ? "AI đang viết lại..." : `${projectSummaries.length} project`}
-                  </span>
-                </div>
+              <Tabs defaultValue="reports" className="space-y-4">
+                <TabsList className="grid h-auto w-full grid-cols-1 gap-2 rounded-lg border border-[var(--border)] bg-[var(--card)] p-2 shadow-sm md:grid-cols-3">
+                  <TabsTrigger
+                    value="reports"
+                    className="h-auto justify-start rounded-md px-4 py-3 text-left data-[state=active]:bg-slate-900 data-[state=active]:text-white"
+                  >
+                    <span className="flex flex-col items-start">
+                      <span className="text-sm font-bold">Báo cáo nhân viên</span>
+                      <span className="text-xs opacity-75">
+                        {dailySummary.unreviewedCount} chưa xem, {dailyReports.length} tổng
+                      </span>
+                    </span>
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="projects"
+                    className="h-auto justify-start rounded-md px-4 py-3 text-left data-[state=active]:bg-slate-900 data-[state=active]:text-white"
+                  >
+                    <span className="flex flex-col items-start">
+                      <span className="text-sm font-bold">Tổng hợp dự án</span>
+                      <span className="text-xs opacity-75">
+                        {projectSummaries.length} dự án có dữ liệu
+                      </span>
+                    </span>
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="requests"
+                    className="h-auto justify-start rounded-md px-4 py-3 text-left data-[state=active]:bg-slate-900 data-[state=active]:text-white"
+                  >
+                    <span className="flex flex-col items-start">
+                      <span className="text-sm font-bold">Yêu cầu duyệt</span>
+                      <span className="text-xs opacity-75">
+                        {statusRequests.length} yêu cầu chờ xử lý
+                      </span>
+                    </span>
+                  </TabsTrigger>
+                </TabsList>
 
-                {(aiSummary?.overallSummary || aiSummaryError) && (
-                  <div className="border-b border-[var(--border)] px-5 py-4">
-                    {aiSummary?.overallSummary && (
-                      <div className="rounded-lg bg-blue-50 p-4 text-sm leading-6 text-blue-900">
-                        <p className="font-semibold">AI tóm tắt điều hành</p>
-                        <p className="mt-1">{aiSummary.overallSummary}</p>
+                <TabsContent value="projects" className="m-0">
+                  <section className="rounded-lg border border-[var(--border)] bg-[var(--card)] shadow-sm">
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border)] px-5 py-4">
+                      <div>
+                        <h2 className="text-lg font-bold">Tổng hợp theo dự án</h2>
+                        <p className="text-sm font-medium text-[var(--muted-foreground)]">
+                          AI đọc báo cáo thô, viết lại rõ ý người báo cáo và gợi ý phương án xử lý.
+                        </p>
+                      </div>
+                      <span className="rounded-md bg-slate-100 px-2.5 py-1 text-sm font-medium text-slate-700">
+                        {isAiSummaryLoading
+                          ? "AI đang viết lại..."
+                          : `${projectSummaries.length} project`}
+                      </span>
+                    </div>
+
+                    {(aiSummary?.overallSummary || aiSummaryError) && (
+                      <div className="border-b border-[var(--border)] px-5 py-4">
+                        {aiSummary?.overallSummary && (
+                          <div className="rounded-lg bg-blue-50 p-4 text-sm leading-6 text-blue-900">
+                            <p className="font-semibold">AI tóm tắt điều hành</p>
+                            <p className="mt-1">{aiSummary.overallSummary}</p>
+                          </div>
+                        )}
+                        {aiSummaryError && (
+                          <div className="rounded-lg bg-amber-50 p-4 text-sm leading-6 text-amber-900">
+                            Không gọi được AI: {aiSummaryError}. Hệ thống đang hiển thị bản tổng hợp
+                            tự động cơ bản.
+                          </div>
+                        )}
                       </div>
                     )}
-                    {aiSummaryError && (
-                      <div className="rounded-lg bg-amber-50 p-4 text-sm leading-6 text-amber-900">
-                        Không gọi được AI: {aiSummaryError}. Hệ thống đang hiển thị bản tổng hợp tự động cơ bản.
+
+                    {projectSummaries.length === 0 ? (
+                      <div className="px-5 py-6 text-sm text-[var(--muted-foreground)]">
+                        Chưa có dữ liệu project để tổng hợp.
                       </div>
-                    )}
-                  </div>
-                )}
+                    ) : (
+                      <div className="grid gap-4 p-5">
+                        {projectSummaries.map((project) => {
+                          const aiProject = aiSummary?.projects.find(
+                            (item) =>
+                              (project.projectId !== "no-project" &&
+                                item.projectId === project.projectId) ||
+                              item.projectName === project.projectName
+                          );
+                          const displayIssues = aiProject?.issues || project.issues;
+                          const displayRecommendations =
+                            aiProject?.recommendations || project.suggestions;
+                          const displayNextActions = aiProject?.nextActions || [];
 
-                {projectSummaries.length === 0 ? (
-                  <div className="px-5 py-6 text-sm text-[var(--muted-foreground)]">
-                    Chưa có dữ liệu project để tổng hợp.
-                  </div>
-                ) : (
-                  <div className="grid gap-4 p-5">
-                    {projectSummaries.map((project) => {
-                      const aiProject = aiSummary?.projects.find(
-                        (item) =>
-                          (project.projectId !== "no-project" && item.projectId === project.projectId) ||
-                          item.projectName === project.projectName
-                      );
-                      const displayIssues = aiProject?.issues || project.issues;
-                      const displayRecommendations =
-                        aiProject?.recommendations || project.suggestions;
-                      const displayNextActions = aiProject?.nextActions || [];
-
-                      return (
-                        <article
-                          key={project.projectId}
-                          className="rounded-lg border border-[var(--border)] bg-[var(--background)] p-4"
-                        >
-                          <div className="flex flex-wrap items-start justify-between gap-3">
-                            <div className="min-w-0">
-                              <div className="flex flex-wrap items-center gap-2">
-                                <h3 className="text-base font-semibold">{project.projectName}</h3>
-                                <span className="rounded-md bg-[var(--muted)] px-2 py-1 text-xs text-[var(--muted-foreground)]">
-                                  {project.workspaceName}
-                                </span>
-                                {aiProject && (
-                                  <span className="rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700">
-                                    AI đã viết lại
-                                  </span>
-                                )}
-                                {aiProject?.riskLevel && (
-                                  <span
-                                    className={cn(
-                                      "rounded-md px-2 py-1 text-xs font-medium",
-                                      aiProject.riskLevel === "HIGH" && "bg-red-50 text-red-700",
-                                      aiProject.riskLevel === "MEDIUM" &&
-                                        "bg-amber-50 text-amber-700",
-                                      aiProject.riskLevel === "LOW" &&
-                                        "bg-emerald-50 text-emerald-700"
-                                    )}
-                                  >
-                                    Rủi ro {aiProject.riskLevel}
-                                  </span>
-                                )}
-                              </div>
-                              <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-                                {project.reports.length} báo cáo
-                                {project.taskNames.length > 0 &&
-                                  ` - ${project.taskNames.length} task được nhắc tới`}
-                              </p>
-                            </div>
-                            <div className="rounded-md bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700">
-                              {project.averageProgress === null
-                                ? "Chưa có tiến độ"
-                                : `${project.averageProgress}% tiến độ`}
-                            </div>
-                          </div>
-
-                          {aiProject && (
-                            <div className="mt-4 rounded-lg bg-blue-50 p-4 text-blue-950">
-                              <p className="text-sm font-semibold">AI viết lại báo cáo</p>
-                              <p className="mt-2 text-sm leading-6">{aiProject.rewrittenSummary}</p>
-                              <p className="mt-3 text-sm font-semibold">Đánh giá tiến độ</p>
-                              <p className="mt-1 text-sm leading-6">
-                                {aiProject.progressAssessment}
-                              </p>
-                            </div>
-                          )}
-
-                          <div className="mt-4 grid gap-4 lg:grid-cols-2">
-                            <div className="rounded-lg bg-amber-50 p-4">
-                              <p className="text-sm font-semibold text-amber-900">Vấn đề tổng hợp</p>
-                              <ul className="mt-2 space-y-2 text-sm leading-6 text-amber-900">
-                                {displayIssues.map((issue) => (
-                                  <li key={issue} className="flex gap-2">
-                                    <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-600" />
-                                    <span>{issue}</span>
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-
-                            <div className="rounded-lg bg-emerald-50 p-4">
-                              <p className="text-sm font-semibold text-emerald-900">
-                                Gợi ý phương án xử lý
-                              </p>
-                              <ul className="mt-2 space-y-2 text-sm leading-6 text-emerald-900">
-                                {displayRecommendations.map((suggestion) => (
-                                  <li key={suggestion} className="flex gap-2">
-                                    <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-600" />
-                                    <span>{suggestion}</span>
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          </div>
-
-                          {displayNextActions.length > 0 && (
-                            <div className="mt-4 rounded-lg bg-slate-50 p-4">
-                              <p className="text-sm font-semibold text-slate-900">
-                                Việc nên làm tiếp theo
-                              </p>
-                              <ul className="mt-2 grid gap-2 text-sm leading-6 text-slate-700 md:grid-cols-2">
-                                {displayNextActions.map((action) => (
-                                  <li key={action} className="flex gap-2">
-                                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-slate-600" />
-                                    <span>{action}</span>
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-
-                          {project.blockerReports.length > 0 && (
-                            <div className="mt-4 rounded-lg border border-red-100 bg-red-50 p-4">
-                              <p className="text-sm font-semibold text-red-800">
-                                Chi tiết vướng mắc gốc
-                              </p>
-                              <div className="mt-2 space-y-2">
-                                {project.blockerReports.map((report) => (
-                                  <div key={report.id} className="text-sm leading-6 text-red-800">
-                                    <span className="font-medium">
-                                      {getUserName(report.reporter)}
+                          return (
+                            <article
+                              key={project.projectId}
+                              className="rounded-lg border border-[var(--border)] bg-[var(--background)] p-4"
+                            >
+                              <div className="flex flex-wrap items-start justify-between gap-3">
+                                <div className="min-w-0">
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <h3 className="text-base font-semibold">
+                                      {project.projectName}
+                                    </h3>
+                                    <span className="rounded-md bg-[var(--muted)] px-2 py-1 text-xs text-[var(--muted-foreground)]">
+                                      {project.workspaceName}
                                     </span>
-                                    {report.task?.title && ` - ${report.task.title}`}:{" "}
-                                    {report.blockers}
+                                    {aiProject && (
+                                      <span className="rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700">
+                                        AI đã viết lại
+                                      </span>
+                                    )}
+                                    {aiProject?.riskLevel && (
+                                      <span
+                                        className={cn(
+                                          "rounded-md px-2 py-1 text-xs font-medium",
+                                          aiProject.riskLevel === "HIGH" &&
+                                            "bg-red-50 text-red-700",
+                                          aiProject.riskLevel === "MEDIUM" &&
+                                            "bg-amber-50 text-amber-700",
+                                          aiProject.riskLevel === "LOW" &&
+                                            "bg-emerald-50 text-emerald-700"
+                                        )}
+                                      >
+                                        Rủi ro {aiProject.riskLevel}
+                                      </span>
+                                    )}
                                   </div>
-                                ))}
+                                  <p className="mt-1 text-sm text-[var(--muted-foreground)]">
+                                    {project.reports.length} báo cáo
+                                    {project.taskNames.length > 0 &&
+                                      ` - ${project.taskNames.length} task được nhắc tới`}
+                                  </p>
+                                </div>
+                                <div className="rounded-md bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700">
+                                  {project.averageProgress === null
+                                    ? "Chưa có tiến độ"
+                                    : `${project.averageProgress}% tiến độ`}
+                                </div>
                               </div>
-                            </div>
-                          )}
-                        </article>
-                      );
-                    })}
-                  </div>
-                )}
-              </section>
 
-              <section className="rounded-lg border border-[var(--border)] bg-[var(--card)] shadow-sm">
-                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border)] px-5 py-4">
-                  <div>
-                    <h2 className="text-base font-semibold">Yêu cầu đổi trạng thái</h2>
-                    <p className="text-sm text-[var(--muted-foreground)]">
-                      Các yêu cầu cần manager xác nhận trước khi đổi trạng thái task.
-                    </p>
-                  </div>
-                  <span className="rounded-md bg-amber-50 px-2.5 py-1 text-sm font-medium text-amber-700">
-                    {statusRequests.length} chờ duyệt
-                  </span>
-                </div>
+                              {aiProject && (
+                                <div className="mt-4 rounded-lg bg-blue-50 p-4 text-blue-950">
+                                  <p className="text-sm font-semibold">AI viết lại báo cáo</p>
+                                  <p className="mt-2 text-sm leading-6">
+                                    {aiProject.rewrittenSummary}
+                                  </p>
+                                  <p className="mt-3 text-sm font-semibold">Đánh giá tiến độ</p>
+                                  <p className="mt-1 text-sm leading-6">
+                                    {aiProject.progressAssessment}
+                                  </p>
+                                </div>
+                              )}
 
-                {statusRequests.length === 0 ? (
-                  <div className="flex items-center gap-3 px-5 py-6 text-sm text-[var(--muted-foreground)]">
-                    <Clock3 className="h-5 w-5" />
-                    Không có yêu cầu đổi trạng thái đang chờ.
-                  </div>
-                ) : (
-                  <div className="grid gap-3 p-4">
-                    {statusRequests.map((request) => (
-                      <article
-                        key={request.id}
-                        className="rounded-lg border border-[var(--border)] bg-[var(--background)] p-4"
-                      >
-                        <div className="flex flex-wrap items-start justify-between gap-4">
-                          <div className="min-w-0 flex-1">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <p className="min-w-0 break-words font-medium">
-                                {request.task?.title || "Công việc"}
-                              </p>
-                              <span className="inline-flex max-w-full items-center gap-1 rounded-md bg-[var(--muted)] px-2 py-1 text-xs font-medium text-[var(--muted-foreground)]">
-                                <FolderKanban className="h-3.5 w-3.5 shrink-0" />
-                                <span className="truncate">{getProjectLabel(request.task)}</span>
-                              </span>
-                            </div>
-                            <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-                              {getUserName(request.requestedBy)} muốn chuyển sang{" "}
-                              <span className="font-medium text-[var(--foreground)]">
-                                {request.requestedStatus?.name}
-                              </span>
-                            </p>
-                            {request.requesterNote && (
-                              <p className="mt-2 break-words text-sm">{request.requesterNote}</p>
-                            )}
-                            <p className="mt-1 text-xs text-[var(--muted-foreground)]">
-                              {getWorkspaceLabel(request.task)}
-                            </p>
-                          </div>
-                          <div className="flex w-full flex-wrap gap-2 sm:w-auto">
-                            {getTaskHref(request.task) && (
-                              <Button variant="outline" size="sm" asChild>
-                                <Link href={getTaskHref(request.task)!}>
-                                  <ExternalLink className="h-4 w-4" />
-                                  Xem công việc
-                                </Link>
-                              </Button>
-                            )}
-                            <Button
-                              type="button"
-                              size="sm"
-                              className="bg-emerald-600 text-white hover:bg-emerald-700"
-                              disabled={reviewingId === request.id}
-                              onClick={() => reviewStatusRequest(request, "APPROVED")}
-                            >
-                              <Check className="h-4 w-4" />
-                              Duyệt
-                            </Button>
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="outline"
-                              disabled={reviewingId === request.id}
-                              onClick={() => reviewStatusRequest(request, "REJECTED")}
-                            >
-                              <X className="h-4 w-4" />
-                              Từ chối
-                            </Button>
-                          </div>
-                        </div>
-                      </article>
-                    ))}
-                  </div>
-                )}
-              </section>
+                              <div className="mt-4 grid gap-4 lg:grid-cols-2">
+                                <div className="rounded-lg bg-amber-50 p-4">
+                                  <p className="text-sm font-semibold text-amber-900">
+                                    Vấn đề tổng hợp
+                                  </p>
+                                  <ul className="mt-2 space-y-2 text-sm leading-6 text-amber-900">
+                                    {displayIssues.map((issue) => (
+                                      <li key={issue} className="flex gap-2">
+                                        <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-600" />
+                                        <span>{issue}</span>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
 
-              <section className="space-y-3">
-                <div className="flex flex-wrap items-end justify-between gap-2">
-                  <div>
-                    <h2 className="text-base font-semibold">Báo cáo theo nhân viên</h2>
-                    <p className="text-sm text-[var(--muted-foreground)]">
-                      Tổng hợp nội dung báo cáo, vướng mắc và tiến độ theo từng người.
-                    </p>
-                  </div>
-                  <span className="text-sm text-[var(--muted-foreground)]">
-                    {dailyReports.length} báo cáo
-                  </span>
-                </div>
-
-                {dailyReports.length === 0 ? (
-                  <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-6 text-sm text-[var(--muted-foreground)] shadow-sm">
-                    Chưa có báo cáo trong ngày đã chọn.
-                  </div>
-                ) : (
-                  <div className="grid gap-4">
-                    {Object.entries(reportsByEmployee).map(([employeeId, reports]) => {
-                      const employeeName = getUserName(reports[0]?.reporter);
-                      return (
-                        <section
-                          key={employeeId}
-                          className="overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--card)] shadow-sm"
-                        >
-                          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border)] px-5 py-4">
-                            <div className="flex min-w-0 items-center gap-3">
-                              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-slate-900 text-sm font-semibold text-white">
-                                {getInitials(employeeName)}
+                                <div className="rounded-lg bg-emerald-50 p-4">
+                                  <p className="text-sm font-semibold text-emerald-900">
+                                    Gợi ý phương án xử lý
+                                  </p>
+                                  <ul className="mt-2 space-y-2 text-sm leading-6 text-emerald-900">
+                                    {displayRecommendations.map((suggestion) => (
+                                      <li key={suggestion} className="flex gap-2">
+                                        <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-600" />
+                                        <span>{suggestion}</span>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
                               </div>
-                              <div className="min-w-0">
-                                <h3 className="truncate font-semibold">{employeeName}</h3>
-                                <p className="text-sm text-[var(--muted-foreground)]">
-                                  {reports.length} báo cáo trong ngày
-                                  {getProjectCount(reports) > 0 &&
-                                    ` - ${getProjectCount(reports)} dự án`}
+
+                              {displayNextActions.length > 0 && (
+                                <div className="mt-4 rounded-lg bg-slate-50 p-4">
+                                  <p className="text-sm font-semibold text-slate-900">
+                                    Việc nên làm tiếp theo
+                                  </p>
+                                  <ul className="mt-2 grid gap-2 text-sm leading-6 text-slate-700 md:grid-cols-2">
+                                    {displayNextActions.map((action) => (
+                                      <li key={action} className="flex gap-2">
+                                        <Check className="mt-0.5 h-4 w-4 shrink-0 text-slate-600" />
+                                        <span>{action}</span>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+
+                              {project.blockerReports.length > 0 && (
+                                <div className="mt-4 rounded-lg border border-red-100 bg-red-50 p-4">
+                                  <p className="text-sm font-semibold text-red-800">
+                                    Chi tiết vướng mắc gốc
+                                  </p>
+                                  <div className="mt-2 space-y-2">
+                                    {project.blockerReports.map((report) => (
+                                      <div
+                                        key={report.id}
+                                        className="text-sm leading-6 text-red-800"
+                                      >
+                                        <span className="font-medium">
+                                          {getUserName(report.reporter)}
+                                        </span>
+                                        {report.task?.title && ` - ${report.task.title}`}:{" "}
+                                        {report.blockers}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </article>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </section>
+                </TabsContent>
+
+                <TabsContent value="requests" className="m-0">
+                  <section className="rounded-lg border border-[var(--border)] bg-[var(--card)] shadow-sm">
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border)] px-5 py-4">
+                      <div>
+                        <h2 className="text-lg font-bold">Yêu cầu đổi trạng thái</h2>
+                        <p className="text-sm font-medium text-[var(--muted-foreground)]">
+                          Các yêu cầu cần manager xác nhận trước khi đổi trạng thái task.
+                        </p>
+                      </div>
+                      <span className="rounded-md bg-amber-50 px-2.5 py-1 text-sm font-medium text-amber-700">
+                        {statusRequests.length} chờ duyệt
+                      </span>
+                    </div>
+
+                    {statusRequests.length === 0 ? (
+                      <div className="flex items-center gap-3 px-5 py-6 text-sm text-[var(--muted-foreground)]">
+                        <Clock3 className="h-5 w-5" />
+                        Không có yêu cầu đổi trạng thái đang chờ.
+                      </div>
+                    ) : (
+                      <div className="grid gap-3 p-4">
+                        {statusRequests.map((request) => (
+                          <article
+                            key={request.id}
+                            className="rounded-lg border border-[var(--border)] bg-[var(--background)] p-4"
+                          >
+                            <div className="flex flex-wrap items-start justify-between gap-4">
+                              <div className="min-w-0 flex-1">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <p className="min-w-0 break-words font-medium">
+                                    {request.task?.title || "Công việc"}
+                                  </p>
+                                  <span className="inline-flex max-w-full items-center gap-1 rounded-md bg-[var(--muted)] px-2 py-1 text-xs font-medium text-[var(--muted-foreground)]">
+                                    <FolderKanban className="h-3.5 w-3.5 shrink-0" />
+                                    <span className="truncate">
+                                      {getProjectLabel(request.task)}
+                                    </span>
+                                  </span>
+                                </div>
+                                <p className="mt-1 text-sm text-[var(--muted-foreground)]">
+                                  {getUserName(request.requestedBy)} muốn chuyển sang{" "}
+                                  <span className="font-medium text-[var(--foreground)]">
+                                    {request.requestedStatus?.name}
+                                  </span>
+                                </p>
+                                {request.requesterNote && (
+                                  <p className="mt-2 break-words text-sm">
+                                    {request.requesterNote}
+                                  </p>
+                                )}
+                                <p className="mt-1 text-xs text-[var(--muted-foreground)]">
+                                  {getWorkspaceLabel(request.task)}
                                 </p>
                               </div>
+                              <div className="flex w-full flex-wrap gap-2 sm:w-auto">
+                                {getTaskHref(request.task) && (
+                                  <Button variant="outline" size="sm" asChild>
+                                    <Link href={getTaskHref(request.task)!}>
+                                      <ExternalLink className="h-4 w-4" />
+                                      Xem công việc
+                                    </Link>
+                                  </Button>
+                                )}
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  className="bg-emerald-600 text-white hover:bg-emerald-700"
+                                  disabled={reviewingId === request.id}
+                                  onClick={() => reviewStatusRequest(request, "APPROVED")}
+                                >
+                                  <Check className="h-4 w-4" />
+                                  Duyệt
+                                </Button>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="outline"
+                                  disabled={reviewingId === request.id}
+                                  onClick={() => reviewStatusRequest(request, "REJECTED")}
+                                >
+                                  <X className="h-4 w-4" />
+                                  Từ chối
+                                </Button>
+                              </div>
                             </div>
-                            <div className="inline-flex items-center gap-1.5 rounded-md bg-[var(--muted)] px-2.5 py-1 text-sm text-[var(--muted-foreground)]">
-                              <Users className="h-4 w-4" />
-                              Nhân viên
-                            </div>
-                          </div>
+                          </article>
+                        ))}
+                      </div>
+                    )}
+                  </section>
+                </TabsContent>
 
-                          <div className="divide-y divide-[var(--border)]">
-                            {reports.map((report) => {
-                              const taskHref = getTaskHref(report.task);
-                              return (
-                                <article key={report.id} className="p-5">
-                                  <div className="flex flex-wrap items-start justify-between gap-4">
-                                    <div className="min-w-0 flex-1">
-                                      <div className="flex flex-wrap items-center gap-2">
-                                        <span className="rounded-md bg-slate-100 px-2 py-1 text-xs font-medium text-slate-700">
-                                          {formatReportType(report.type)}
-                                        </span>
-                                        <span className="min-w-0 break-words text-sm font-semibold">
-                                          {report.task?.title || "Công việc"}
-                                        </span>
-                                        <span className="inline-flex max-w-full items-center gap-1 rounded-md bg-[var(--muted)] px-2 py-1 text-xs font-medium text-[var(--muted-foreground)]">
-                                          <FolderKanban className="h-3.5 w-3.5 shrink-0" />
-                                          <span className="truncate">
-                                            {getProjectLabel(report.task)}
-                                          </span>
-                                        </span>
-                                        <span
-                                          className={cn(
-                                            "rounded-md px-2 py-1 text-xs font-medium",
-                                            report.status === "REVIEWED"
-                                              ? "bg-emerald-50 text-emerald-700"
-                                              : "bg-amber-50 text-amber-700"
-                                          )}
-                                        >
-                                          {report.status === "REVIEWED" ? "Đã xem" : "Chưa xem"}
-                                        </span>
-                                      </div>
-                                      <p className="mt-1 text-xs text-[var(--muted-foreground)]">
-                                        {getWorkspaceLabel(report.task)}
-                                        {report.task?.status?.name &&
-                                          ` - ${report.task.status.name}`}
-                                      </p>
-                                      <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-6">
-                                        {report.content}
-                                      </p>
-                                      {report.blockers && (
-                                        <p className="mt-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
-                                          Vướng mắc: {report.blockers}
-                                        </p>
-                                      )}
-                                      {typeof report.progressPercent === "number" && (
-                                        <div className="mt-3 max-w-md">
-                                          <div className="mb-1 flex justify-between text-xs text-[var(--muted-foreground)]">
-                                            <span>Tiến độ</span>
-                                            <span>{report.progressPercent}%</span>
-                                          </div>
-                                          <div className="h-2 rounded-full bg-[var(--muted)]">
-                                            <div
-                                              className="h-2 rounded-full bg-slate-900"
-                                              style={{
-                                                width: `${Math.min(Math.max(report.progressPercent, 0), 100)}%`,
-                                              }}
-                                            />
-                                          </div>
-                                        </div>
-                                      )}
-                                    </div>
+                <TabsContent value="reports" className="m-0">
+                  <section className="space-y-4 rounded-lg border border-[var(--border)] bg-[var(--card)] p-5 shadow-sm">
+                    <div className="flex flex-wrap items-end justify-between gap-3 border-b border-[var(--border)] pb-4">
+                      <div>
+                        <h2 className="text-lg font-bold">Báo cáo theo nhân viên</h2>
+                        <p className="mt-1 text-sm font-medium text-[var(--muted-foreground)]">
+                          Tổng hợp nội dung báo cáo, vướng mắc và tiến độ theo từng người.
+                        </p>
+                      </div>
+                      <span className="rounded-md bg-slate-100 px-3 py-1.5 text-sm font-semibold text-slate-700">
+                        {dailyReports.length} báo cáo
+                      </span>
+                    </div>
 
-                                    <div className="flex w-full flex-wrap gap-2 sm:w-auto">
-                                      {taskHref && (
-                                        <Button variant="outline" size="sm" asChild>
-                                          <Link href={taskHref}>
-                                            <ExternalLink className="h-4 w-4" />
-                                            Xem công việc
-                                          </Link>
-                                        </Button>
-                                      )}
-                                      {report.status !== "REVIEWED" && (
-                                        <Button
-                                          type="button"
-                                          size="sm"
-                                          variant="outline"
-                                          disabled={reviewingId === report.id}
-                                          onClick={() => reviewDailyReport(report)}
-                                        >
-                                          Đánh dấu đã xem
-                                        </Button>
-                                      )}
-                                    </div>
+                    {dailyReports.length === 0 ? (
+                      <div className="rounded-lg bg-[var(--background)] p-6 text-sm font-medium text-[var(--muted-foreground)]">
+                        Chưa có báo cáo trong ngày đã chọn.
+                      </div>
+                    ) : (
+                      <div className="grid gap-5">
+                        {Object.entries(reportsByEmployee).map(([employeeId, reports]) => {
+                          const employeeName = getUserName(reports[0]?.reporter);
+                          const unreadReports = reports.filter(
+                            (report) => report.status !== "REVIEWED"
+                          ).length;
+                          return (
+                            <section
+                              key={employeeId}
+                              className="overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--background)]"
+                            >
+                              <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[var(--border)] bg-slate-50 px-5 py-4">
+                                <div className="flex min-w-0 items-center gap-3">
+                                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-slate-900 text-sm font-semibold text-white">
+                                    {getInitials(employeeName)}
                                   </div>
-                                </article>
-                              );
-                            })}
-                          </div>
-                        </section>
-                      );
-                    })}
-                  </div>
-                )}
-              </section>
+                                  <div className="min-w-0">
+                                    <h3 className="truncate text-base font-bold">{employeeName}</h3>
+                                    <p className="text-sm font-medium text-[var(--muted-foreground)]">
+                                      {reports.length} báo cáo trong ngày
+                                      {getProjectCount(reports) > 0 &&
+                                        ` - ${getProjectCount(reports)} dự án`}
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <div className="inline-flex items-center gap-1.5 rounded-md bg-white px-2.5 py-1 text-sm font-semibold text-slate-700">
+                                    <Users className="h-4 w-4" />
+                                    Nhân viên
+                                  </div>
+                                  <div
+                                    className={cn(
+                                      "rounded-md px-2.5 py-1 text-sm font-semibold",
+                                      unreadReports > 0
+                                        ? "bg-amber-100 text-amber-800"
+                                        : "bg-emerald-100 text-emerald-800"
+                                    )}
+                                  >
+                                    {unreadReports > 0 ? `${unreadReports} chưa xem` : "Đã xem hết"}
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="divide-y divide-[var(--border)]">
+                                {reports.map((report) => {
+                                  const taskHref = getTaskHref(report.task);
+                                  return (
+                                    <article key={report.id} className="p-5 lg:p-6">
+                                      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_14rem]">
+                                        <div className="min-w-0 flex-1">
+                                          <div className="flex flex-wrap items-center gap-2">
+                                            <span className="rounded-md bg-slate-100 px-2 py-1 text-xs font-medium text-slate-700">
+                                              {formatReportType(report.type)}
+                                            </span>
+                                            <span className="min-w-0 break-words text-base font-bold">
+                                              {report.task?.title || "Công việc"}
+                                            </span>
+                                            <span className="inline-flex max-w-full items-center gap-1 rounded-md bg-[var(--muted)] px-2 py-1 text-xs font-medium text-[var(--muted-foreground)]">
+                                              <FolderKanban className="h-3.5 w-3.5 shrink-0" />
+                                              <span className="truncate">
+                                                {getProjectLabel(report.task)}
+                                              </span>
+                                            </span>
+                                            <span
+                                              className={cn(
+                                                "rounded-md px-2 py-1 text-xs font-medium",
+                                                report.status === "REVIEWED"
+                                                  ? "bg-emerald-50 text-emerald-700"
+                                                  : "bg-amber-50 text-amber-700"
+                                              )}
+                                            >
+                                              {report.status === "REVIEWED" ? "Đã xem" : "Chưa xem"}
+                                            </span>
+                                          </div>
+                                          <p className="mt-2 text-sm font-medium text-[var(--muted-foreground)]">
+                                            {getWorkspaceLabel(report.task)}
+                                            {report.task?.status?.name &&
+                                              ` - ${report.task.status.name}`}
+                                          </p>
+                                          <p className="mt-4 text-xs font-bold uppercase text-[var(--muted-foreground)]">
+                                            Nội dung báo cáo
+                                          </p>
+                                          <p className="mt-2 whitespace-pre-wrap break-words rounded-lg bg-slate-50 px-4 py-3 text-base font-medium leading-7 text-slate-900">
+                                            {report.content}
+                                          </p>
+                                          {report.blockers && (
+                                            <p className="mt-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+                                              Vướng mắc: {report.blockers}
+                                            </p>
+                                          )}
+                                        </div>
+
+                                        <aside className="space-y-3 rounded-lg border border-[var(--border)] bg-[var(--card)] p-3">
+                                          <div>
+                                            <p className="text-xs font-bold uppercase text-[var(--muted-foreground)]">
+                                              Tiến độ
+                                            </p>
+                                            {typeof report.progressPercent === "number" ? (
+                                              <div className="mt-2">
+                                                <div className="mb-1 flex justify-between text-sm font-semibold">
+                                                  <span>Công việc</span>
+                                                  <span>{report.progressPercent}%</span>
+                                                </div>
+                                                <div className="h-2 rounded-full bg-[var(--muted)]">
+                                                  <div
+                                                    className="h-2 rounded-full bg-slate-900"
+                                                    style={{
+                                                      width: `${Math.min(Math.max(report.progressPercent, 0), 100)}%`,
+                                                    }}
+                                                  />
+                                                </div>
+                                              </div>
+                                            ) : (
+                                              <p className="mt-2 text-sm font-medium text-[var(--muted-foreground)]">
+                                                Chưa cập nhật.
+                                              </p>
+                                            )}
+                                          </div>
+                                          {taskHref && (
+                                            <Button
+                                              variant="outline"
+                                              size="sm"
+                                              className="w-full justify-center font-semibold"
+                                              asChild
+                                            >
+                                              <Link href={taskHref}>
+                                                <ExternalLink className="h-4 w-4" />
+                                                Xem công việc
+                                              </Link>
+                                            </Button>
+                                          )}
+                                          {report.status !== "REVIEWED" && (
+                                            <Button
+                                              type="button"
+                                              size="sm"
+                                              variant="outline"
+                                              className="w-full justify-center font-semibold"
+                                              disabled={reviewingId === report.id}
+                                              onClick={() => reviewDailyReport(report)}
+                                            >
+                                              Đánh dấu đã xem
+                                            </Button>
+                                          )}
+                                        </aside>
+                                      </div>
+                                    </article>
+                                  );
+                                })}
+                              </div>
+                            </section>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </section>
+                </TabsContent>
+              </Tabs>
             </>
           )}
         </div>

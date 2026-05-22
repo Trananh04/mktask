@@ -81,7 +81,7 @@ export class PlannedProjectDto {
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => PlannedTaskDto)
-  @ArrayMaxSize(80)
+  @ArrayMaxSize(12)
   tasks: PlannedTaskDto[];
 }
 
@@ -92,7 +92,7 @@ export class ProjectPlanDto {
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => PlannedProjectDto)
-  @ArrayMaxSize(12)
+  @ArrayMaxSize(6)
   projects: PlannedProjectDto[];
 
   @IsArray()

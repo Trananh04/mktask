@@ -1,6 +1,6 @@
 // src/modules/notifications/notifications.service.ts
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { NotificationPriority, NotificationType } from '@prisma/client';
+import { NotificationPriority, NotificationType, Role } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
@@ -274,38 +274,134 @@ export class NotificationsService {
   }
 
   async notifyTaskDueSoon(taskId: string) {
+    return this.notifyTaskDeadline(taskId, 'due-soon');
+  }
+
+  async notifyTaskOverdue(taskId: string) {
+    return this.notifyTaskDeadline(taskId, 'overdue');
+  }
+
+  private async notifyTaskDeadline(taskId: string, state: 'due-soon' | 'overdue') {
     const task = await this.prisma.task.findUnique({
       where: { id: taskId },
       include: {
-        assignees: true, // Only need userId from join table
+        assignees: true,
         project: {
           include: {
+            members: {
+              select: { userId: true, role: true },
+            },
             workspace: {
-              select: { organizationId: true, slug: true },
+              include: {
+                members: {
+                  select: { userId: true, role: true },
+                },
+                organization: {
+                  select: {
+                    ownerId: true,
+                    members: {
+                      select: { userId: true, role: true },
+                    },
+                  },
+                },
+              },
             },
           },
         },
       },
     });
 
-    if (!task || !task.assignees?.length || !task.dueDate) return;
+    if (!task?.dueDate) return [];
 
-    // Create notifications for all assignees
-    const notifications = task.assignees.map((assignee) =>
-      this.createNotification({
-        title: 'Task Due Soon',
-        message: `Task "${task.title}" is due soon`,
+    const recipients = new Map<string, 'assignee' | 'manager'>();
+
+    task.assignees.forEach((assignee) => {
+      recipients.set(assignee.userId, 'assignee');
+    });
+
+    this.getManagerRecipientIds(task).forEach((userId) => {
+      if (!recipients.has(userId)) {
+        recipients.set(userId, 'manager');
+      }
+    });
+
+    if (recipients.size === 0) return [];
+
+    const title = state === 'overdue' ? 'Task Overdue' : 'Task Due Soon';
+    const priority = state === 'overdue' ? NotificationPriority.URGENT : NotificationPriority.HIGH;
+    const actionUrl = `/${task.project.workspace.slug}/${task.project.slug}/tasks/${task.slug}`;
+
+    const notifications = Array.from(recipients.entries()).map(async ([userId, recipientType]) => {
+      const alreadyNotified = await this.hasRecentTaskDeadlineNotification(task.id, userId, title);
+
+      if (alreadyNotified) return null;
+
+      const message =
+        state === 'overdue'
+          ? `Task "${task.title}" is overdue and not completed`
+          : recipientType === 'manager'
+            ? `Task "${task.title}" is due soon and not completed`
+            : `Task "${task.title}" is due soon`;
+
+      return this.createNotification({
+        title,
+        message,
         type: NotificationType.TASK_DUE_SOON,
-        userId: assignee.userId,
+        userId,
         organizationId: task.project.workspace.organizationId,
         entityType: 'Task',
-        entityId: taskId,
-        actionUrl: `/${task.project.workspace.slug}/${task.project.slug}/tasks/${task.slug}`,
-        priority: NotificationPriority.HIGH,
-      }),
-    );
+        entityId: task.id,
+        actionUrl,
+        priority,
+      });
+    });
 
     return Promise.all(notifications);
+  }
+
+  private getManagerRecipientIds(task: {
+    project: {
+      members: Array<{ userId: string; role: Role }>;
+      workspace: {
+        members: Array<{ userId: string; role: Role }>;
+        organization: {
+          ownerId: string;
+          members: Array<{ userId: string; role: Role }>;
+        };
+      };
+    };
+  }) {
+    const managerialRoles = new Set<Role>([Role.MANAGER, Role.OWNER]);
+    const recipientIds = new Set<string>([task.project.workspace.organization.ownerId]);
+
+    task.project.members.forEach((member) => {
+      if (managerialRoles.has(member.role)) recipientIds.add(member.userId);
+    });
+    task.project.workspace.members.forEach((member) => {
+      if (managerialRoles.has(member.role)) recipientIds.add(member.userId);
+    });
+    task.project.workspace.organization.members.forEach((member) => {
+      if (managerialRoles.has(member.role)) recipientIds.add(member.userId);
+    });
+
+    return recipientIds;
+  }
+
+  private async hasRecentTaskDeadlineNotification(taskId: string, userId: string, title: string) {
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const existing = await this.prisma.notification.findFirst({
+      where: {
+        title,
+        type: NotificationType.TASK_DUE_SOON,
+        userId,
+        entityType: 'Task',
+        entityId: taskId,
+        createdAt: { gte: oneDayAgo },
+      },
+      select: { id: true },
+    });
+
+    return Boolean(existing);
   }
 
   // Add these methods to your notifications.service.ts

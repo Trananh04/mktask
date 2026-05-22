@@ -85,7 +85,7 @@ export const aiProjectPlannerApi = {
   apply: async (
     workspaceId: string,
     plan: ProjectPlan,
-    createAssignments = true
+    createAssignments = false
   ): Promise<ApplyProjectPlanResponse> => {
     const response = await api.post<ApplyProjectPlanResponse>("/ai-project-planner/apply", {
       workspaceId,

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import ActionButton from "../common/ActionButton";
 import {
   Dialog,
@@ -8,98 +8,188 @@ import {
   DialogHeader,
   DialogTitle,
 } from "../ui/dialog";
-import { invitationApi } from "@/utils/api/invitationsApi";
-import { HiMail } from "react-icons/hi";
-import { Input, Label, Select } from "../ui";
+import { HiUserAdd } from "react-icons/hi";
+import { Label, Select } from "../ui";
 import { SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { projectApi } from "@/utils/api/projectApi";
+import { OrganizationMember, ProjectMember } from "@/types";
+
+interface ProjectInviteMemberModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onAddMember: (userId: string, role: string) => Promise<void>;
+  availableRoles: Array<{ id: string; name: string; description: string }>;
+  projectId: string;
+  organizationId: string;
+}
 
 export const ProjectInviteMemberModal = ({
   isOpen,
   onClose,
-  onInvite,
+  onAddMember,
   availableRoles,
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-  onInvite: (email: string, role: string) => void;
-  availableRoles: Array<{ id: string; name: string; description: string }>;
-}) => {
-  const [email, setEmail] = useState("");
+  projectId,
+  organizationId,
+}: ProjectInviteMemberModalProps) => {
+  const [selectedUserId, setSelectedUserId] = useState("");
   const [role, setRole] = useState("");
-  const [inviting, setInviting] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const [organizationMembers, setOrganizationMembers] = useState<OrganizationMember[]>([]);
+  const [projectMembers, setProjectMembers] = useState<ProjectMember[]>([]);
+  const [membersLoading, setMembersLoading] = useState(false);
+  const [membersError, setMembersError] = useState("");
 
-  // Add email validation display
-  const isEmailValid = email ? invitationApi.validateEmail(email) : true;
+  useEffect(() => {
+    if (!isOpen || !organizationId || !projectId) return;
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email.trim() || !isEmailValid || !role) return;
+    let ignore = false;
+    const fetchSelectableMembers = async () => {
+      try {
+        setMembersLoading(true);
+        setMembersError("");
+        const [orgMembers, existingProjectMembers] = await Promise.all([
+          projectApi.getOrganizationMembers(organizationId),
+          projectApi.getProjectMembers(projectId),
+        ]);
 
-    setInviting(true);
+        if (!ignore) {
+          setOrganizationMembers(orgMembers);
+          setProjectMembers(existingProjectMembers);
+        }
+      } catch (error) {
+        console.error("Failed to load selectable project members:", error);
+        if (!ignore) {
+          setMembersError("Không thể tải danh sách nhân viên");
+        }
+      } finally {
+        if (!ignore) {
+          setMembersLoading(false);
+        }
+      }
+    };
+
+    fetchSelectableMembers();
+
+    return () => {
+      ignore = true;
+    };
+  }, [isOpen, organizationId, projectId]);
+
+  const selectableMembers = useMemo(() => {
+    const projectMemberIds = new Set(projectMembers.map((member) => member.userId));
+    return organizationMembers.filter(
+      (member) => member.user?.id && member.user.email && !projectMemberIds.has(member.userId)
+    );
+  }, [organizationMembers, projectMembers]);
+
+  const getMemberName = (member: OrganizationMember) => {
+    const fullName = `${member.user?.firstName || ""} ${member.user?.lastName || ""}`.trim();
+    return fullName || member.user?.username || member.user?.email || "Nhân viên";
+  };
+
+  const resetForm = () => {
+    setSelectedUserId("");
+    setRole("");
+  };
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!selectedUserId || !role) return;
+
+    setAdding(true);
     try {
-      await onInvite(email.trim(), role);
-      setEmail("");
-      setRole("");
+      await onAddMember(selectedUserId, role);
+      resetForm();
       onClose();
     } catch (error) {
-      console.error("Failed to send invitation:", error);
+      console.error("Failed to add project member:", error);
     } finally {
-      setInviting(false);
+      setAdding(false);
     }
   };
 
   const handleClose = () => {
-    setEmail("");
-    setRole("");
+    resetForm();
     onClose();
   };
 
   return (
     <div automation-id="invite-modal">
-      <Dialog open={isOpen} onOpenChange={onClose}>
+      <Dialog open={isOpen} onOpenChange={handleClose}>
         <DialogContent className="bg-[var(--card)] border-none rounded-[var(--card-radius)] shadow-lg max-w-md">
           <DialogHeader>
             <DialogTitle className="text-[var(--foreground)] flex items-center gap-2">
-              <HiMail className="w-5 h-5 text-[var(--primary)]" />
-              Mời thành viên vào dự án
+              <HiUserAdd className="w-5 h-5 text-[var(--primary)]" />
+              Thêm thành viên vào dự án
             </DialogTitle>
             <DialogDescription className="text-[var(--muted-foreground)]">
-              Gửi lời mời tham gia dự án này.
+              Chọn nhân viên có sẵn để thêm vào dự án này.
             </DialogDescription>
           </DialogHeader>
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <Label
-                htmlFor="invite-email"
-                className="text-sm font-medium text-[var(--foreground)]"
+              <Label className="text-sm font-medium text-[var(--foreground)]">Nhân viên</Label>
+              <div
+                id="invite-member"
+                className="mt-1 max-h-52 overflow-y-auto rounded-md bg-background p-1"
               >
-                Địa chỉ email
-              </Label>
-              <Input
-                id="invite-email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Nhập địa chỉ email"
-                className="mt-1 border-none bg-background text-[var(--foreground)]"
-                required
-              />
-              {email && !isEmailValid && (
-                <p className="text-xs text-[var(--destructive)] mt-1">
-                  Vui lòng nhập địa chỉ email hợp lệ
-                </p>
-              )}
+                {membersLoading && (
+                  <p className="px-3 py-4 text-sm text-[var(--muted-foreground)]">
+                    Đang tải danh sách nhân viên...
+                  </p>
+                )}
+                {!membersLoading && membersError && (
+                  <p className="px-3 py-4 text-sm text-[var(--destructive)]">{membersError}</p>
+                )}
+                {!membersLoading && !membersError && selectableMembers.length === 0 && (
+                  <p className="px-3 py-4 text-sm text-[var(--muted-foreground)]">
+                    Tất cả nhân viên đã có trong dự án.
+                  </p>
+                )}
+                {!membersLoading &&
+                  !membersError &&
+                  selectableMembers.map((member) => (
+                    <button
+                      key={member.id}
+                      type="button"
+                      onClick={() => setSelectedUserId(member.userId)}
+                      className={`flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-left transition-colors ${
+                        selectedUserId === member.userId
+                          ? "bg-[var(--primary)]/10 text-[var(--foreground)]"
+                          : "hover:bg-[var(--hover-bg)]"
+                      }`}
+                    >
+                      <span className="min-w-0">
+                        <span className="block truncate text-sm font-medium">
+                          {getMemberName(member)}
+                        </span>
+                        <span className="block truncate text-xs text-[var(--muted-foreground)]">
+                          {member.user?.email}
+                        </span>
+                      </span>
+                      <span
+                        className={`size-4 shrink-0 rounded-full border ${
+                          selectedUserId === member.userId
+                            ? "border-[var(--primary)] bg-[var(--primary)]"
+                            : "border-[var(--border)]"
+                        }`}
+                      />
+                    </button>
+                  ))}
+              </div>
             </div>
+
             <div>
               <Label className="text-sm font-medium text-[var(--foreground)]">Vai trò</Label>
               <Select value={role} onValueChange={setRole}>
                 <SelectTrigger
                   className="projects-workspace-button border-none mt-1"
-                  onFocus={(e) => {
-                    e.currentTarget.style.boxShadow = "none";
+                  onFocus={(event) => {
+                    event.currentTarget.style.boxShadow = "none";
                   }}
-                  onBlur={(e) => {
-                    e.currentTarget.style.boxShadow = "none";
+                  onBlur={(event) => {
+                    event.currentTarget.style.boxShadow = "none";
                   }}
                 >
                   <SelectValue placeholder="Chọn vai trò">
@@ -107,12 +197,18 @@ export const ProjectInviteMemberModal = ({
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent className="border-none bg-[var(--card)]">
-                  {availableRoles.map((r) => (
-                    <SelectItem key={r.id} value={r.name} className="hover:bg-[var(--hover-bg)]">
+                  {availableRoles.map((availableRole) => (
+                    <SelectItem
+                      key={availableRole.id}
+                      value={availableRole.name}
+                      className="hover:bg-[var(--hover-bg)]"
+                    >
                       <div className="flex flex-col items-start py-1">
-                        <span className="font-medium text-[var(--foreground)]">{r.name}</span>
+                        <span className="font-medium text-[var(--foreground)]">
+                          {availableRole.name}
+                        </span>
                         <span className="text-xs text-[var(--muted-foreground)] mt-0.5">
-                          {r.description}
+                          {availableRole.description}
                         </span>
                       </div>
                     </SelectItem>
@@ -124,13 +220,14 @@ export const ProjectInviteMemberModal = ({
                   Vui lòng chọn vai trò cho thành viên
                 </p>
               )}
-            </div>{" "}
+            </div>
+
             <DialogFooter className="flex justify-end gap-3">
               <ActionButton
                 secondary
                 type="button"
                 onClick={handleClose}
-                disabled={inviting}
+                disabled={adding}
                 className="w-20"
               >
                 Hủy
@@ -138,10 +235,10 @@ export const ProjectInviteMemberModal = ({
               <ActionButton
                 primary
                 type="submit"
-                disabled={inviting || !email.trim() || !isEmailValid || !role}
-                className="w-28"
+                disabled={adding || !selectedUserId || !role}
+                className="w-32"
               >
-                {inviting ? "Đang mời..." : "Gửi lời mời"}
+                {adding ? "Đang thêm..." : "Thêm thành viên"}
               </ActionButton>
             </DialogFooter>
           </form>

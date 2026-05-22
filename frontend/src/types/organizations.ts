@@ -264,6 +264,11 @@ export enum ChartType {
   RESOURCE_ALLOCATION = "resource-allocation",
 }
 
+export enum ChartScope {
+  ORGANIZATION = "organization",
+  PERSONAL = "personal",
+}
+
 // Type definitions for better type safety
 export interface ChartDataResponse {
   [key: string]: any;

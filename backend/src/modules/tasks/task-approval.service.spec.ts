@@ -38,6 +38,12 @@ describe('TasksService approvals and daily reports', () => {
         findUnique: jest.fn().mockResolvedValue(taskContext),
         update: jest.fn().mockResolvedValue({ id: taskId }),
       },
+      project: {
+        findUnique: jest.fn().mockResolvedValue({
+          createdBy: managerId,
+          members: [],
+        }),
+      },
       taskStatus: {
         findFirst: jest.fn().mockResolvedValue({ id: statusId, name: 'Done' }),
         findUnique: jest.fn().mockResolvedValue({ category: 'DONE' }),
@@ -132,6 +138,25 @@ describe('TasksService approvals and daily reports', () => {
       expect.objectContaining({
         where: { id: 'existing-request' },
         data: expect.objectContaining({ requestedStatusId: statusId }),
+      }),
+    );
+  });
+
+  it('notifies owner members when a project has no creator id', async () => {
+    const { service, prisma, notifications } = createService();
+    prisma.project.findUnique.mockResolvedValue({
+      createdBy: null,
+      members: [{ userId: managerId }],
+    });
+    prisma.taskStatusChangeRequest.create.mockResolvedValue({ id: 'request-id' });
+
+    await service.requestTaskStatusChange(taskId, { statusId }, userId);
+
+    expect(notifications.createNotification).toHaveBeenCalledTimes(1);
+    expect(notifications.createNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: managerId,
+        entityType: 'TaskStatusChangeRequest',
       }),
     );
   });
@@ -269,6 +294,33 @@ describe('TasksService approvals and daily reports', () => {
                   }),
                 }),
               }),
+            }),
+          }),
+        }),
+      }),
+    );
+  });
+
+  it('limits organization managers to daily reports in projects they own', async () => {
+    const { service, prisma } = createService();
+    prisma.user.findUnique.mockResolvedValue({ role: 'MEMBER' });
+    prisma.organizationMember.findUnique.mockResolvedValue({ role: 'MANAGER' });
+    prisma.taskDailyReport.findMany.mockResolvedValue([]);
+
+    await service.listTaskDailyReports(managerId, {
+      organizationId: orgId,
+      date: '2026-05-21',
+    });
+
+    expect(prisma.taskDailyReport.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          task: expect.objectContaining({
+            project: expect.objectContaining({
+              OR: [
+                { createdBy: managerId },
+                { members: { some: { userId: managerId, role: 'OWNER' } } },
+              ],
             }),
           }),
         }),

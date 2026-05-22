@@ -2639,7 +2639,7 @@ export class TasksService {
     });
 
     if (user?.role === Role.SUPER_ADMIN) {
-      return;
+      return Role.SUPER_ADMIN;
     }
 
     const orgMember = await this.prisma.organizationMember.findUnique({
@@ -2648,7 +2648,7 @@ export class TasksService {
     });
 
     if (orgMember?.role === Role.MANAGER || orgMember?.role === Role.OWNER) {
-      return;
+      return orgMember.role;
     }
 
     throw new ForbiddenException('Only managers can review member task updates');
@@ -2659,6 +2659,26 @@ export class TasksService {
     if (!access.isElevated && !access.isSuperAdmin) {
       throw new ForbiddenException('Only managers can review this task');
     }
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true },
+    });
+
+    if (user?.role === Role.MANAGER) {
+      const project = await this.prisma.project.findUnique({
+        where: { id: task.project.id },
+        select: {
+          createdBy: true,
+          members: { where: { userId, role: Role.OWNER }, select: { userId: true } },
+        },
+      });
+      const canManageProject = project?.createdBy === userId || (project?.members?.length || 0) > 0;
+      if (!canManageProject) {
+        throw new ForbiddenException('Managers can only review reports in owned projects');
+      }
+    }
+
     return task;
   }
 
@@ -2670,29 +2690,30 @@ export class TasksService {
     return new Date(Date.UTC(source.getUTCFullYear(), source.getUTCMonth(), source.getUTCDate()));
   }
 
-  private async getManagerRecipientIds(organizationId: string, excludeUserId?: string) {
-    const [superAdmins, orgManagers] = await Promise.all([
-      this.prisma.user.findMany({
-        where: { role: Role.SUPER_ADMIN, status: 'ACTIVE' },
-        select: { id: true },
-      }),
-      this.prisma.organizationMember.findMany({
-        where: {
-          organizationId,
-          role: { in: [Role.MANAGER, Role.OWNER] },
-          user: { status: 'ACTIVE' },
+  private async getProjectOwnerRecipientIds(projectId: string, excludeUserId?: string) {
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+      select: {
+        createdBy: true,
+        members: {
+          where: { role: Role.OWNER, user: { status: 'ACTIVE' } },
+          select: { userId: true },
         },
-        select: { userId: true },
-      }),
-    ]);
+      },
+    });
+
+    if (!project) {
+      return [];
+    }
 
     return Array.from(
-      new Set([...superAdmins.map((u) => u.id), ...orgManagers.map((m) => m.userId)]),
-    ).filter((id) => id !== excludeUserId);
+      new Set([project.createdBy, ...project.members.map((member) => member.userId)]),
+    ).filter((id): id is string => Boolean(id) && id !== excludeUserId);
   }
 
-  private async notifyManagers(data: {
+  private async notifyProjectOwners(data: {
     organizationId: string;
+    projectId: string;
     createdBy: string;
     title: string;
     message: string;
@@ -2700,9 +2721,9 @@ export class TasksService {
     entityId: string;
     actionUrl: string;
   }) {
-    const managerIds = await this.getManagerRecipientIds(data.organizationId, data.createdBy);
+    const ownerIds = await this.getProjectOwnerRecipientIds(data.projectId, data.createdBy);
     await Promise.all(
-      managerIds.map((userId) =>
+      ownerIds.map((userId) =>
         this.notificationsService.createNotification({
           title: data.title,
           message: data.message,
@@ -2766,8 +2787,9 @@ export class TasksService {
           include: this.taskStatusRequestInclude(),
         });
 
-    await this.notifyManagers({
+    await this.notifyProjectOwners({
       organizationId: task.project.workspace.organizationId,
+      projectId: task.project.id,
       createdBy: userId,
       title: 'Yêu cầu đổi trạng thái task',
       message: `"${task.title}" muốn chuyển sang "${requestedStatus.name}"`,
@@ -2823,9 +2845,20 @@ export class TasksService {
       date?: string;
     },
   ) {
-    await this.ensureOrganizationManager(filters.organizationId, userId);
+    const reviewerRole = await this.ensureOrganizationManager(filters.organizationId, userId);
+    const managerProjectScope =
+      reviewerRole === Role.MANAGER
+        ? {
+            OR: [{ createdBy: userId }, { members: { some: { userId, role: Role.OWNER } } }],
+          }
+        : {};
     const where: Prisma.TaskStatusChangeRequestWhereInput = {
-      task: { project: { workspace: { organizationId: filters.organizationId } } },
+      task: {
+        project: {
+          workspace: { organizationId: filters.organizationId },
+          ...managerProjectScope,
+        },
+      },
     };
 
     if (filters.status) {
@@ -2982,8 +3015,9 @@ export class TasksService {
       include: this.taskDailyReportInclude(),
     });
 
-    await this.notifyManagers({
+    await this.notifyProjectOwners({
       organizationId: task.project.workspace.organizationId,
+      projectId: task.project.id,
       createdBy: userId,
       title:
         dto.type === TaskDailyReportType.START_OF_DAY ? 'Báo cáo đầu ngày' : 'Báo cáo cuối ngày',
@@ -3006,11 +3040,21 @@ export class TasksService {
       status?: TaskDailyReportStatus;
     },
   ) {
-    await this.ensureOrganizationManager(filters.organizationId, userId);
+    const reviewerRole = await this.ensureOrganizationManager(filters.organizationId, userId);
+    const managerProjectScope =
+      reviewerRole === Role.MANAGER
+        ? {
+            OR: [{ createdBy: userId }, { members: { some: { userId, role: Role.OWNER } } }],
+          }
+        : {};
     const where: Prisma.TaskDailyReportWhereInput = {
-      task: { project: { workspace: { organizationId: filters.organizationId } } },
+      task: {
+        project: {
+          workspace: { organizationId: filters.organizationId },
+          ...managerProjectScope,
+        },
+      },
     };
-
     if (filters.date) {
       where.reportDate = this.normalizeReportDate(filters.date);
     }

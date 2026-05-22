@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import UserAvatar from "@/components/ui/avatars/UserAvatar";
 import { UserStatusIndicator } from "@/components/users/UserStatusIndicator";
-import { invitationApi } from "@/utils/api/invitationsApi";
 import { toast } from "sonner";
 import { formatDateForDisplay } from "@/utils/date";
 import {
@@ -122,6 +121,7 @@ function ProjectMembersContent() {
     updateProjectMemberRole,
     removeProjectMember,
     getProjectMembersPagination,
+    addMemberToProject,
   } = useProjectContext();
   const { isAuthenticated, getCurrentUser, getUserAccess } = useAuth();
   const { handleSlugNotFound } = useSlugRedirect();
@@ -589,49 +589,36 @@ function ProjectMembersContent() {
     }
   };
 
-  const handleInvite = async (email: string, role: string) => {
+  const handleAddMember = async (userId: string, role: string) => {
     if (!project) {
       toast.error(t("project_not_found_for_invite"));
       throw new Error(t("project_not_found_for_invite"));
     }
 
-    const validation = invitationApi.validateInvitationData({
-      inviteeEmail: email,
-      projectId: project.id,
-      role: role,
-    });
-
-    if (!validation.isValid) {
-      validation.errors.forEach((error) => toast.error(error));
-      throw new Error(t("validation_failed"));
-    }
-
     try {
-      await invitationApi.createInvitation({
-        inviteeEmail: email,
+      await addMemberToProject({
+        userId,
         projectId: project.id,
-        role: role,
+        role,
       });
 
-      toast.success(t("invitation_sent", { email }));
-
-      if (pendingInvitationsRef.current) {
-        await pendingInvitationsRef.current.refreshInvitations();
-      }
+      toast.success(t("member_added_success", { defaultValue: "Member added to project" }));
       await refreshMembers();
     } catch (error: any) {
       const errorMessage =
-        error?.response?.data?.message || error?.message || t("invitation_failed");
+        error?.response?.data?.message ||
+        error?.message ||
+        t("member_add_failed", { defaultValue: "Failed to add member" });
       toast.error(errorMessage);
-      console.error("Invite member error:", error);
+      console.error("Add project member error:", error);
       throw error;
     }
   };
 
-  const handleInviteWithLoading = async (email: string, role: string) => {
+  const handleAddMemberWithLoading = async (userId: string, role: string) => {
     setInviteLoading(true);
     try {
-      await handleInvite(email, role);
+      await handleAddMember(userId, role);
     } finally {
       setInviteLoading(false);
     }
@@ -1110,8 +1097,10 @@ function ProjectMembersContent() {
       <ProjectInviteMemberModal
         isOpen={showInviteModal}
         onClose={() => setShowInviteModal(false)}
-        onInvite={handleInviteWithLoading}
+        onAddMember={handleAddMemberWithLoading}
         availableRoles={getAvailableRolesForMember()}
+        projectId={project?.id || ""}
+        organizationId={workspace?.organizationId || project?.workspace?.organizationId || ""}
       />
 
       {memberToRemove && (

@@ -15,6 +15,12 @@ export enum ChartType {
   MEMBER_WORKLOAD = 'member-workload',
   RESOURCE_ALLOCATION = 'resource-allocation',
 }
+
+export enum ChartScope {
+  ORGANIZATION = 'organization',
+  PERSONAL = 'personal',
+}
+
 export interface ChartDataResponse {
   [key: string]: any;
 }
@@ -46,4 +52,14 @@ export class GetChartsQueryDto {
   @IsOptional()
   @IsUUID()
   projectId?: string;
+
+  @ApiProperty({
+    description: 'Chart data scope',
+    enum: ChartScope,
+    required: false,
+    default: ChartScope.ORGANIZATION,
+  })
+  @IsOptional()
+  @IsEnum(ChartScope)
+  scope?: ChartScope;
 }

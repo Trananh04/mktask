@@ -362,7 +362,7 @@ Yêu cầu đầu ra JSON:
 Quy tắc:
 - Chỉ trả JSON hợp lệ.
 - Dùng tiếng Việt cho summary, name, title, description, warnings.
-- Tạo tối đa 6 project, mỗi project tối đa 12 task.
+- Tạo từ 3 đến 6 project, mỗi project từ 5 đến 12 task.
 - requiredSkills dùng keyword ngắn không dấu nếu phù hợp: frontend, backend, design, qa, devops, database, marketing, content, sales.
 - priority chỉ dùng LOWEST, LOW, MEDIUM, HIGH hoặc HIGHEST.
 - Không tự bịa assigneeId. Việc phân công sẽ do hệ thống mktask xử lý sau.
@@ -384,6 +384,7 @@ ${description}`;
     let requestUrl = apiUrl.replace(/\/+$/, '');
     const requestHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
     if (apiKey) requestHeaders.Authorization = `Bearer ${apiKey}`;
+    const isGpt5Model = typeof model === 'string' && model.startsWith('gpt-5');
     let requestBody: Record<string, unknown> = {
       model,
       messages,
@@ -414,6 +415,13 @@ ${description}`;
         max_tokens: 2500,
         temperature: 0.2,
       };
+    } else if (provider === 'openai') {
+      requestUrl = `${requestUrl}/chat/completions`;
+      delete requestBody.max_tokens;
+      requestBody.max_completion_tokens = 2500;
+      if (isGpt5Model) {
+        delete requestBody.temperature;
+      }
     } else if (provider === 'ollama') {
       requestUrl = requestUrl.includes('/v1')
         ? `${requestUrl}/chat/completions`
@@ -475,7 +483,7 @@ ${description}`;
 
   private normalizePlan(raw: unknown): ProjectPlanDto {
     const source = (raw || {}) as Partial<ProjectPlanDto>;
-    const projects = Array.isArray(source.projects) ? source.projects.slice(0, 12) : [];
+    const projects = Array.isArray(source.projects) ? source.projects.slice(0, 6) : [];
     return {
       summary: String(source.summary || 'Kế hoạch dự án do AI đề xuất'),
       warnings: Array.isArray(source.warnings) ? source.warnings.map(String) : [],
@@ -487,7 +495,7 @@ ${description}`;
 
   private normalizeProject(project: Partial<PlannedProjectDto>, index: number): PlannedProjectDto {
     const name = String(project.name || `Dự án ${index + 1}`).trim();
-    const tasks = Array.isArray(project.tasks) ? project.tasks.slice(0, 80) : [];
+    const tasks = Array.isArray(project.tasks) ? project.tasks.slice(0, 12) : [];
     return {
       id: String(project.id || `project-${index + 1}`),
       name,

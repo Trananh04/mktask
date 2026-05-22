@@ -21,7 +21,6 @@ import { CheckSquare, Flame } from "lucide-react";
 import ErrorState from "@/components/common/ErrorState";
 import { EmptyState } from "@/components/ui";
 import { projectApi } from "@/utils/api/projectApi";
-import { invitationApi } from "@/utils/api/invitationsApi";
 import { roles } from "@/utils/data/projectData";
 
 import { toast } from "sonner";
@@ -89,6 +88,7 @@ const ProjectsContent: React.FC<ProjectsContentProps> = ({
     getProjectsByOrganization,
     refreshProjects,
     clearError,
+    addMemberToProject,
   } = useProjectContext();
 
   const [hasAccess, setHasAccess] = useState(false);
@@ -562,36 +562,25 @@ const ProjectsContent: React.FC<ProjectsContentProps> = ({
     setShowInviteModal(true);
   }, []);
 
-  const handleInvite = async (email: string, role: string) => {
+  const handleAddMember = async (userId: string, role: string) => {
     if (!selectedProjectForInvite) {
       toast.error("No project selected");
       return;
     }
 
-    const validation = invitationApi.validateInvitationData({
-      inviteeEmail: email,
-      projectId: selectedProjectForInvite.id,
-      role: role,
-    });
-
-    if (!validation.isValid) {
-      validation.errors.forEach((error) => toast.error(error));
-      throw new Error("Validation failed");
-    }
-
     try {
       setInviteLoading(true);
-      await invitationApi.createInvitation({
-        inviteeEmail: email,
+      await addMemberToProject({
+        userId,
         projectId: selectedProjectForInvite.id,
-        role: role,
+        role,
       });
 
-      toast.success(t("messages.invitation_sent", { email, defaultValue: `Invitation sent to ${email}` }));
+      toast.success(t("messages.member_added", { defaultValue: "Member added to project" }));
       setShowInviteModal(false);
       setSelectedProjectForInvite(null);
     } catch (error: any) {
-      const errorMessage = error?.response?.data?.message || error?.message || "Failed to send invitation";
+      const errorMessage = error?.response?.data?.message || error?.message || "Failed to add member";
       toast.error(errorMessage);
       throw error;
     } finally {
@@ -602,6 +591,13 @@ const ProjectsContent: React.FC<ProjectsContentProps> = ({
   const getAvailableRoles = () => {
     return roles.filter((role) => role.name !== "OWNER");
   };
+
+  const selectedProjectOrganizationId =
+    selectedProjectForInvite?.organizationId ||
+    selectedProjectForInvite?.workspace?.organizationId ||
+    selectedProjectForInvite?.workspace?.organization?.id ||
+    (contextType === "organization" ? contextId : workspace?.organizationId) ||
+    "";
 
   const goToPage = (page: number) => {
     if (!isFetching && enablePagination && page >= 1) {
@@ -709,8 +705,10 @@ const ProjectsContent: React.FC<ProjectsContentProps> = ({
             setShowInviteModal(false);
             setSelectedProjectForInvite(null);
           }}
-          onInvite={handleInvite}
+          onAddMember={handleAddMember}
           availableRoles={getAvailableRoles()}
+          projectId={selectedProjectForInvite?.id || ""}
+          organizationId={selectedProjectOrganizationId}
         />
 
         {/* Content Area */}

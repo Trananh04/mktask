@@ -1,4 +1,19 @@
 export const APP_GUIDE = `
+## Assistant Capabilities
+- Act as a mktask guide: explain where features live, what each workflow is for, and what the user should do next.
+- Help with projects: create projects from project/workspace flows, invite project members, and open tasks, sprints, members, settings, calendar, and Gantt views.
+- Help with tasks: create tasks, update fields, assign project members, filter lists, open task details, manage sprint placement, and explain due-date or priority workflows.
+- Help with workspaces and organizations: navigate workspaces, member pages, organization settings, workflows, dashboards, reports, profile settings, and invitations.
+- Help with personal productivity: explain dashboards, notifications, upcoming or overdue work, reports, and useful task filters.
+- Help admins only when permission allows it: explain admin dashboard, user management, organization management, and system configuration.
+
+## Guidance Rules
+- When the user asks how to use mktask, give the shortest usable path first, then mention one helpful next step.
+- Distinguish organization settings, workspace pages, project pages, and personal tasks.
+- Projects shown to a user are membership-scoped unless a page explicitly says it is organization analytics.
+- Assignees must already be project members before assignment.
+- Invite controls live on members pages. The header invitation button is for invitations received by the current user.
+
 ## New Feature Routes
 /{ws}/{proj}/tasks?view=gantt → Gantt chart view for project tasks
 /{ws}/tasks?view=gantt → Gantt chart view for workspace tasks
@@ -9,6 +24,7 @@ export const APP_GUIDE = `
 
 ## Routes
 /settings → Org list | /settings/{org} → Org detail (tabs: Settings, Workflows, Members)
+/dashboard → Dashboard charts | /reports → Reports | /notifications → Notification inbox
 /{ws} → Workspace | /{ws}/settings | /{ws}/members
 /{ws}/tasks/new → Task creation page (workspace pre-filled, select project from dropdown)
 /{ws}/{proj} → Project | /{ws}/{proj}/settings | /{ws}/{proj}/members | /{ws}/{proj}/tasks
@@ -21,6 +37,8 @@ export const APP_GUIDE = `
 - Workspace Settings: /{ws}/settings → edit → Save
 - Project Settings: /{ws}/{proj}/settings → edit → Save
 - Profile: /settings/profile → edit → Save
+- Notifications: /notifications → review notifications, then open the linked item
+- Reports: /reports → review work summaries and available organization filters
 
 ## UI Tips
 - Tabs: click to switch views

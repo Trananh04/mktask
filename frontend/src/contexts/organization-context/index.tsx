@@ -17,6 +17,7 @@ import {
   UpdateWorkflowData,
   UpdateMemberRoleData,
   ChartType,
+  ChartScope,
 } from "@/types";
 
 // Add the AnalyticsData interface
@@ -105,12 +106,12 @@ interface OrganizationContextType extends OrganizationState {
   // Add analytics methods
   fetchAnalyticsData: (
     organizationId: string,
-    filters?: { workspaceId?: string; projectId?: string }
+    filters?: { workspaceId?: string; projectId?: string; scope?: ChartScope }
   ) => Promise<void>;
   fetchSingleChartData: (
     organizationId: string,
     chartType: ChartType,
-    filters?: { workspaceId?: string; projectId?: string }
+    filters?: { workspaceId?: string; projectId?: string; scope?: ChartScope }
   ) => Promise<any>;
   clearAnalyticsError: () => void;
   setDefaultOrganization: (organizationId: string) => Promise<OrganizationMember>;
@@ -216,7 +217,7 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
   const fetchAnalyticsData = useCallback(
     async (
       organizationId: string,
-      filters: { workspaceId?: string; projectId?: string } = {}
+      filters: { workspaceId?: string; projectId?: string; scope?: ChartScope } = {}
     ): Promise<void> => {
       try {
         setOrganizationState((prev) => ({
@@ -279,7 +280,7 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
     async (
       organizationId: string,
       chartType: ChartType,
-      filters: { workspaceId?: string; projectId?: string } = {}
+      filters: { workspaceId?: string; projectId?: string; scope?: ChartScope } = {}
     ): Promise<any> => {
       try {
         const result = await orgChartsApi.getSingleChart(organizationId, chartType, filters);

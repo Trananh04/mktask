@@ -1,7 +1,7 @@
 import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AccessControlService } from 'src/common/access-control.utils';
-import { ChartDataResponse, ChartType } from './dto/get-charts-query.dto';
+import { ChartDataResponse, ChartScope, ChartType } from './dto/get-charts-query.dto';
 import { UserSource, ProjectVisibility } from '@prisma/client';
 
 export interface KPIMetrics {
@@ -46,6 +46,13 @@ export interface MemberWorkload {
   reportedTasks: number;
 }
 
+type OrganizationChartFilters = {
+  workspaceId?: string;
+  projectId?: string;
+  minMemberCount?: number;
+  scope?: ChartScope;
+};
+
 @Injectable()
 export class OrganizationChartsService {
   private readonly logger = new Logger(OrganizationChartsService.name);
@@ -62,7 +69,7 @@ export class OrganizationChartsService {
     orgId: string,
     userId: string,
     chartTypes: ChartType[],
-    filters: { workspaceId?: string; projectId?: string; minMemberCount?: number } = {},
+    filters: OrganizationChartFilters = {},
   ): Promise<ChartDataResponse> {
     this.logger.log(
       `Fetching chart data for organization ${orgId}, types: ${chartTypes.join(', ')} with filters: ${JSON.stringify(filters)}`,
@@ -110,29 +117,29 @@ export class OrganizationChartsService {
     orgId: string,
     userId: string,
     chartType: ChartType,
-    filters: { workspaceId?: string; projectId?: string; minMemberCount?: number } = {},
+    filters: OrganizationChartFilters = {},
   ): Promise<any> {
     switch (chartType) {
       case ChartType.KPI_METRICS:
-        return this.organizationKPIMetrics(orgId, userId);
+        return this.organizationKPIMetrics(orgId, userId, filters.scope);
       case ChartType.PROJECT_PORTFOLIO:
-        return this.organizationProjectPortfolio(orgId, userId);
+        return this.organizationProjectPortfolio(orgId, userId, filters.scope);
       case ChartType.TEAM_UTILIZATION:
-        return this.organizationTeamUtilization(orgId, userId, filters.workspaceId);
+        return this.organizationTeamUtilization(orgId, userId, filters.workspaceId, filters.scope);
       case ChartType.TASK_DISTRIBUTION:
-        return this.organizationTaskDistribution(orgId, userId);
+        return this.organizationTaskDistribution(orgId, userId, filters.scope);
       case ChartType.TASK_TYPE:
-        return this.organizationTaskTypeDistribution(orgId, userId);
+        return this.organizationTaskTypeDistribution(orgId, userId, filters.scope);
       case ChartType.SPRINT_METRICS:
-        return this.organizationSprintMetrics(orgId, userId);
+        return this.organizationSprintMetrics(orgId, userId, filters.scope);
       case ChartType.QUALITY_METRICS:
-        return this.organizationQualityMetrics(orgId, userId);
+        return this.organizationQualityMetrics(orgId, userId, filters.scope);
       case ChartType.WORKSPACE_PROJECT_COUNT:
-        return this.organizationWorkspaceProjectCount(orgId, userId);
+        return this.organizationWorkspaceProjectCount(orgId, userId, filters.scope);
       case ChartType.MEMBER_WORKLOAD:
-        return this.organizationMemberWorkload(orgId, userId);
+        return this.organizationMemberWorkload(orgId, userId, filters.scope);
       case ChartType.RESOURCE_ALLOCATION:
-        return this.organizationResourceAllocation(orgId, userId, filters.projectId);
+        return this.organizationResourceAllocation(orgId, userId, filters.projectId, filters.scope);
       default:
         throw new BadRequestException(`Unsupported chart type: ${String(chartType)}`);
     }
@@ -213,11 +220,16 @@ export class OrganizationChartsService {
   /**
    * 1) KPI Metrics
    */
-  async organizationKPIMetrics(orgId: string, userId: string): Promise<KPIMetrics> {
+  async organizationKPIMetrics(
+    orgId: string,
+    userId: string,
+    scope: ChartScope = ChartScope.ORGANIZATION,
+  ): Promise<KPIMetrics> {
     const { isElevated } = await this.accessControl.getOrgAccess(orgId, userId);
+    const isOrganizationWide = scope !== ChartScope.PERSONAL && isElevated;
     const now = new Date();
 
-    if (isElevated) {
+    if (isOrganizationWide) {
       const [
         totalWorkspaces,
         activeWorkspaces,
@@ -367,7 +379,7 @@ export class OrganizationChartsService {
         where: { ...scoped.sprintForUser, status: 'ACTIVE' },
       }),
       this.prisma.organizationMember.count({
-        where: { organizationId: orgId },
+        where: { organizationId: orgId, userId },
       }),
     ]);
 
@@ -377,7 +389,7 @@ export class OrganizationChartsService {
       totalProjects,
       activeProjects,
       completedProjects,
-      totalMembers, // User scope shows only current user
+      totalMembers,
       totalTasks,
       completedTasks,
       overdueTasks,
@@ -394,11 +406,16 @@ export class OrganizationChartsService {
   /**
    * 2) Project Portfolio
    */
-  async organizationProjectPortfolio(orgId: string, userId: string) {
+  async organizationProjectPortfolio(
+    orgId: string,
+    userId: string,
+    scope: ChartScope = ChartScope.ORGANIZATION,
+  ) {
     const { isElevated } = await this.accessControl.getOrgAccess(orgId, userId);
-    const where = isElevated
-      ? { workspace: { organizationId: orgId }, archive: false }
-      : this.userScopedWhere(orgId, userId).projectForUser;
+    const where =
+      scope !== ChartScope.PERSONAL && isElevated
+        ? { workspace: { organizationId: orgId }, archive: false }
+        : this.userScopedWhere(orgId, userId).projectForUser;
 
     return this.prisma.project.groupBy({
       by: ['status'],
@@ -410,19 +427,25 @@ export class OrganizationChartsService {
   /**
    * 3) Team Utilization (roles distribution)
    */
-  async organizationTeamUtilization(orgId: string, userId: string, workspaceId?: string) {
+  async organizationTeamUtilization(
+    orgId: string,
+    userId: string,
+    workspaceId?: string,
+    scope: ChartScope = ChartScope.ORGANIZATION,
+  ) {
     const { isElevated } = await this.accessControl.getOrgAccess(orgId, userId);
+    const isOrganizationWide = scope !== ChartScope.PERSONAL && isElevated;
 
     if (workspaceId) {
       // If workspaceId is provided, group by role in that workspace
       return this.prisma.workspaceMember.groupBy({
         by: ['role'],
-        where: { workspaceId },
+        where: isOrganizationWide ? { workspaceId } : { workspaceId, userId },
         _count: { role: true },
       });
     }
 
-    if (isElevated) {
+    if (isOrganizationWide) {
       return this.prisma.organizationMember.groupBy({
         by: ['role'],
         where: { organizationId: orgId },
@@ -441,13 +464,18 @@ export class OrganizationChartsService {
   /**
    * 4) Task Distribution by Priority
    */
-  async organizationTaskDistribution(orgId: string, userId: string) {
+  async organizationTaskDistribution(
+    orgId: string,
+    userId: string,
+    scope: ChartScope = ChartScope.ORGANIZATION,
+  ) {
     const { isElevated } = await this.accessControl.getOrgAccess(orgId, userId);
+    const isOrganizationWide = scope !== ChartScope.PERSONAL && isElevated;
 
     const tasks = await this.prisma.task.findMany({
       where: {
         project: { workspace: { organizationId: orgId, archive: false } },
-        ...(isElevated
+        ...(isOrganizationWide
           ? {}
           : {
               OR: [
@@ -471,12 +499,17 @@ export class OrganizationChartsService {
   /**
    * 5) Task Type Distribution
    */
-  async organizationTaskTypeDistribution(orgId: string, userId: string) {
+  async organizationTaskTypeDistribution(
+    orgId: string,
+    userId: string,
+    scope: ChartScope = ChartScope.ORGANIZATION,
+  ) {
     const { isElevated } = await this.accessControl.getOrgAccess(orgId, userId);
+    const isOrganizationWide = scope !== ChartScope.PERSONAL && isElevated;
     const base = {
       project: { workspace: { organizationId: orgId }, archive: false },
     };
-    const where = isElevated
+    const where = isOrganizationWide
       ? base
       : {
           ...base,
@@ -496,17 +529,22 @@ export class OrganizationChartsService {
   /**
    * 6) Sprint Metrics
    */
-  async organizationSprintMetrics(orgId: string, userId: string) {
+  async organizationSprintMetrics(
+    orgId: string,
+    userId: string,
+    scope: ChartScope = ChartScope.ORGANIZATION,
+  ) {
     const { isElevated } = await this.accessControl.getOrgAccess(orgId, userId);
-    const where = isElevated
-      ? {
-          archive: false,
-          project: {
-            workspace: { organizationId: orgId },
+    const where =
+      scope !== ChartScope.PERSONAL && isElevated
+        ? {
             archive: false,
-          },
-        }
-      : this.userScopedWhere(orgId, userId).sprintForUser;
+            project: {
+              workspace: { organizationId: orgId },
+              archive: false,
+            },
+          }
+        : this.userScopedWhere(orgId, userId).sprintForUser;
 
     const sprints = await this.prisma.sprint.findMany({
       where,
@@ -525,13 +563,18 @@ export class OrganizationChartsService {
   /**
    * 7) Quality Metrics (bugs)
    */
-  async organizationQualityMetrics(orgId: string, userId: string): Promise<QualityMetrics> {
+  async organizationQualityMetrics(
+    orgId: string,
+    userId: string,
+    scope: ChartScope = ChartScope.ORGANIZATION,
+  ): Promise<QualityMetrics> {
     const { isElevated } = await this.accessControl.getOrgAccess(orgId, userId);
+    const isOrganizationWide = scope !== ChartScope.PERSONAL && isElevated;
     const base = {
       project: { workspace: { organizationId: orgId }, archive: false },
       type: 'BUG' as const,
     };
-    const where = isElevated
+    const where = isOrganizationWide
       ? base
       : {
           ...base,
@@ -574,12 +617,16 @@ export class OrganizationChartsService {
   async organizationWorkspaceProjectCount(
     orgId: string,
     userId: string,
+    scope: ChartScope = ChartScope.ORGANIZATION,
   ): Promise<WorkspaceProjectCount[]> {
     const { isElevated } = await this.accessControl.getOrgAccess(orgId, userId);
-    const scoped = isElevated ? null : this.userScopedWhere(orgId, userId);
+    const isOrganizationWide = scope !== ChartScope.PERSONAL && isElevated;
+    const scoped = isOrganizationWide ? null : this.userScopedWhere(orgId, userId);
 
     const workspaces = await this.prisma.workspace.findMany({
-      where: isElevated ? { organizationId: orgId, archive: false } : scoped?.workspaceForUser,
+      where: isOrganizationWide
+        ? { organizationId: orgId, archive: false }
+        : scoped?.workspaceForUser,
       select: {
         id: true,
         name: true,
@@ -587,7 +634,7 @@ export class OrganizationChartsService {
         _count: {
           select: {
             projects: {
-              where: isElevated
+              where: isOrganizationWide
                 ? { archive: false }
                 : {
                     archive: false,
@@ -618,10 +665,15 @@ export class OrganizationChartsService {
   /**
    * 9) Member Workload Distribution
    */
-  async organizationMemberWorkload(orgId: string, userId: string): Promise<MemberWorkload[]> {
+  async organizationMemberWorkload(
+    orgId: string,
+    userId: string,
+    scope: ChartScope = ChartScope.ORGANIZATION,
+  ): Promise<MemberWorkload[]> {
     const { isElevated } = await this.accessControl.getOrgAccess(orgId, userId);
+    const isOrganizationWide = scope !== ChartScope.PERSONAL && isElevated;
 
-    const userWhere = isElevated
+    const userWhere = isOrganizationWide
       ? {
           organizationMembers: { some: { organizationId: orgId } },
           source: { not: UserSource.EMAIL_INBOX },
@@ -665,7 +717,7 @@ export class OrganizationChartsService {
           },
         },
       },
-      orderBy: isElevated ? { taskAssignees: { _count: 'desc' } } : undefined,
+      orderBy: isOrganizationWide ? { taskAssignees: { _count: 'desc' } } : undefined,
     });
 
     return members.map((m) => ({
@@ -679,21 +731,27 @@ export class OrganizationChartsService {
   /**
    * 10) Resource Allocation Matrix
    */
-  async organizationResourceAllocation(orgId: string, userId: string, projectId?: string) {
+  async organizationResourceAllocation(
+    orgId: string,
+    userId: string,
+    projectId?: string,
+    scope: ChartScope = ChartScope.ORGANIZATION,
+  ) {
     const { isElevated } = await this.accessControl.getOrgAccess(orgId, userId);
+    const isOrganizationWide = scope !== ChartScope.PERSONAL && isElevated;
 
     if (projectId) {
       // If projectId is provided, group by role in that project
       return this.prisma.projectMember.groupBy({
         by: ['projectId', 'role'],
-        where: { projectId },
+        where: isOrganizationWide ? { projectId } : { projectId, userId },
         _count: { role: true },
       });
     }
 
-    const where = isElevated
+    const where = isOrganizationWide
       ? { workspace: { organizationId: orgId } }
-      : { workspace: { organizationId: orgId, members: { some: { userId } } } };
+      : { workspace: { organizationId: orgId, members: { some: { userId } } }, userId };
 
     return this.prisma.workspaceMember.groupBy({
       by: ['workspaceId', 'role'],
