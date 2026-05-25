@@ -221,8 +221,6 @@ export function extractContextFromPath(pathname: string): Partial<MktaskContext>
     "invite",
     "intro",
     "setup",
-    "privacy-policy",
-    "terms-of-service",
     "404",
   ];
 

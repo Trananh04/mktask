@@ -14,6 +14,7 @@ export enum ChartType {
   WORKSPACE_PROJECT_COUNT = 'workspace-project-count',
   MEMBER_WORKLOAD = 'member-workload',
   RESOURCE_ALLOCATION = 'resource-allocation',
+  MANAGEMENT_SUMMARY = 'management-summary',
 }
 
 export enum ChartScope {

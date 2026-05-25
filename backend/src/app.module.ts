@@ -49,6 +49,7 @@ import { TaskRanksModule } from './modules/task-ranks/task-ranks.module';
 import { PublicModule } from './modules/public/public.module';
 import { HealthModule } from './modules/health/health.module';
 import { AdminModule } from './modules/admin/admin.module';
+import { ChatModule } from './modules/chat/chat.module';
 
 @Module({
   imports: [
@@ -99,6 +100,7 @@ import { AdminModule } from './modules/admin/admin.module';
           EditorImagesModule,
           TaskRanksModule,
           AdminModule,
+          ChatModule,
         ],
       },
     ]),
@@ -143,6 +145,7 @@ import { AdminModule } from './modules/admin/admin.module';
     EditorImagesModule,
     TaskRanksModule,
     AdminModule,
+    ChatModule,
   ],
   controllers: [AppController],
   providers: [

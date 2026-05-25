@@ -18,6 +18,7 @@ import {
   UpdateMemberRoleData,
   ChartType,
   ChartScope,
+  ManagementSummary,
 } from "@/types";
 
 // Add the AnalyticsData interface
@@ -32,6 +33,7 @@ interface AnalyticsData {
   workspaceProjectCount: any[];
   memberWorkload: any[];
   resourceAllocation: any[];
+  managementSummary: ManagementSummary | null;
 }
 
 interface OrganizationState {
@@ -251,6 +253,7 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
           workspaceProjectCount: results[ChartType.WORKSPACE_PROJECT_COUNT],
           memberWorkload: results[ChartType.MEMBER_WORKLOAD],
           resourceAllocation: results[ChartType.RESOURCE_ALLOCATION],
+          managementSummary: results[ChartType.MANAGEMENT_SUMMARY],
         };
 
         setOrganizationState((prev) => ({
@@ -302,6 +305,7 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
               [ChartType.WORKSPACE_PROJECT_COUNT]: "workspaceProjectCount",
               [ChartType.MEMBER_WORKLOAD]: "memberWorkload",
               [ChartType.RESOURCE_ALLOCATION]: "resourceAllocation",
+              [ChartType.MANAGEMENT_SUMMARY]: "managementSummary",
             };
 
             const dataKey = typeToKeyMap[chartType];

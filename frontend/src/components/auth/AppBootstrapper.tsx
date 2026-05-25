@@ -38,8 +38,6 @@ export default function AppBootstrapper({ children }: AppBootstrapperProps) {
     "/register",
     "/forgot-password",
     "/reset-password",
-    "/terms-of-service",
-    "/privacy-policy",
     "/setup",
     "/public/task/[token]",
     "/invite",
@@ -48,7 +46,7 @@ export default function AppBootstrapper({ children }: AppBootstrapperProps) {
 
   const handleSystemCheck = async () => {
     // Skip setup check on routes that don't need it
-    const skipRoutes = ["/login", "/register", "/forgot-password", "/reset-password", "/terms-of-service", "/privacy-policy", "/public/"];
+    const skipRoutes = ["/login", "/register", "/forgot-password", "/reset-password", "/public/"];
     const shouldSkip = skipRoutes.some(route => router.pathname.startsWith(route));
 
     if (shouldSkip || router.pathname === "/setup") {

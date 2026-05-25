@@ -77,7 +77,7 @@ const ProjectsContent: React.FC<ProjectsContentProps> = ({
   generateProjectLink,
 }) => {
   const { t } = useTranslation("projects");
-  const { isAuthenticated, getUserAccess } = useAuth();
+  const { isAuthenticated, getCurrentUser, getUserAccess } = useAuth();
   const { getWorkspaceBySlug } = useWorkspaceContext();
   const router = useRouter();
   const {
@@ -144,8 +144,34 @@ const ProjectsContent: React.FC<ProjectsContentProps> = ({
   const debouncedSearchQuery = useDebounce(searchInput, 500);
 
   const { createSection } = useGenericFilters();
+  const currentUser = getCurrentUser();
 
-  const showLoader = isInitialLoad || (isFetching && projects.length === 0);
+  const isProjectCreatedByCurrentUser = useCallback(
+    (project: any) => {
+      if (!currentUser?.id) return false;
+      const creatorId =
+        project.createdBy ||
+        project.createdById ||
+        project.creatorId ||
+        project.createdByUser?.id ||
+        project.creator?.id ||
+        project.ownerId;
+      return creatorId === currentUser.id;
+    },
+    [currentUser?.id]
+  );
+
+  const visibleProjects = useMemo(
+    () => projects.filter(isProjectCreatedByCurrentUser),
+    [projects, isProjectCreatedByCurrentUser]
+  );
+
+  const visibleArchivedProjects = useMemo(
+    () => archivedProjects.filter(isProjectCreatedByCurrentUser),
+    [archivedProjects, isProjectCreatedByCurrentUser]
+  );
+
+  const showLoader = isInitialLoad || (isFetching && visibleProjects.length === 0);
   const showContent = !showLoader && !error;
 
   // Project icon component
@@ -232,11 +258,11 @@ const ProjectsContent: React.FC<ProjectsContentProps> = ({
         name: t(`status.${status.value.toLowerCase()}`),
         value: status.value,
         selected: selectedStatuses.includes(status.value),
-        count: projects.filter((project) => project.status === status.value).length,
+        count: visibleProjects.filter((project) => project.status === status.value).length,
         color: status.color,
         icon: status.icon,
       })),
-    [availableStatuses, selectedStatuses, projects, t]
+    [availableStatuses, selectedStatuses, visibleProjects, t]
   );
 
   const priorityFilters = useMemo(
@@ -246,11 +272,11 @@ const ProjectsContent: React.FC<ProjectsContentProps> = ({
         name: priority.name,
         value: priority.value,
         selected: selectedPriorities.includes(priority.value),
-        count: projects.filter((project) => project.priority === priority.value).length,
+        count: visibleProjects.filter((project) => project.priority === priority.value).length,
         color: priority.color,
         icon: priority.icon,
       })),
-    [availablePriorities, selectedPriorities, projects]
+    [availablePriorities, selectedPriorities, visibleProjects]
   );
 
   const filterSections = useMemo(
@@ -715,7 +741,7 @@ const ProjectsContent: React.FC<ProjectsContentProps> = ({
         {showContent && (
           <>
             {/* Project Grid */}
-            {projects.length === 0 ? (
+            {visibleProjects.length === 0 ? (
               searchInput || totalActiveFilters > 0 ? (
                 <EmptyState
                   icon={<HiSearch size={24} />}
@@ -748,7 +774,7 @@ const ProjectsContent: React.FC<ProjectsContentProps> = ({
             ) : (
               <>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-6">
-                  {projects.map((project) => {
+                  {visibleProjects.map((project) => {
                     const statusText = formatStatus(project.status);
 
                     return (
@@ -805,7 +831,7 @@ const ProjectsContent: React.FC<ProjectsContentProps> = ({
                 </div>
 
                 {/* Fixed Bottom Bar: Pagination + Counter */}
-                {projects.length > 0 && (
+                {visibleProjects.length > 0 && (
                   <div className="w-full flex flex-col items-center pb-4 pt-3 bg-[var(--background)] border-t border-[var(--border)]">
                     {enablePagination && (currentPage > 1 || hasMore) && (
                       <div className="flex items-center gap-3 mb-2">
@@ -841,7 +867,7 @@ const ProjectsContent: React.FC<ProjectsContentProps> = ({
                         <div className="w-4 h-4 border-2 border-[var(--primary)] border-t-transparent rounded-full animate-spin" />
                       ) : (
                         <>
-                          {t("showing_projects", { count: projects.length })}
+                          {t("showing_projects", { count: visibleProjects.length })}
                           {searchInput && t("matching", { query: searchInput })}
                           {totalActiveFilters > 0 &&
                             t("with_filters", { count: totalActiveFilters })}
@@ -856,13 +882,13 @@ const ProjectsContent: React.FC<ProjectsContentProps> = ({
         )}
 
         {/* Archived Projects Section */}
-        {hasAccess && archivedProjects.length > 0 && (
+        {hasAccess && visibleArchivedProjects.length > 0 && (
           <div className="mt-6">
             <h3 className="text-sm font-medium text-[var(--muted-foreground)] mb-3">
               {t("archived_projects", "Dự án đã lưu trữ")}
             </h3>
             <div className="space-y-3">
-              {archivedProjects.map((project: any) => {
+              {visibleArchivedProjects.map((project: any) => {
                 const isWorkspaceArchived = project.workspace?.archive === true;
                 return (
                   <div

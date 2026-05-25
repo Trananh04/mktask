@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
+import { ChevronDown, Plus, Search, UserPlus } from "lucide-react";
 import UserAvatar from "@/components/ui/avatars/UserAvatar";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,6 @@ import {
   DropdownMenuTrigger,
   DropdownMenuContent,
 } from "@/components/ui/DropdownMenu";
-import { ChevronDown } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useProject } from "@/contexts/project-context";
 import { toast } from "sonner";
@@ -152,6 +151,7 @@ function MemberSelect({
     const maxToShow = 3;
     const shownMembers = selectedMembers.slice(0, maxToShow);
     const extraCount = selectedMembers.length - maxToShow;
+    const editButtonText = type === "assignee" ? "Thêm người làm" : "Sửa";
 
     const baseLabel = label.endsWith("s") ? label.slice(0, -1) : label;
     const displayLabel =
@@ -161,9 +161,12 @@ function MemberSelect({
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <Label>{label}</Label>
-          <button
+          <Button
             type="button"
-            className="ml-2 rounded transition flex items-center cursor-pointer p-1 text-[var(--muted-foreground)] hover:text-[var(--foreground)] text-xs"
+            variant="outline"
+            size="sm"
+            disabled={disabled}
+            className="ml-2 h-8 rounded-md px-2 text-xs"
             onClick={() => {
               if (isEditing && isOpen) {
                 setIsOpen(false);
@@ -175,11 +178,11 @@ function MemberSelect({
               }
             }}
             tabIndex={0}
-            aria-label="Edit"
-            style={{ lineHeight: 0 }}
+            aria-label={editButtonText}
           >
-            Edit
-          </button>
+            {type === "assignee" ? <UserPlus className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
+            <span>{editButtonText}</span>
+          </Button>
         </div>
         <div className="flex items-center gap-2 min-h-[28px]">
           {shownMembers.length > 0 ? (

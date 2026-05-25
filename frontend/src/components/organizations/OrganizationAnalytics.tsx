@@ -89,6 +89,7 @@ const emptyOrganizationAnalyticsData = {
   workspaceProjectCount: [],
   memberWorkload: [],
   resourceAllocation: [],
+  managementSummary: null,
 };
 
 const singleCompanyKPICards = organizationKPICards.filter((card) => card.id !== "workspaces");
@@ -439,7 +440,7 @@ export function OrganizationAnalytics({ organizationId }: OrganizationAnalyticsP
       const widgetData = dashboardData[widget.dataKey];
 
       // Handle case where API request failed and data is null
-      if (widgetData === null) {
+      if (widgetData === null && widget.id !== "management-summary") {
         return (
           <Card className="p-4 h-full flex items-center justify-center">
             <div className="text-center text-muted-foreground">
@@ -470,6 +471,7 @@ export function OrganizationAnalytics({ organizationId }: OrganizationAnalyticsP
             ...widget,
             visible:
               widget.id === "kpi-metrics" ||
+              widget.id === "management-summary" ||
               widget.id === "project-portfolio" ||
               widget.id === "team-utilization" ||
               widget.id === "task-distribution" ||

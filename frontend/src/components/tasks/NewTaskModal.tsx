@@ -87,7 +87,7 @@ export function NewTaskModal({
   const {
     getProjectsByOrganization,
     getTaskStatusByProject,
-    getOrganizationMembers,
+    getProjectMembers,
   } = useProject();
   const { createTask } = useTask();
   const { fetchAnalyticsData } = useProject();
@@ -259,6 +259,7 @@ export function NewTaskModal({
           name: project.name,
           slug: project.slug,
         },
+        assigneeIds: [],
       }));
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : t("modal.errorLoadProject");
@@ -360,13 +361,16 @@ export function NewTaskModal({
   };
 
   const loadOrganizationMembers = async () => {
+    if (!formData.project?.id) {
+      setOrganizationMembers([]);
+      return;
+    }
+
     try {
-      const organizationId = TokenManager.getCurrentOrgId();
-      if (!organizationId) return;
-      const members = await getOrganizationMembers(organizationId);
+      const members = await getProjectMembers(formData.project.id);
       setOrganizationMembers(members || []);
     } catch (error) {
-      console.error("Failed to load organization members:", error);
+      console.error("Failed to load project members:", error);
       setOrganizationMembers([]);
     }
   };
@@ -636,6 +640,7 @@ export function NewTaskModal({
                                 name: project.name,
                                 slug: project.slug,
                               },
+                              assigneeIds: [],
                             }));
                             setProjectOpen(false);
                           }}

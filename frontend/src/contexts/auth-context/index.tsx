@@ -40,6 +40,7 @@ interface AuthContextType extends AuthState {
 
   // Utility methods
   getCurrentUser: () => User | null;
+  refreshCurrentUser: () => Promise<User | null>;
   isAuthenticated: () => boolean;
   checkOrganizationAndRedirect: () => Promise<string>; // Returns redirect path
   clearError: () => void;
@@ -129,6 +130,19 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const refreshCurrentUser = useCallback(async (): Promise<User | null> => {
+    if (!authApi.isAuthenticated()) {
+      setAuthState((prev) => ({ ...prev, user: null }));
+      return null;
+    }
+
+    const user = await authApi.getUserProfile();
+    if (user) {
+      setAuthState((prev) => ({ ...prev, user }));
+    }
+    return user;
+  }, []);
+
   // Initialize auth state once on mount
   useEffect(() => {
     const initializeAuth = async () => {
@@ -144,6 +158,7 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
 
         if (user && isAuth) {
           setAuthState((prev) => ({ ...prev, user }));
+          void refreshCurrentUser();
 
           // Setup organization for the user
           await setupUserOrganization(user.id);
@@ -166,7 +181,31 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     initializeAuth();
-  }, [setupUserOrganization]);
+  }, [refreshCurrentUser, setupUserOrganization]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const handleRefresh = () => {
+      void refreshCurrentUser();
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        void refreshCurrentUser();
+      }
+    };
+
+    window.addEventListener("focus", handleRefresh);
+    window.addEventListener("auth:refresh-current-user", handleRefresh);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener("focus", handleRefresh);
+      window.removeEventListener("auth:refresh-current-user", handleRefresh);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [refreshCurrentUser]);
 
   /**
    * Helper to handle API calls with error handling and optional user state update.
@@ -336,7 +375,8 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
       deleteUser: (userId: string) => handleApiOperation(() => userApi.deleteUser(userId)),
 
       // Utility methods
-      getCurrentUser: authApi.getCurrentUser,
+      getCurrentUser: () => authState.user || authApi.getCurrentUser(),
+      refreshCurrentUser,
       isAuthenticated: authApi.isAuthenticated,
       checkOrganizationAndRedirect, // Exposed but must be called manually by UI components
       clearError: () => {
@@ -389,7 +429,7 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
       uploadFileToS3: async (file: File, key: string) => authApi.uploadFileToS3(file, key),
     }),
 
-    [authState, handleApiOperation, setupUserOrganization, checkOrganizationAndRedirect]
+    [authState, handleApiOperation, refreshCurrentUser, setupUserOrganization, checkOrganizationAndRedirect]
   );
 
   return <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>;

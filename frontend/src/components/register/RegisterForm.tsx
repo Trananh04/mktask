@@ -6,7 +6,6 @@ import { useAuth } from "@/contexts/auth-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import Image from "next/image";
 import {
@@ -29,7 +28,6 @@ interface FormData {
   email: string;
   password: string;
   confirmPassword: string;
-  acceptTerms: boolean;
 }
 
 export function RegisterForm() {
@@ -44,7 +42,6 @@ export function RegisterForm() {
     email: initialEmail,
     password: "",
     confirmPassword: "",
-    acceptTerms: false,
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -95,12 +92,6 @@ export function RegisterForm() {
 
     if (!passwordsMatch) {
       setError("Mật khẩu xác nhận không khớp");
-      setIsLoading(false);
-      return;
-    }
-
-    if (!formData.acceptTerms) {
-      setError("Bạn cần đồng ý với điều khoản sử dụng");
       setIsLoading(false);
       return;
     }
@@ -417,38 +408,6 @@ export function RegisterForm() {
           )}
         </motion.div>
 
-        {/* Terms Checkbox */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.5 }}
-          className="signup-terms-container"
-        >
-          <Checkbox
-            id="acceptTerms"
-            name="acceptTerms"
-            checked={formData.acceptTerms}
-            onCheckedChange={(checked) =>
-              setFormData((prev) => ({
-                ...prev,
-                acceptTerms: Boolean(checked),
-              }))
-            }
-            required
-            className="signup-terms-checkbox"
-          />
-          <Label htmlFor="acceptTerms" className="signup-terms-label">
-            Tôi đồng ý với{" "}
-            <Link href="/terms-of-service" className="signup-terms-link">
-              Điều khoản dịch vụ
-            </Link>{" "}
-            và{" "}
-            <Link href="/privacy-policy" className="signup-terms-link">
-              Chính sách quyền riêng tư
-            </Link>
-          </Label>
-        </motion.div>
-
         {/* Submit Button */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
@@ -461,8 +420,7 @@ export function RegisterForm() {
               isLoading ||
               !allFieldsFilled ||
               !isPasswordValid ||
-              !passwordsMatch ||
-              !formData.acceptTerms
+              !passwordsMatch
             }
             className="signup-submit-button"
           >
@@ -512,24 +470,6 @@ export function RegisterForm() {
         </Link>
       </motion.div>
 
-      {/* Footer */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5, delay: 0.9 }}
-        className="signup-footer"
-      >
-        <p className="signup-footer-text">
-          Khi tạo tài khoản, bạn đồng ý với{" "}
-          <Link href="/terms-of-service" className="signup-footer-link">
-            Điều khoản dịch vụ
-          </Link>{" "}
-          và{" "}
-          <Link href="/privacy-policy" className="signup-footer-link">
-            Chính sách quyền riêng tư
-          </Link>
-        </p>
-      </motion.div>
     </motion.div>
   );
 }

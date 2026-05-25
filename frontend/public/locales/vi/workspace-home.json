@@ -11,6 +11,7 @@
   "error_loading": "Lỗi khi tải phân tích tổ chức:",
   "widgets": {
     "kpi_metrics": "Chỉ số KPI",
+    "management_summary": "Báo cáo quản lý",
     "project_status": "Phân bổ trạng thái dự án",
     "task_priority": "Cơ cấu độ ưu tiên công việc",
     "task_type": "Phân bổ loại công việc",

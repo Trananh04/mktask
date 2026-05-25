@@ -7,7 +7,7 @@ const __dirname = path.dirname(__filename);
 
 const authFile = path.join(__dirname, '.auth/user.json');
 
-const ADMIN_EMAIL = 'admin@mktask.app';
+const ADMIN_EMAIL = process.env.E2E_ADMIN_EMAIL || 'admin@taskosaur.com';
 const ADMIN_PASSWORD = 'password123';
 
 setup('authenticate', async ({ page }) => {
@@ -17,7 +17,8 @@ setup('authenticate', async ({ page }) => {
     await page.getByLabel(/email/i).fill(ADMIN_EMAIL);
     await page.locator('input[type="password"]').fill(ADMIN_PASSWORD);
 
-    const submitButton = page.getByRole('button', { name: /sign in|log in/i });
+    const submitButton = page.locator('button[type="submit"]').first();
+    await expect(submitButton).toBeVisible({ timeout: 10000 });
     await submitButton.click();
 
     await page.waitForFunction(() => {

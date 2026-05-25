@@ -11,6 +11,7 @@
   "error_loading": "Error loading organization analytics:",
   "widgets": {
     "kpi_metrics": "KPI Metrics",
+    "management_summary": "Management Report",
     "project_status": "Project Status Distribution",
     "task_priority": "Task Priority Breakdown",
     "task_type": "Task Type Distribution",

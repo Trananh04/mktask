@@ -262,6 +262,7 @@ export enum ChartType {
   WORKSPACE_PROJECT_COUNT = "workspace-project-count",
   MEMBER_WORKLOAD = "member-workload",
   RESOURCE_ALLOCATION = "resource-allocation",
+  MANAGEMENT_SUMMARY = "management-summary",
 }
 
 export enum ChartScope {
@@ -314,4 +315,99 @@ export interface MemberWorkload {
   memberName: string;
   activeTasks: number;
   reportedTasks: number;
+}
+
+export type ManagementRiskLevel = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+export type ManagementWorkloadLevel = "LOW" | "MEDIUM" | "HIGH";
+
+export interface ManagementProgressRow {
+  totalTasks: number;
+  activeTasks: number;
+  inProgressTasks: number;
+  completedTasks: number;
+  overdueTasks: number;
+  blockedTasks: number;
+  completionRate: number;
+}
+
+export interface ManagementSummary {
+  taskOverview: ManagementProgressRow & {
+    dueSoonTasks: number;
+    overdueRate: number;
+  };
+  workspaceProgress: Array<
+    ManagementProgressRow & {
+      workspaceId: string;
+      workspaceName: string;
+      workspaceSlug: string;
+    }
+  >;
+  projectProgress: Array<
+    ManagementProgressRow & {
+      projectId: string;
+      projectName: string;
+      projectSlug: string;
+      workspaceName: string;
+      status: string;
+      priority: string;
+      endDate: string | null;
+      openRisks: number;
+      riskLevel: ManagementRiskLevel;
+      latestHealth: string | null;
+      latestSummary: string | null;
+    }
+  >;
+  memberProgress: Array<
+    ManagementProgressRow & {
+      memberId: string;
+      memberName: string;
+      email: string | null;
+      assignedTasks: number;
+      workloadLevel: ManagementWorkloadLevel;
+    }
+  >;
+  deadlinePerformance: Array<{
+    label: "overdue" | "dueSoon" | "noDueDate";
+    count: number;
+  }>;
+  riskAlerts: Array<{
+    projectId: string;
+    projectName: string;
+    projectSlug: string;
+    severity: ManagementRiskLevel;
+    message: string;
+    signals: string[];
+    endDate: string | null;
+  }>;
+  blockers: Array<{
+    taskId: string;
+    taskTitle: string;
+    projectId: string;
+    projectName: string;
+    projectSlug: string;
+    reason: string;
+    blockingTaskTitle: string | null;
+    dueDate: string | null;
+    assigneeNames: string[];
+  }>;
+  delayedTasks: Array<{
+    taskId: string;
+    taskTitle: string;
+    projectId: string;
+    projectName: string;
+    projectSlug: string;
+    dueDate: string | null;
+    priority: string;
+    reason: "overdue" | "blocked";
+    assigneeNames: string[];
+  }>;
+  quickReport: {
+    generatedAt: string;
+    totalProjects: number;
+    atRiskProjects: number;
+    overloadedMembers: number;
+    overdueTasks: number;
+    blockedTasks: number;
+    topRiskProject: string | null;
+  };
 }
