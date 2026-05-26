@@ -143,15 +143,15 @@ export default function ChatPanel() {
     resizing.current = true;
   };
 
-  const handleMouseMove = (e: MouseEvent) => {
+  const handleMouseMove = useCallback((e: MouseEvent) => {
     if (!resizing.current) return;
-    const newWidth = Math.min(Math.max(window.innerWidth - e.clientX, 400), 650);
+    const newWidth = Math.min(Math.max(window.innerWidth - e.clientX, 300), 700);
     setPanelWidth(newWidth);
-  };
+  }, []);
 
-  const handleMouseUp = () => {
+  const handleMouseUp = useCallback(() => {
     resizing.current = false;
-  };
+  }, []);
 
   useEffect(() => {
     window.addEventListener("mousemove", handleMouseMove);
@@ -160,7 +160,7 @@ export default function ChatPanel() {
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("mouseup", handleMouseUp);
     };
-  }, []);
+  }, [handleMouseMove, handleMouseUp]);
 
   // Initialize browser agent and clear stale history on mount
   useEffect(() => {
@@ -699,8 +699,11 @@ export default function ChatPanel() {
       >
         <div
           onMouseDown={handleMouseDown}
-          className="absolute left-0 top-0 bottom-0 w-0.5 cursor-col-resize bg-transparent hover:bg-gray-300/40"
-        />
+          className="absolute left-0 top-0 bottom-0 w-2 cursor-col-resize z-50 group flex items-center justify-center"
+          style={{ marginLeft: '-4px' }}
+        >
+          <div className="w-0.5 h-12 rounded-full bg-gray-300/60 dark:bg-gray-600/60 group-hover:bg-blue-400 group-hover:w-1 transition-all duration-150" />
+        </div>
         {/* Chat Header */}
         <div className="flex-shrink-0 flex items-center justify-between p-4 border-b border-[var(--border)] bg-[var(--background)]">
           <div className="flex items-center gap-2">

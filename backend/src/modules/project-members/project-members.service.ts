@@ -388,8 +388,25 @@ export class ProjectMembersService {
       // 3. If INTERNAL, workspace members have access
       // 4. Otherwise (PRIVATE), only those in #1 have access
 
+      const isTaskInvolved = await this.prisma.task.findFirst({
+        where: {
+          projectId,
+          OR: [
+            { createdBy: requestUserId },
+            { assignees: { some: { userId: requestUserId } } },
+            { reporters: { some: { userId: requestUserId } } },
+          ],
+        },
+        select: { id: true },
+      });
+
       const hasExplicitAccess =
-        isSuperAdmin || requesterProjectMember || isOrgOwner || isOrgAdmin || isWorkspaceAdmin;
+        isSuperAdmin ||
+        requesterProjectMember ||
+        isOrgOwner ||
+        isOrgAdmin ||
+        isWorkspaceAdmin ||
+        !!isTaskInvolved;
 
       if (!hasExplicitAccess) {
         if (project.visibility === ProjectVisibility.PUBLIC) {

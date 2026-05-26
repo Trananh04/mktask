@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -30,11 +30,17 @@ const extractUuid = (taskId: string) => {
   return match ? match[0] : taskId;
 };
 
+// System page segments that are not project slugs
+const SYSTEM_PAGES = ['tasks', 'settings', 'members', 'sprints', 'calendar', 'activities'];
+
 interface BreadcrumbItem {
   name: string;
   href?: string;
   current: boolean;
 }
+
+// Simple cache to avoid redundant API calls
+const projectNameCache = new Map<string, string>();
 
 export default function Breadcrumb() {
   const pathname = usePathname();
@@ -76,6 +82,77 @@ export default function Breadcrumb() {
 
   // Use currentPath (from window.location) instead of pathname (from Next.js)
   const pathToUse = currentPath || pathname;
+
+  const buildBreadcrumbFromSegments = useCallback(async (segments: string[]) => {
+    const baseItems: BreadcrumbItem[] = [];
+    const workspaceSegment = segments[0];
+
+    if (workspaceTree && workspaceTree.length > 0 && workspaceSegment) {
+      const workspace = workspaceTree.find(w => w.slug === workspaceSegment);
+      if (workspace && workspace.path) {
+        const ancestorIds = workspace.path.split('/').filter(Boolean);
+        if (ancestorIds[ancestorIds.length - 1] === workspace.id) {
+          ancestorIds.pop();
+        }
+
+        ancestorIds.forEach(id => {
+          const ancestor = workspaceTree.find(w => w.id === id);
+          if (ancestor) {
+            baseItems.push({
+              name: ancestor.name,
+              href: `/${ancestor.slug}`,
+              current: false,
+            });
+          }
+        });
+      }
+    }
+
+    // Fetch real project name if segment[1] looks like a project slug
+    let projectName: string | null = null;
+    if (segments.length >= 2) {
+      const projectSlug = segments[1];
+      if (!SYSTEM_PAGES.includes(projectSlug)) {
+        // Check cache first
+        if (projectNameCache.has(projectSlug)) {
+          projectName = projectNameCache.get(projectSlug) || null;
+        } else {
+          try {
+            const response = await api.get(`/projects/slug/${encodeURIComponent(projectSlug)}`);
+            if (response.data?.name) {
+              projectName = response.data.name;
+              projectNameCache.set(projectSlug, projectName as string);
+            }
+          } catch {
+            // silently fall back to slug formatting
+          }
+        }
+      }
+    }
+
+    const items = segments.map((seg, idx) => {
+      const href = "/" + segments.slice(0, idx + 1).join("/");
+      let displayName = formatSegment(seg);
+
+      if (idx === 0 && workspaceTree && workspaceTree.length > 0) {
+        const ws = workspaceTree.find(w => w.slug === seg);
+        if (ws) displayName = ws.name;
+      }
+
+      // Use fetched project name for segment index 1 (project slug position)
+      if (idx === 1 && projectName) {
+        displayName = projectName;
+      }
+
+      return {
+        name: displayName,
+        href,
+        current: idx === segments.length - 1,
+      };
+    });
+
+    setBreadcrumbs([...baseItems, ...items]);
+  }, [workspaceTree]);
 
   useEffect(() => {
     if (!pathToUse) {
@@ -130,10 +207,24 @@ export default function Breadcrumb() {
             });
           }
 
-          // Add project
+          // Add project (try to get real name)
           if (segments[1]) {
+            let projectDisplayName = formatSegment(segments[1]);
+            if (!SYSTEM_PAGES.includes(segments[1])) {
+              if (projectNameCache.has(segments[1])) {
+                projectDisplayName = projectNameCache.get(segments[1]) || projectDisplayName;
+              } else {
+                try {
+                  const projResponse = await api.get(`/projects/slug/${encodeURIComponent(segments[1])}`);
+                  if (projResponse.data?.name) {
+                    projectDisplayName = projResponse.data.name;
+                    projectNameCache.set(segments[1], projectDisplayName);
+                  }
+                } catch { /* ignore */ }
+              }
+            }
             items.push({
-              name: formatSegment(segments[1]),
+              name: projectDisplayName,
               href: `/${segments[0]}/${segments[1]}`,
               current: false,
             });
@@ -217,53 +308,9 @@ export default function Breadcrumb() {
       return;
     }
 
-    // Default: build breadcrumb from URL segments
+    // Default: build breadcrumb from URL segments (with project name lookup)
     buildBreadcrumbFromSegments(segments);
-  }, [pathToUse]);
-
-  const buildBreadcrumbFromSegments = (segments: string[]) => {
-    const baseItems: BreadcrumbItem[] = [];
-    const workspaceSegment = segments[0];
-
-    if (workspaceTree && workspaceTree.length > 0 && workspaceSegment) {
-      const workspace = workspaceTree.find(w => w.slug === workspaceSegment);
-      if (workspace && workspace.path) {
-        const ancestorIds = workspace.path.split('/').filter(Boolean);
-        if (ancestorIds[ancestorIds.length - 1] === workspace.id) {
-          ancestorIds.pop();
-        }
-
-        ancestorIds.forEach(id => {
-          const ancestor = workspaceTree.find(w => w.id === id);
-          if (ancestor) {
-            baseItems.push({
-              name: ancestor.name,
-              href: `/${ancestor.slug}`,
-              current: false,
-            });
-          }
-        });
-      }
-    }
-
-    const items = segments.map((seg, idx) => {
-      const href = "/" + segments.slice(0, idx + 1).join("/");
-      let displayName = formatSegment(seg);
-
-      if (idx === 0 && workspaceTree && workspaceTree.length > 0) {
-        const ws = workspaceTree.find(w => w.slug === seg);
-        if (ws) displayName = ws.name;
-      }
-
-      return {
-        name: displayName,
-        href,
-        current: idx === segments.length - 1,
-      };
-    });
-
-    setBreadcrumbs([...baseItems, ...items]);
-  };
+  }, [pathToUse, buildBreadcrumbFromSegments]);
 
   if (
     !pathToUse ||
@@ -294,7 +341,7 @@ export default function Breadcrumb() {
               <ChevronRight className="breadcrumb-separator-icon" />
             </BreadcrumbSeparator>
             {breadcrumbs.map((item, idx) => (
-              <React.Fragment key={item.href}>
+              <React.Fragment key={item.href || idx}>
                 <BreadcrumbItem className="breadcrumb-item">
                   {item.current ? (
                     <BreadcrumbPage className="breadcrumb-current">
@@ -302,7 +349,7 @@ export default function Breadcrumb() {
                     </BreadcrumbPage>
                   ) : (
                     <BreadcrumbLink asChild>
-                      <Link href={item.href} className="breadcrumb-link">
+                      <Link href={item.href!} className="breadcrumb-link">
                         <span className="breadcrumb-link-text">{item.name}</span>
                       </Link>
                     </BreadcrumbLink>

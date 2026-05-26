@@ -15,18 +15,23 @@ import { AssignLabelDto, AssignMultipleLabelsDto } from './dto/assign-label.dto'
 export class LabelsService {
   constructor(private prisma: PrismaService) {}
 
-  async create(createLabelDto: CreateLabelDto, userId: string): Promise<Label> {
-    // Check if project exists and user has access
+  private async checkProjectAccess(projectId: string, userId: string) {
     const project = await this.prisma.project.findUnique({
-      where: { id: createLabelDto.projectId },
+      where: { id: projectId },
       include: {
         workspace: {
-          include: {
-            members: {
-              where: { userId },
-              select: { role: true },
-            },
+          include: { members: { where: { userId } } },
+        },
+        members: { where: { userId } },
+        tasks: {
+          where: {
+            OR: [
+              { createdBy: userId },
+              { assignees: { some: { userId } } },
+              { reporters: { some: { userId } } },
+            ],
           },
+          take: 1,
         },
       },
     });
@@ -35,10 +40,19 @@ export class LabelsService {
       throw new NotFoundException('Project not found');
     }
 
-    // Check if user has access to the workspace
-    if (project.workspace.members.length === 0) {
-      throw new ForbiddenException('You do not have permission to create labels in this project');
+    const isWorkspaceMember = project.workspace.members.length > 0;
+    const isProjectMember = project.members.length > 0;
+    const isTaskInvolved = project.tasks.length > 0;
+
+    if (!isWorkspaceMember && !isProjectMember && !isTaskInvolved) {
+      throw new ForbiddenException('You do not have permission to access labels in this project');
     }
+
+    return project;
+  }
+
+  async create(createLabelDto: CreateLabelDto, userId: string): Promise<Label> {
+    const project = await this.checkProjectAccess(createLabelDto.projectId, userId);
 
     try {
       return await this.prisma.$transaction(async (tx) => {
@@ -116,29 +130,7 @@ export class LabelsService {
     const whereClause: any = {};
 
     if (projectId) {
-      // Verify user has access to the project
-      const project = await this.prisma.project.findUnique({
-        where: { id: projectId },
-        include: {
-          workspace: {
-            include: {
-              members: {
-                where: { userId },
-                select: { role: true },
-              },
-            },
-          },
-        },
-      });
-
-      if (!project) {
-        throw new NotFoundException('Project not found');
-      }
-
-      // Check if user has access to the workspace
-      if (project.workspace.members.length === 0) {
-        throw new ForbiddenException('You do not have permission to view labels in this project');
-      }
+      const project = await this.checkProjectAccess(projectId, userId);
 
       whereClause.OR = [
         { project: { workspaceId: project.workspaceId } },
@@ -250,10 +242,7 @@ export class LabelsService {
       throw new NotFoundException('Label not found');
     }
 
-    // Check if user has access to the workspace
-    if (label.project.workspace.members.length === 0) {
-      throw new ForbiddenException('You do not have permission to view this label');
-    }
+    await this.checkProjectAccess(label.projectId, userId);
 
     // Flatten nested assignees for API backward compatibility
     return {
@@ -294,10 +283,7 @@ export class LabelsService {
       throw new NotFoundException('Label not found');
     }
 
-    // Check if user has access to the workspace
-    if (label.project.workspace.members.length === 0) {
-      throw new ForbiddenException('You do not have permission to update labels in this project');
-    }
+    await this.checkProjectAccess(label.projectId, userId);
 
     try {
       const updatedLabel = await this.prisma.label.update({
@@ -381,10 +367,7 @@ export class LabelsService {
       throw new NotFoundException('Label not found');
     }
 
-    // Check if user has access to the workspace
-    if (label.project.workspace.members.length === 0) {
-      throw new ForbiddenException('You do not have permission to delete labels in this project');
-    }
+    await this.checkProjectAccess(label.projectId, userId);
 
     try {
       await this.prisma.label.delete({
@@ -426,10 +409,7 @@ export class LabelsService {
       throw new NotFoundException('Task not found');
     }
 
-    // Check if user has access to the workspace
-    if (task.project.workspace.members.length === 0) {
-      throw new ForbiddenException('You do not have permission to modify labels in this project');
-    }
+    await this.checkProjectAccess(task.projectId, userId);
 
     const label = await this.prisma.label.findUnique({
       where: { id: labelId },
@@ -508,10 +488,7 @@ export class LabelsService {
       throw new NotFoundException('Task not found');
     }
 
-    // Check if user has access to the workspace
-    if (task.project.workspace.members.length === 0) {
-      throw new ForbiddenException('You do not have permission to modify labels in this project');
-    }
+    await this.checkProjectAccess(task.projectId, userId);
 
     try {
       await this.prisma.taskLabel.delete({
@@ -565,10 +542,7 @@ export class LabelsService {
       throw new NotFoundException('Task not found');
     }
 
-    // Check if user has access to the workspace
-    if (task.project.workspace.members.length === 0) {
-      throw new ForbiddenException('You do not have permission to modify labels in this project');
-    }
+    await this.checkProjectAccess(task.projectId, userId);
 
     // Verify all labels exist and belong to the same workspace or are inherited
     const labels = await this.prisma.label.findMany({
@@ -641,10 +615,7 @@ export class LabelsService {
       throw new NotFoundException('Task not found');
     }
 
-    // Check if user has access to the workspace
-    if (task.project.workspace.members.length === 0) {
-      throw new ForbiddenException('You do not have permission to view labels in this project');
-    }
+    await this.checkProjectAccess(task.projectId, userId);
 
     const taskLabels = await this.prisma.taskLabel.findMany({
       where: { taskId: task.id },

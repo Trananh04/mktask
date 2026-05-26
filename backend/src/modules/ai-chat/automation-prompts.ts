@@ -53,11 +53,10 @@ HOW TO DETERMINE WORKSPACE & PROJECT:
      - /{ws}/{proj}/tasks or /{ws}/{proj}/tasks/new → BOTH workspace and project are known from URL
      - /{ws}/tasks or /{ws}/tasks/new → Workspace is known, project is NOT
      - /tasks → NEITHER is known
-  2. Check if the user mentioned workspace/project in their message or in any PREVIOUS message in the conversation
-  3. If you STILL don't know workspace or project → ASK: "Which workspace and project should I create this task in?"
-  4. If you know workspace but NOT project → ASK: "Which project should I create this task in?"
-  5. If the user already answered in a previous message → USE that answer. Do NOT ask again.
-  6. NEVER guess or pick randomly.
+  2. Check if the user mentioned project in their message or in any PREVIOUS message in the conversation
+  3. If you STILL don't know the project → ASK: "Which project should I create this task in?"
+  4. If the user already answered in a previous message → USE that answer. Do NOT ask again.
+  5. NEVER ask for a workspace. If workspace is missing, let the backend or default fallback handle it.
 
 PAGE-SPECIFIC INSTRUCTIONS:
 
