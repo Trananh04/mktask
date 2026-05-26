@@ -18,6 +18,10 @@ type BulkTaskDraft = {
   awaitingProjectPath: boolean;
 };
 
+type AutoProjectDraft = {
+  description: string;
+};
+
 interface Message {
   role: "user" | "assistant" | "system";
   content: string;
@@ -47,29 +51,74 @@ function sanitizeErrorMessage(msg: string): string {
 }
 
 function isProjectPlannerRequest(message: string): boolean {
-  const normalized = message.toLowerCase();
+  const normalized = normalizeVietnamese(message);
   const hasPlanningIntent =
-    normalized.includes("lập kế hoạch") ||
-    normalized.includes("lên kế hoạch") ||
-    normalized.includes("tao ke hoach") ||
+    normalized.includes("lap ke hoach") ||
     normalized.includes("len ke hoach") ||
-    normalized.includes("tạo kế hoạch") ||
+    normalized.includes("tao ke hoach") ||
     normalized.includes("chia task") ||
-    normalized.includes("chia việc") ||
-    normalized.includes("phan chia cong viec") ||
-    normalized.includes("phân chia công việc");
+    normalized.includes("chia viec") ||
+    normalized.includes("phan chia cong viec");
   const hasProjectContext =
-    normalized.includes("dự án") ||
     normalized.includes("du an") ||
     normalized.includes("project") ||
     normalized.includes("task") ||
-    normalized.includes("công việc") ||
+    normalized.includes("cong viec") ||
     normalized.includes("website") ||
     normalized.includes("web ") ||
     normalized.includes("app ") ||
-    normalized.includes("hệ thống") ||
     normalized.includes("he thong");
   return hasPlanningIntent && hasProjectContext;
+}
+
+function normalizeVietnamese(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function isAutoProjectCreateRequest(message: string): boolean {
+  const normalized = normalizeVietnamese(message);
+  const wantsProject =
+    normalized.includes("tao du an") ||
+    normalized.includes("tao project") ||
+    normalized.includes("create project");
+  const wantsTasks =
+    normalized.includes("cong viec") ||
+    normalized.includes("cac viec") ||
+    normalized.includes("viec can lam") ||
+    normalized.includes("task") ||
+    normalized.includes("tasks");
+
+  return wantsProject && wantsTasks;
+}
+
+function extractRequestedProjectName(message: string): string | null {
+  const explicitNamePatterns = [
+    /(?:tên|ten)\s+(?:dự án|du an|project)\s*(?:là|la|:)\s*["“”']?([^"“”'\n,.]+)/iu,
+    /(?:dự án|du an|project)\s*["“”']([^"“”'\n]+)["“”']/iu,
+    /(?:tạo|tao|create)\s+(?:dự án|du an|project)\s+([^"“”'\n,.]{2,60}?)\s+(?:để|de|làm|lam|cho|về|ve|:)/iu,
+  ];
+
+  for (const pattern of explicitNamePatterns) {
+    const match = message.match(pattern);
+    const name = match?.[1]?.trim().replace(/\s+/g, " ");
+    if (name && !/^l(à|a|àm|am)$/i.test(name)) return name;
+  }
+
+  return null;
+}
+
+function buildAutoProjectDescription(projectName: string, description: string): string {
+  return [
+    `Tên dự án: ${projectName.trim()}`,
+    `Mô tả yêu cầu: ${description.trim()}`,
+    "Yêu cầu: Tạo đúng 1 dự án với tên trên và các công việc cần làm. Giữ nguyên chính tả tên dự án.",
+  ].join("\n");
 }
 
 function getPlannerErrorMessage(error: any): string {
@@ -169,6 +218,7 @@ export default function ChatPanel() {
   const { getCurrentUser } = useAuth();
   const [panelWidth, setPanelWidth] = useState(400);
   const [bulkTaskDraft, setBulkTaskDraft] = useState<BulkTaskDraft | null>(null);
+  const [autoProjectDraft, setAutoProjectDraft] = useState<AutoProjectDraft | null>(null);
   const resizing = useRef(false);
 
   // Browser automation state
@@ -544,6 +594,92 @@ export default function ChatPanel() {
     return workspace.id;
   };
 
+  const createProjectAndTasksFromAi = async (projectName: string, description: string) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const workspaceId = await resolvePlannerWorkspaceId();
+      const plan = await aiProjectPlannerApi.plan(
+        workspaceId,
+        buildAutoProjectDescription(projectName, description)
+      );
+      const firstProject = plan.projects[0];
+      if (!firstProject) {
+        throw new Error("AI chưa tạo được danh sách công việc cho dự án này.");
+      }
+
+      const singleProjectPlan: ProjectPlan = {
+        ...plan,
+        projects: [
+          {
+            ...firstProject,
+            name: projectName.trim(),
+          },
+        ],
+      };
+
+      const result = await aiProjectPlannerApi.apply(workspaceId, singleProjectPlan, false);
+      setAutoProjectDraft(null);
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: `Đã tạo dự án ${projectName.trim()} và ${result.createdTasks.length} công việc.`,
+          timestamp: new Date(),
+        },
+      ]);
+      if (result.warnings.length > 0) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "system",
+            content: result.warnings.join("\n"),
+            timestamp: new Date(),
+          },
+        ]);
+      }
+    } catch (error: any) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: getPlannerErrorMessage(error),
+          timestamp: new Date(),
+        },
+      ]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleAutoProjectCreateIntent = async (message: string) => {
+    if (autoProjectDraft) {
+      const projectName = message.trim();
+      if (!projectName) return true;
+      await createProjectAndTasksFromAi(projectName, autoProjectDraft.description);
+      return true;
+    }
+
+    if (!isAutoProjectCreateRequest(message)) return false;
+
+    const projectName = extractRequestedProjectName(message);
+    if (projectName) {
+      await createProjectAndTasksFromAi(projectName, message);
+      return true;
+    }
+
+    setAutoProjectDraft({ description: message });
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: "assistant",
+        content: "Bạn muốn đặt tên dự án là gì?",
+        timestamp: new Date(),
+      },
+    ]);
+    return true;
+  };
+
   const handleProjectPlanning = async (message: string) => {
     setIsLoading(true);
     setError(null);
@@ -756,6 +892,9 @@ export default function ChatPanel() {
   };
 
   const processUserMessage = async (message: string) => {
+    if (await handleAutoProjectCreateIntent(message)) {
+      return;
+    }
     if (await handleBulkTaskCreateIntent(message)) {
       return;
     }
@@ -827,6 +966,8 @@ export default function ChatPanel() {
 
   const clearChat = () => {
     setMessages([]);
+    setAutoProjectDraft(null);
+    setBulkTaskDraft(null);
     mcpServer.clearHistory();
     browserAgentRef.current?.reset();
   };
@@ -838,6 +979,8 @@ export default function ChatPanel() {
 
       // Set flag to prevent automatic context extraction from URL
       setIsContextManuallyCleared(true);
+      setAutoProjectDraft(null);
+      setBulkTaskDraft(null);
 
       // Also clear the history to ensure clean context
       mcpServer.clearHistory();
