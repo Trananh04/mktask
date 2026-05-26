@@ -29,6 +29,7 @@
     "node_modules/(?!(mime|marked)/)"
   ],
   "moduleNameMapper": {
+    "^mime$": "<rootDir>/test/mocks/mime.js",
     "^src/(.*)$": "<rootDir>/src/$1"
   },
   "testTimeout": 60000,

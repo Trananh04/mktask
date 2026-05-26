@@ -11,6 +11,11 @@ import {
 import { SettingsService } from '../settings/settings.service';
 import { enhancePromptWithContext } from './app-guide';
 import { getAutomationPrompt } from './automation-prompts';
+import {
+  buildAssistantSystemPrompt,
+  buildAssistantUserContext,
+  isAutomationEnvelope,
+} from './assistant-prompts';
 
 @Injectable()
 export class AiChatService {
@@ -228,11 +233,15 @@ ADMIN PANEL RULES (SUPER_ADMIN ONLY):
         throw new BadRequestException('AI API key not configured. Please set it in settings.');
       }
 
+      const useAutomationPrompt = isAutomationEnvelope(chatRequest.message);
+
       // Build messages array with system prompt and conversation history
       const messages: ChatMessageDto[] = [];
 
       // Generate system prompt
-      const systemPrompt = this.generateSystemPrompt();
+      const systemPrompt = useAutomationPrompt
+        ? this.generateSystemPrompt()
+        : buildAssistantSystemPrompt();
       messages.push({
         role: 'system',
         content: systemPrompt,
@@ -253,7 +262,7 @@ ADMIN PANEL RULES (SUPER_ADMIN ONLY):
       const taskMatch = userMessage.match(/Task:\s*([^\n]+)/);
       const urlMatch = userMessage.match(/Current URL:\s*([^\n]+)/);
 
-      if (taskMatch && urlMatch) {
+      if (useAutomationPrompt && taskMatch && urlMatch) {
         const task = taskMatch[1].trim();
         const url = urlMatch[1].trim();
         const appContext = enhancePromptWithContext(task, url);
@@ -262,6 +271,8 @@ ADMIN PANEL RULES (SUPER_ADMIN ONLY):
         if (automationPrompt) {
           userMessage = userMessage + `\n\n${automationPrompt}`;
         }
+      } else {
+        userMessage = buildAssistantUserContext(userMessage);
       }
 
       messages.push({

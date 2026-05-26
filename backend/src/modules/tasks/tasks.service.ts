@@ -41,6 +41,10 @@ import {
 } from './dto/task-approval.dto';
 import { NotificationsService } from '../notifications/notifications.service';
 
+type CreateTaskInput = CreateTaskDto & {
+  sourceChatMessageId?: string;
+};
+
 @Injectable()
 export class TasksService {
   private readonly logger = new Logger(TasksService.name);
@@ -110,6 +114,66 @@ export class TasksService {
     return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
   }
 
+  private visibleProjectScope(organizationId: string, userId: string, isSuperAdmin: boolean) {
+    return {
+      archive: false,
+      workspace: { organizationId, archive: false },
+      ...(isSuperAdmin ? {} : { members: { some: { userId } } }),
+    };
+  }
+
+  private visibleProjectRankSql(userId: string, isSuperAdmin: boolean) {
+    return Prisma.sql`
+      AND p.archive = false
+      AND w.archive = false
+      AND t.is_archived = false
+      ${
+        isSuperAdmin
+          ? Prisma.empty
+          : Prisma.sql`AND EXISTS (
+              SELECT 1
+              FROM project_members pm
+              WHERE pm.project_id = p.id
+                AND pm.user_id = ${userId}::uuid
+            )`
+      }
+    `;
+  }
+
+  private taskParticipationScope(userId: string, isSuperAdmin: boolean) {
+    return isSuperAdmin
+      ? []
+      : [
+          {
+            OR: [
+              { assignees: { some: { userId } } },
+              { reporters: { some: { userId } } },
+              { createdBy: userId },
+            ],
+          },
+        ];
+  }
+
+  private visibleTaskRankSql(userId: string, isSuperAdmin: boolean) {
+    return isSuperAdmin
+      ? Prisma.empty
+      : Prisma.sql`AND (
+          EXISTS (
+            SELECT 1
+            FROM task_assignees ta_vis
+            WHERE ta_vis.task_id = t.id
+              AND ta_vis.user_id = ${userId}::uuid
+          )
+          OR EXISTS (
+            SELECT 1
+            FROM task_reporters trp_vis
+            WHERE trp_vis.task_id = t.id
+              AND trp_vis.user_id = ${userId}::uuid
+          )
+          OR t.created_by_id = ${userId}::uuid
+        )`;
+  }
+
   /**
    * Generates a unique task number by locking the project row to prevent race conditions.
    * This MUST be called within an interactive transaction.
@@ -144,7 +208,7 @@ export class TasksService {
     };
   }
 
-  async create(createTaskDto: CreateTaskDto, userId: string): Promise<Task> {
+  async create(createTaskDto: CreateTaskInput, userId: string): Promise<Task> {
     const project = await this.prisma.project.findUnique({
       where: { id: createTaskDto.projectId },
       select: {
@@ -172,6 +236,22 @@ export class TasksService {
 
     if (!projectAccess.canChange) {
       throw new ForbiddenException('Insufficient permissions to create task in this project');
+    }
+
+    const memberUserIds = [
+      ...new Set([...(createTaskDto.assigneeIds || []), ...(createTaskDto.reporterIds || [])]),
+    ];
+    if (memberUserIds.length > 0) {
+      const projectMemberCount = await this.prisma.projectMember.count({
+        where: {
+          projectId: createTaskDto.projectId,
+          userId: { in: memberUserIds },
+        },
+      });
+
+      if (projectMemberCount !== memberUserIds.length) {
+        throw new BadRequestException('Assignees and reporters must be project members');
+      }
     }
 
     // Validate that startDate is before dueDate
@@ -240,6 +320,8 @@ export class TasksService {
       if (taskData.completedAt !== undefined) taskCreateData.completedAt = taskData.completedAt;
       if (taskData.allowEmailReplies !== undefined)
         taskCreateData.allowEmailReplies = taskData.allowEmailReplies;
+      if (taskData.sourceChatMessageId)
+        taskCreateData.sourceChatMessageId = taskData.sourceChatMessageId;
 
       // Only add assignees if there are any
       if (assigneeIds?.length) {
@@ -588,7 +670,7 @@ export class TasksService {
   }
   // Updated Task Create with Attachments
   async createWithAttachments(
-    createTaskDto: CreateTaskDto,
+    createTaskDto: CreateTaskInput,
     userId: string,
     files?: Express.Multer.File[],
   ) {
@@ -687,6 +769,8 @@ export class TasksService {
       if (taskData.completedAt !== undefined) taskCreateData.completedAt = taskData.completedAt;
       if (taskData.allowEmailReplies !== undefined)
         taskCreateData.allowEmailReplies = taskData.allowEmailReplies;
+      if (taskData.sourceChatMessageId)
+        taskCreateData.sourceChatMessageId = taskData.sourceChatMessageId;
 
       // Only add assignees if there are any
       if (assigneeIds?.length) {
@@ -915,6 +999,7 @@ export class TasksService {
     }
 
     const access = await this.accessControl.getOrgAccess(organizationId, userId);
+    const isSuperAdmin = Boolean(access.isSuperAdmin);
 
     // Verify organization exists
     const organization = await this.prisma.organization.findUnique({
@@ -926,23 +1011,13 @@ export class TasksService {
       throw new NotFoundException('Organization not found');
     }
 
-    // Build base where clause
     const whereClause: any = {
-      // Ensure tasks belong to the organization through project->workspace->organization
-      project: {
-        workspace: {
-          organizationId: organizationId,
-        },
-      },
+      isArchived: false,
+      project: this.visibleProjectScope(organizationId, userId, isSuperAdmin),
     };
 
-    // If not super admin and not organization elevated user (OWNER/MANAGER), apply visibility filters
-    if (!access.isSuperAdmin && !access.isElevated) {
-      whereClause.project.OR = this.accessControl.getProjectVisibilityFilter(userId);
-    }
-
     // Add conditions using AND array to avoid conflicts
-    const andConditions: any[] = [];
+    const andConditions: any[] = this.taskParticipationScope(userId, isSuperAdmin);
 
     // Filter by workspace if provided
     if (workspaceId && workspaceId.length > 0) {
@@ -1149,6 +1224,10 @@ export class TasksService {
       const rankOrderDir = sortOrder === 'asc' ? 'ASC' : 'DESC';
       const sqlLimit = limit;
       const sqlOffset = skip;
+      const rankVisibilitySql = Prisma.sql`
+        ${this.visibleProjectRankSql(userId, isSuperAdmin)}
+        ${this.visibleTaskRankSql(userId, isSuperAdmin)}
+      `;
 
       // Build the scope-specific WHERE predicate so LIMIT/OFFSET pages the
       // correct filtered set rather than the entire organisation.
@@ -1165,6 +1244,7 @@ export class TasksService {
           INNER JOIN projects p ON t.project_id = p.id
           INNER JOIN workspaces w ON p.workspace_id = w.id
           WHERE w."organization_id"::uuid = ${organizationId}::uuid
+            ${rankVisibilitySql}
             AND t.project_id = ${scopeId}::uuid
             AND t."parent_task_id" IS NULL
             ${sprintId ? Prisma.sql`AND t.sprint_id = ${sprintId}::uuid` : Prisma.empty}
@@ -1182,6 +1262,7 @@ export class TasksService {
           INNER JOIN projects p ON t.project_id = p.id
           INNER JOIN workspaces w ON p.workspace_id = w.id
           WHERE w."organization_id"::uuid = ${organizationId}::uuid
+            ${rankVisibilitySql}
             AND p."workspace_id" = ${scopeId}::uuid
             AND t."parent_task_id" IS NULL
             ${sprintId ? Prisma.sql`AND t.sprint_id = ${sprintId}::uuid` : Prisma.empty}
@@ -1199,6 +1280,7 @@ export class TasksService {
           INNER JOIN projects p ON t.project_id = p.id
           INNER JOIN workspaces w ON p.workspace_id = w.id
           WHERE w."organization_id"::uuid = ${organizationId}::uuid
+            ${rankVisibilitySql}
             AND t."parent_task_id" IS NULL
             ${sprintId ? Prisma.sql`AND t.sprint_id = ${sprintId}::uuid` : Prisma.empty}
           ORDER BY tr.rank ${Prisma.raw(rankOrderDir)} NULLS LAST, t.created_at ${Prisma.raw(rankOrderDir)}
@@ -1392,6 +1474,7 @@ export class TasksService {
     }
 
     const access = await this.accessControl.getOrgAccess(organizationId, userId);
+    const isSuperAdmin = Boolean(access.isSuperAdmin);
 
     // Verify organization exists
     const organization = await this.prisma.organization.findUnique({
@@ -1403,19 +1486,12 @@ export class TasksService {
       throw new NotFoundException('Organization not found');
     }
 
-    // Build base where clause
     const whereClause: any = {
-      project: {
-        workspace: { organizationId },
-      },
+      isArchived: false,
+      project: this.visibleProjectScope(organizationId, userId, isSuperAdmin),
     };
 
-    // If not super admin and not organization elevated user (OWNER/MANAGER), apply visibility filters
-    if (!access.isSuperAdmin && !access.isElevated) {
-      whereClause.project.OR = this.accessControl.getProjectVisibilityFilter(userId);
-    }
-
-    const andConditions: any[] = [];
+    const andConditions: any[] = this.taskParticipationScope(userId, isSuperAdmin);
 
     if (workspaceId?.length) {
       andConditions.push({ project: { workspaceId: { in: workspaceId } } });
@@ -1584,6 +1660,10 @@ export class TasksService {
       const rankOrderDir = sortOrder === 'asc' ? 'ASC' : 'DESC';
       const sqlLimit = limit;
       const sqlOffset = skip;
+      const rankVisibilitySql = Prisma.sql`
+        ${this.visibleProjectRankSql(userId, isSuperAdmin)}
+        ${this.visibleTaskRankSql(userId, isSuperAdmin)}
+      `;
 
       // Build scope-specific WHERE so LIMIT/OFFSET pages within the correct scope
       let rankedTaskIds: { id: string }[];
@@ -1599,6 +1679,7 @@ export class TasksService {
           INNER JOIN projects p ON t.project_id = p.id
           INNER JOIN workspaces w ON p.workspace_id = w.id
           WHERE w."organization_id"::uuid = ${organizationId}::uuid
+            ${rankVisibilitySql}
             AND t.project_id = ${scopeId}::uuid
             AND t."parent_task_id" IS NULL
           ORDER BY tr.rank ${Prisma.raw(rankOrderDir)} NULLS LAST, t.created_at ${Prisma.raw(rankOrderDir)}
@@ -1615,6 +1696,7 @@ export class TasksService {
           INNER JOIN projects p ON t.project_id = p.id
           INNER JOIN workspaces w ON p.workspace_id = w.id
           WHERE w."organization_id"::uuid = ${organizationId}::uuid
+            ${rankVisibilitySql}
             AND p."workspace_id" = ${scopeId}::uuid
             AND t."parent_task_id" IS NULL
           ORDER BY tr.rank ${Prisma.raw(rankOrderDir)} NULLS LAST, t.created_at ${Prisma.raw(rankOrderDir)}
@@ -1631,6 +1713,7 @@ export class TasksService {
           INNER JOIN projects p ON t.project_id = p.id
           INNER JOIN workspaces w ON p.workspace_id = w.id
           WHERE w."organization_id"::uuid = ${organizationId}::uuid
+            ${rankVisibilitySql}
             AND t."parent_task_id" IS NULL
           ORDER BY tr.rank ${Prisma.raw(rankOrderDir)} NULLS LAST, t.created_at ${Prisma.raw(rankOrderDir)}
           LIMIT ${Prisma.raw(sqlLimit.toString())}
@@ -1720,6 +1803,7 @@ export class TasksService {
     const { organizationId, groupBy, limitPerGroup = 20, groupKey, page = 1 } = dto;
 
     const access = await this.accessControl.getOrgAccess(organizationId, userId);
+    const isSuperAdmin = Boolean(access.isSuperAdmin);
 
     const organization = await this.prisma.organization.findUnique({
       where: { id: organizationId },
@@ -1729,13 +1813,11 @@ export class TasksService {
 
     // ── Base where clause (same access-control pattern as findAll) ──────────
     const baseWhere: any = {
-      project: { workspace: { organizationId } },
+      isArchived: false,
+      project: this.visibleProjectScope(organizationId, userId, isSuperAdmin),
     };
-    if (!access.isSuperAdmin && !access.isElevated) {
-      baseWhere.project.OR = this.accessControl.getProjectVisibilityFilter(userId);
-    }
 
-    const andConditions: any[] = [];
+    const andConditions: any[] = this.taskParticipationScope(userId, isSuperAdmin);
     const parseIds = (csv?: string) =>
       csv
         ? csv
@@ -2639,7 +2721,7 @@ export class TasksService {
     });
 
     if (user?.role === Role.SUPER_ADMIN) {
-      return;
+      return Role.SUPER_ADMIN;
     }
 
     const orgMember = await this.prisma.organizationMember.findUnique({
@@ -2648,7 +2730,7 @@ export class TasksService {
     });
 
     if (orgMember?.role === Role.MANAGER || orgMember?.role === Role.OWNER) {
-      return;
+      return orgMember.role;
     }
 
     throw new ForbiddenException('Only managers can review member task updates');
@@ -2659,6 +2741,26 @@ export class TasksService {
     if (!access.isElevated && !access.isSuperAdmin) {
       throw new ForbiddenException('Only managers can review this task');
     }
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true },
+    });
+
+    if (user?.role === Role.MANAGER) {
+      const project = await this.prisma.project.findUnique({
+        where: { id: task.project.id },
+        select: {
+          createdBy: true,
+          members: { where: { userId, role: Role.OWNER }, select: { userId: true } },
+        },
+      });
+      const canManageProject = project?.createdBy === userId || (project?.members?.length || 0) > 0;
+      if (!canManageProject) {
+        throw new ForbiddenException('Managers can only review reports in owned projects');
+      }
+    }
+
     return task;
   }
 
@@ -2670,29 +2772,30 @@ export class TasksService {
     return new Date(Date.UTC(source.getUTCFullYear(), source.getUTCMonth(), source.getUTCDate()));
   }
 
-  private async getManagerRecipientIds(organizationId: string, excludeUserId?: string) {
-    const [superAdmins, orgManagers] = await Promise.all([
-      this.prisma.user.findMany({
-        where: { role: Role.SUPER_ADMIN, status: 'ACTIVE' },
-        select: { id: true },
-      }),
-      this.prisma.organizationMember.findMany({
-        where: {
-          organizationId,
-          role: { in: [Role.MANAGER, Role.OWNER] },
-          user: { status: 'ACTIVE' },
+  private async getProjectOwnerRecipientIds(projectId: string, excludeUserId?: string) {
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+      select: {
+        createdBy: true,
+        members: {
+          where: { role: Role.OWNER, user: { status: 'ACTIVE' } },
+          select: { userId: true },
         },
-        select: { userId: true },
-      }),
-    ]);
+      },
+    });
+
+    if (!project) {
+      return [];
+    }
 
     return Array.from(
-      new Set([...superAdmins.map((u) => u.id), ...orgManagers.map((m) => m.userId)]),
-    ).filter((id) => id !== excludeUserId);
+      new Set([project.createdBy, ...project.members.map((member) => member.userId)]),
+    ).filter((id): id is string => Boolean(id) && id !== excludeUserId);
   }
 
-  private async notifyManagers(data: {
+  private async notifyProjectOwners(data: {
     organizationId: string;
+    projectId: string;
     createdBy: string;
     title: string;
     message: string;
@@ -2700,9 +2803,9 @@ export class TasksService {
     entityId: string;
     actionUrl: string;
   }) {
-    const managerIds = await this.getManagerRecipientIds(data.organizationId, data.createdBy);
+    const ownerIds = await this.getProjectOwnerRecipientIds(data.projectId, data.createdBy);
     await Promise.all(
-      managerIds.map((userId) =>
+      ownerIds.map((userId) =>
         this.notificationsService.createNotification({
           title: data.title,
           message: data.message,
@@ -2766,8 +2869,9 @@ export class TasksService {
           include: this.taskStatusRequestInclude(),
         });
 
-    await this.notifyManagers({
+    await this.notifyProjectOwners({
       organizationId: task.project.workspace.organizationId,
+      projectId: task.project.id,
       createdBy: userId,
       title: 'Yêu cầu đổi trạng thái task',
       message: `"${task.title}" muốn chuyển sang "${requestedStatus.name}"`,
@@ -2823,9 +2927,20 @@ export class TasksService {
       date?: string;
     },
   ) {
-    await this.ensureOrganizationManager(filters.organizationId, userId);
+    const reviewerRole = await this.ensureOrganizationManager(filters.organizationId, userId);
+    const managerProjectScope =
+      reviewerRole === Role.MANAGER
+        ? {
+            OR: [{ createdBy: userId }, { members: { some: { userId, role: Role.OWNER } } }],
+          }
+        : {};
     const where: Prisma.TaskStatusChangeRequestWhereInput = {
-      task: { project: { workspace: { organizationId: filters.organizationId } } },
+      task: {
+        project: {
+          workspace: { organizationId: filters.organizationId },
+          ...managerProjectScope,
+        },
+      },
     };
 
     if (filters.status) {
@@ -2982,8 +3097,9 @@ export class TasksService {
       include: this.taskDailyReportInclude(),
     });
 
-    await this.notifyManagers({
+    await this.notifyProjectOwners({
       organizationId: task.project.workspace.organizationId,
+      projectId: task.project.id,
       createdBy: userId,
       title:
         dto.type === TaskDailyReportType.START_OF_DAY ? 'Báo cáo đầu ngày' : 'Báo cáo cuối ngày',
@@ -3006,11 +3122,21 @@ export class TasksService {
       status?: TaskDailyReportStatus;
     },
   ) {
-    await this.ensureOrganizationManager(filters.organizationId, userId);
+    const reviewerRole = await this.ensureOrganizationManager(filters.organizationId, userId);
+    const managerProjectScope =
+      reviewerRole === Role.MANAGER
+        ? {
+            OR: [{ createdBy: userId }, { members: { some: { userId, role: Role.OWNER } } }],
+          }
+        : {};
     const where: Prisma.TaskDailyReportWhereInput = {
-      task: { project: { workspace: { organizationId: filters.organizationId } } },
+      task: {
+        project: {
+          workspace: { organizationId: filters.organizationId },
+          ...managerProjectScope,
+        },
+      },
     };
-
     if (filters.date) {
       where.reportDate = this.normalizeReportDate(filters.date);
     }

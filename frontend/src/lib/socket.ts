@@ -84,6 +84,10 @@ class SocketService {
       console.log("[SocketService] Connected acknowledgement received:", data);
     });
 
+    this.socket.on(SocketEvents.CHAT_UNREAD, (data) => {
+      this.dispatchCustomEvent(SocketEvents.CHAT_UNREAD, data);
+    });
+
     this.socket.on(SocketEvents.ERROR, (error) => {
       console.error("[SocketService] Socket error:", error);
     });
@@ -128,10 +132,10 @@ class SocketService {
    * @param room The room type (e.g., 'project', 'workspace', 'organization', 'task')
    * @param id The unique identifier for the room
    */
-  joinRoom(room: "project" | "workspace" | "organization" | "task", id: string) {
+  joinRoom(room: "project" | "workspace" | "organization" | "task" | "chat", id: string) {
     if (this.socket) {
       const event = `join:${room}`;
-      this.socket.emit(event, { [`${room}Id`]: id });
+      this.socket.emit(event, room === "chat" ? { conversationId: id } : { [`${room}Id`]: id });
     }
   }
 
@@ -140,10 +144,13 @@ class SocketService {
    * @param room The room type
    * @param id The unique identifier (optional for some room types)
    */
-  leaveRoom(room: "project" | "workspace" | "organization" | "task", id?: string) {
+  leaveRoom(room: "project" | "workspace" | "organization" | "task" | "chat", id?: string) {
     if (this.socket) {
       const event = `leave:${room}`;
-      this.socket.emit(event, id ? { [`${room}Id`]: id } : {});
+      this.socket.emit(
+        event,
+        id ? (room === "chat" ? { conversationId: id } : { [`${room}Id`]: id }) : {}
+      );
     }
   }
 

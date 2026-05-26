@@ -422,8 +422,8 @@ export default function OrganizationMembers({
         </div>
         <div className="organizations-members-table-body">
           {members.map((member) => {
-            const canEdit = canUpdateMember(member);
             const availableRoles = getAvailableRolesForMember(member);
+            const canEdit = canUpdateMember(member) && availableRoles.includes(member.role);
             const isCurrentUser = member.userId === getCurrentUserId() && isCurrentUserOwner;
             const canRemove = canRemoveMember(member);
             return (

@@ -10,12 +10,15 @@ import {
 import { Server, Socket } from 'socket.io';
 import { Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { PrismaService } from '../prisma/prisma.service';
+import { ChatConversationType, Role } from '@prisma/client';
 
 interface AuthenticatedSocket extends Socket {
   userId?: string;
   organizationId?: string;
   workspaceId?: string;
   projectId?: string;
+  chatConversationIds?: Set<string>;
 }
 
 @WebSocketGateway({
@@ -33,7 +36,10 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private connectedUsers = new Map<string, string[]>(); // userId -> socketIds[]
   private userLastSeen = new Map<string, string>();
 
-  constructor(private jwtService: JwtService) {}
+  constructor(
+    private jwtService: JwtService,
+    private prisma: PrismaService,
+  ) {}
 
   afterInit() {
     this.logger.log('EventsGateway initialized on /events namespace');
@@ -136,6 +142,9 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       if (client.projectId) {
         roomsToLeave.push(`project:${client.projectId}`);
       }
+      client.chatConversationIds?.forEach((conversationId) => {
+        roomsToLeave.push(`chat:${conversationId}`);
+      });
 
       // Leave all rooms the client was part of
       for (const room of roomsToLeave) {
@@ -238,6 +247,33 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
+  @SubscribeMessage('join:chat')
+  async joinChat(
+    @MessageBody() data: { conversationId: string },
+    @ConnectedSocket() client: AuthenticatedSocket,
+  ) {
+    try {
+      if (!client.userId || !data.conversationId) {
+        client.emit('error', { message: 'Conversation ID is required' });
+        return;
+      }
+
+      const canJoin = await this.canJoinChatConversation(data.conversationId, client.userId);
+      if (!canJoin) {
+        client.emit('error', { message: 'Not authorized to join this conversation' });
+        return;
+      }
+
+      await client.join(`chat:${data.conversationId}`);
+      client.chatConversationIds ??= new Set<string>();
+      client.chatConversationIds.add(data.conversationId);
+      client.emit('joined:chat', { conversationId: data.conversationId });
+    } catch (error) {
+      this.logger.error(`Error joining chat: ${error.message}`);
+      client.emit('error', { message: 'Failed to join chat', details: error.message });
+    }
+  }
+
   // Leave rooms
   @SubscribeMessage('leave:organization')
   async leaveOrganization(@ConnectedSocket() client: AuthenticatedSocket) {
@@ -314,6 +350,17 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       this.logger.error(`Error leaving task: ${error.message}`);
       client.emit('error', { message: 'Failed to leave task', details: error.message });
     }
+  }
+
+  @SubscribeMessage('leave:chat')
+  async leaveChat(
+    @MessageBody() data: { conversationId: string },
+    @ConnectedSocket() client: AuthenticatedSocket,
+  ) {
+    if (!data.conversationId) return;
+    await client.leave(`chat:${data.conversationId}`);
+    client.chatConversationIds?.delete(data.conversationId);
+    client.emit('left:chat', { conversationId: data.conversationId });
   }
 
   // Real-time event broadcasting methods
@@ -442,6 +489,41 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     });
   }
 
+  emitChatMessage(conversationId: string, message: any) {
+    this.server.to(`chat:${conversationId}`).emit('chat:message', {
+      event: 'chat:message',
+      data: message,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  emitChatUnread(userIds: string[], unread: any) {
+    const timestamp = new Date().toISOString();
+    userIds.forEach((userId) => {
+      this.server.to(`user:${userId}`).emit('chat:unread', {
+        event: 'chat:unread',
+        data: unread,
+        timestamp,
+      });
+    });
+  }
+
+  emitChatMessageReaction(conversationId: string, message: any) {
+    this.server.to(`chat:${conversationId}`).emit('chat:reaction', {
+      event: 'chat:reaction',
+      data: message,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  emitChatMessagePinned(conversationId: string, message: any) {
+    this.server.to(`chat:${conversationId}`).emit('chat:pinned', {
+      event: 'chat:pinned',
+      data: message,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
   // Typing indicators for comments
   emitUserTyping(taskId: string, user: any) {
     this.server.to(`task:${taskId}`).emit('user:typing', {
@@ -485,5 +567,57 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       }
     }
     return [...new Set(onlineUsers)]; // Remove duplicates
+  }
+
+  private async canJoinChatConversation(conversationId: string, userId: string) {
+    const conversation = (await this.prisma.chatConversation.findUnique({
+      where: { id: conversationId },
+      select: { id: true, type: true, projectId: true, workspaceId: true } as any,
+    })) as {
+      id: string;
+      type: ChatConversationType;
+      projectId: string | null;
+      workspaceId?: string | null;
+    } | null;
+
+    if (!conversation) return false;
+
+    if (conversation.type === ChatConversationType.DIRECT) {
+      const member = await this.prisma.chatConversationMember.findUnique({
+        where: { conversationId_userId: { conversationId, userId } },
+        select: { userId: true },
+      });
+      return !!member;
+    }
+
+    if (conversation.type === ('WORKSPACE' as ChatConversationType)) {
+      if (!conversation.workspaceId) return false;
+
+      const actor = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { role: true },
+      });
+      if (actor?.role === Role.SUPER_ADMIN) return true;
+
+      const member = await this.prisma.workspaceMember.findUnique({
+        where: { userId_workspaceId: { userId, workspaceId: conversation.workspaceId } },
+        select: { userId: true },
+      });
+      return !!member;
+    }
+
+    if (!conversation.projectId) return false;
+
+    const actor = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true },
+    });
+    if (actor?.role === Role.SUPER_ADMIN) return true;
+
+    const member = await this.prisma.projectMember.findUnique({
+      where: { userId_projectId: { userId, projectId: conversation.projectId } },
+      select: { userId: true },
+    });
+    return !!member;
   }
 }

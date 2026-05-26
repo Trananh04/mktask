@@ -11,6 +11,7 @@
   "error_loading": "Lỗi khi tải phân tích tổ chức:",
   "widgets": {
     "kpi_metrics": "Chỉ số KPI",
+    "management_summary": "Báo cáo quản lý",
     "project_status": "Phân bổ trạng thái dự án",
     "task_priority": "Cơ cấu độ ưu tiên công việc",
     "task_type": "Phân bổ loại công việc",
@@ -117,7 +118,7 @@
     "today_agenda_tooltip": "Today Agenda",
     "dashboard_settings_tooltip": "bảng điều khiển cài đặt",
     "dashboard_title": "Bảng điều khiển",
-    "dashboard_description": "Comprehensive insights into your tổ chức's performance and health",
+    "dashboard_description": "Tổng quan dự án, công việc và khối lượng của bạn",
     "no_analytics_data": "Chưa có dữ liệu phân tích cho tổ chức này.",
     "load_data_button": "Tải dữ liệu",
     "no_widgets_title": "Không có tiện ích để hiển thị",

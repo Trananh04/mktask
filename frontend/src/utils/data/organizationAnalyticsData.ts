@@ -8,6 +8,7 @@ import { WorkspaceProjectChart } from "@/components/charts/dashboard/workspace-p
 import { MemberWorkloadChart } from "@/components/charts/dashboard/member-workload-chart";
 import { ResourceAllocationChart } from "@/components/charts/dashboard/resource-allocation-chart";
 import { TaskTypeChart } from "@/components/charts/dashboard/task-type-chart";
+import { ManagementSummaryPanel } from "@/components/charts/dashboard/management-summary-panel";
 import i18n from '@/lib/i18n'; // Import the i18n instance
 
 export interface KPICard {
@@ -29,6 +30,7 @@ export interface AnalyticsData {
   workspaceProjectCount: any[];
   memberWorkload: any[];
   resourceAllocation: any[];
+  managementSummary: any;
 }
 
 export interface Widget {
@@ -53,13 +55,22 @@ export const organizationAnalyticsWidgets: Widget[] = [
     priority: 1,
   },
   {
+    id: "management-summary",
+    title: "workspace-home:widgets.management_summary",
+    component: ManagementSummaryPanel,
+    dataKey: "managementSummary",
+    visible: true,
+    gridCols: "col-span-full",
+    priority: 2,
+  },
+  {
     id: "project-portfolio",
     title: "workspace-home:widgets.project_status",
     component: ProjectPortfolioChart,
     dataKey: "projectPortfolio",
     visible: true,
     gridCols: "col-span-1 md:col-span-1",
-    priority: 2,
+    priority: 3,
     link: "/projects",
   },
   {
@@ -69,7 +80,7 @@ export const organizationAnalyticsWidgets: Widget[] = [
     dataKey: "teamUtilization",
     visible: true,
     gridCols: "col-span-1 md:col-span-1",
-    priority: 9,
+    priority: 10,
   },
   {
     id: "task-distribution",
@@ -78,7 +89,7 @@ export const organizationAnalyticsWidgets: Widget[] = [
     dataKey: "taskDistribution",
     visible: true,
     gridCols: "col-span-1 md:col-span-1",
-    priority: 4,
+    priority: 5,
     link: "/tasks",
   },
   {
@@ -88,7 +99,7 @@ export const organizationAnalyticsWidgets: Widget[] = [
     dataKey: "taskType",
     visible: false,
     gridCols: "col-span-1 md:col-span-1",
-    priority: 5,
+    priority: 6,
   },
   {
     id: "sprint-metrics",
@@ -97,7 +108,7 @@ export const organizationAnalyticsWidgets: Widget[] = [
     dataKey: "sprintMetrics",
     visible: false,
     gridCols: "col-span-1 md:col-span-1",
-    priority: 6,
+    priority: 7,
   },
   {
     id: "quality-metrics",
@@ -106,7 +117,7 @@ export const organizationAnalyticsWidgets: Widget[] = [
     dataKey: "qualityMetrics",
     visible: false,
     gridCols: "col-span-1 md:col-span-1",
-    priority: 7,
+    priority: 8,
   },
   {
     id: "workspace-projects",
@@ -115,7 +126,7 @@ export const organizationAnalyticsWidgets: Widget[] = [
     dataKey: "workspaceProjectCount",
     visible: false,
     gridCols: "col-span-full",
-    priority: 8,
+    priority: 9,
   },
   {
     id: "member-workload",
@@ -124,7 +135,7 @@ export const organizationAnalyticsWidgets: Widget[] = [
     dataKey: "memberWorkload",
     visible: true,
     gridCols: "col-span-1 md:col-span-1",
-    priority: 3,
+    priority: 4,
   },
   {
     id: "resource-allocation",
@@ -133,7 +144,7 @@ export const organizationAnalyticsWidgets: Widget[] = [
     dataKey: "resourceAllocation",
     visible: false,
     gridCols: "col-span-1 md:col-span-1",
-    priority: 10,
+    priority: 11,
   },
 ];
 

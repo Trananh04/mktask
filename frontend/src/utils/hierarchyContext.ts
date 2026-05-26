@@ -31,7 +31,7 @@ export const useHierarchyContext = () => {
 
   const getHierarchyFromUrl = () => {
     const segments = pathname.split("/").filter(Boolean);
-    const globalRoutes = ["dashboard", "workspaces", "activity", "settings", "tasks"];
+    const globalRoutes = ["dashboard", "workspaces", "activity", "settings", "tasks", "chat"];
 
     // Check if we're in a global route
     if (segments.length === 0 || globalRoutes.includes(segments[0])) {

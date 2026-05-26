@@ -159,15 +159,18 @@ export class SetupService {
     userId: string,
   ): Promise<void> {
     const organization = await prismaTransaction.organization.upsert({
-      where: { slug: 'company' },
+      where: { slug: 'mekong' },
       update: {
+        name: 'mekong',
+        description: 'Default organization for Mekong projects',
         ownerId: userId,
         updatedBy: userId,
+        archive: false,
       },
       create: {
-        name: 'Company',
-        slug: 'company',
-        description: 'Internal company workspace',
+        name: 'mekong',
+        slug: 'mekong',
+        description: 'Default organization for Mekong projects',
         ownerId: userId,
         createdBy: userId,
         updatedBy: userId,
@@ -205,7 +208,7 @@ export class SetupService {
       where: {
         organizationId_slug: {
           organizationId: organization.id,
-          slug: 'projects',
+          slug: 'mekong',
         },
       },
       update: {
@@ -213,7 +216,7 @@ export class SetupService {
       },
       create: {
         name: 'Projects',
-        slug: 'projects',
+        slug: 'mekong',
         description: 'Default internal project area',
         organizationId: organization.id,
         createdBy: userId,

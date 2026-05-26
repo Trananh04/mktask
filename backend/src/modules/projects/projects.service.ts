@@ -27,6 +27,11 @@ type ProjectFilters = {
   search?: string;
 };
 
+type ProjectOverviewInput = {
+  goal?: string | null;
+  scope?: string | null;
+};
+
 function generateTaskPrefix(name: string): string {
   const words = name.split(/[\s-]+/).filter(Boolean);
   let prefix = '';
@@ -63,7 +68,11 @@ export class ProjectsService {
     userId: string,
     currentOrganizationId?: string,
   ): Promise<Project> {
-    // Get the selected organization when the frontend sends it, otherwise fall back to the user's first organization.
+    const defaultOrganizationId = currentOrganizationId
+      ? null
+      : await this.settingsService.get('default_organization_id');
+
+    // Get the selected organization when provided; otherwise prefer the configured mekong organization.
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: {
@@ -79,19 +88,50 @@ export class ProjectsService {
               },
             },
           },
-          where: currentOrganizationId ? { organizationId: currentOrganizationId } : undefined,
+          where: currentOrganizationId
+            ? { organizationId: currentOrganizationId }
+            : defaultOrganizationId
+              ? { organizationId: defaultOrganizationId }
+              : { organization: { slug: 'mekong', archive: false } },
           take: 1,
         },
       },
     });
 
-    if (!user?.organizationMembers?.[0]) {
+    let selectedOrganizationMember = user?.organizationMembers?.[0];
+
+    if (!selectedOrganizationMember && !currentOrganizationId) {
+      const fallbackUser = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          organizationMembers: {
+            select: {
+              organizationId: true,
+              role: true,
+              organization: {
+                select: {
+                  id: true,
+                  ownerId: true,
+                  archive: true,
+                },
+              },
+            },
+            where: { organization: { archive: false } },
+            orderBy: { createdAt: 'asc' },
+            take: 1,
+          },
+        },
+      });
+      selectedOrganizationMember = fallbackUser?.organizationMembers?.[0];
+    }
+
+    if (!selectedOrganizationMember) {
       throw new NotFoundException('User is not a member of any organization');
     }
 
-    const organizationId = user.organizationMembers[0].organizationId;
-    const organizationRole = user.organizationMembers[0].role;
-    const organization = user.organizationMembers[0].organization;
+    const organizationId = selectedOrganizationMember.organizationId;
+    const organizationRole = selectedOrganizationMember.role;
+    const organization = selectedOrganizationMember.organization;
 
     // Check if organization is archived
     if (organization.archive) {
@@ -109,9 +149,9 @@ export class ProjectsService {
       if (!defaultWorkspace) {
         defaultWorkspace = await this.prisma.workspace.create({
           data: {
-            name: 'Company',
-            slug: 'company',
-            description: 'Default workspace for company projects',
+            name: 'Projects',
+            slug: 'mekong',
+            description: 'Default project workspace for mekong',
             organizationId,
             createdBy: userId,
             updatedBy: userId,
@@ -469,7 +509,7 @@ export class ProjectsService {
       workspace: { archive: false },
     };
     if (!isSuperAdmin) {
-      whereClause.members = { some: { userId } };
+      whereClause.createdBy = userId;
     }
     if (workspaceId) {
       whereClause.workspace.id = workspaceId;
@@ -611,7 +651,7 @@ export class ProjectsService {
       archive: false,
     };
     if (!isSuperAdmin) {
-      whereClause.members = { some: { userId } };
+      whereClause.createdBy = userId;
     }
     if (workspaceId) {
       whereClause.workspace.id = workspaceId;
@@ -719,6 +759,152 @@ export class ProjectsService {
     });
 
     return projects.map((p) => p.id);
+  }
+
+  async updateOverview(id: string, input: ProjectOverviewInput): Promise<Project> {
+    const data: Prisma.ProjectUpdateInput = {};
+
+    if (Object.prototype.hasOwnProperty.call(input, 'goal')) {
+      data.goal = input.goal;
+    }
+    if (Object.prototype.hasOwnProperty.call(input, 'scope')) {
+      data.scope = input.scope;
+    }
+
+    if (Object.keys(data).length === 0) {
+      throw new BadRequestException('No project overview fields were provided');
+    }
+
+    return this.prisma.project.update({
+      where: { id },
+      data,
+    });
+  }
+
+  async getProjectHealthFacts(projectId: string, _userId: string, asOf = new Date()) {
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+      select: {
+        id: true,
+        name: true,
+        endDate: true,
+      },
+    });
+
+    if (!project) {
+      throw new NotFoundException('Project not found');
+    }
+
+    const taskInclude = {
+      status: {
+        select: {
+          id: true,
+          name: true,
+          category: true,
+        },
+      },
+      assignees: {
+        select: {
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+              avatar: true,
+            },
+          },
+        },
+      },
+    } satisfies Prisma.TaskInclude;
+
+    const [
+      blockedTasks,
+      overdueTasks,
+      blockingDependencies,
+      milestones,
+      risks,
+      latestStatusUpdate,
+    ] = await Promise.all([
+      this.prisma.task.findMany({
+        where: {
+          projectId,
+          isArchived: false,
+          OR: [{ isBlocked: true }, { blockedReason: { not: null } }],
+        },
+        include: taskInclude,
+        orderBy: [{ blockedAt: 'desc' }, { updatedAt: 'desc' }],
+        take: 50,
+      }),
+      this.prisma.task.findMany({
+        where: {
+          projectId,
+          isArchived: false,
+          completedAt: null,
+          dueDate: { lt: asOf },
+          status: { category: { not: 'DONE' } },
+        },
+        include: taskInclude,
+        orderBy: [{ dueDate: 'asc' }, { updatedAt: 'desc' }],
+        take: 50,
+      }),
+      this.prisma.taskDependency.findMany({
+        where: {
+          type: 'BLOCKS',
+          dependentTask: {
+            projectId,
+            isArchived: false,
+            completedAt: null,
+          },
+          blockingTask: {
+            isArchived: false,
+            completedAt: null,
+          },
+        },
+        include: {
+          blockingTask: {
+            select: {
+              id: true,
+              title: true,
+              completedAt: true,
+            },
+          },
+          dependentTask: {
+            select: {
+              id: true,
+              title: true,
+              completedAt: true,
+            },
+          },
+        },
+      }),
+      this.prisma.projectMilestone.findMany({
+        where: { projectId },
+        orderBy: [{ dueDate: 'asc' }, { createdAt: 'asc' }],
+      }),
+      this.prisma.projectRisk.findMany({
+        where: {
+          projectId,
+          status: { in: ['OPEN', 'MITIGATED'] },
+        },
+        orderBy: [{ severity: 'desc' }, { updatedAt: 'desc' }],
+      }),
+      this.prisma.projectStatusUpdate.findFirst({
+        where: { projectId },
+        orderBy: { createdAt: 'desc' },
+      }),
+    ]);
+
+    return {
+      project,
+      asOf,
+      blockedTasks,
+      overdueTasks,
+      blockingDependencies,
+      milestones,
+      risks,
+      latestStatusUpdate,
+    };
   }
 
   async findOne(id: string, userId: string): Promise<Project> {
@@ -867,7 +1053,10 @@ export class ProjectsService {
       throw new ForbiddenException('Only owners can delete projects');
     }
     try {
-      await this.prisma.project.delete({ where: { id } });
+      await this.prisma.$transaction(async (tx) => {
+        await tx.task.deleteMany({ where: { projectId: id } });
+        await tx.project.delete({ where: { id } });
+      });
     } catch (error: any) {
       this.logger.error(
         `Error deleting project: ${error instanceof Error ? error.message : 'Unknown error'}`,

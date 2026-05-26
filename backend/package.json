@@ -31,6 +31,8 @@
     "seed": "ts-node -r tsconfig-paths/register src/seeder/seeder.command.ts seed",
     "seed:admin": "ts-node -r tsconfig-paths/register src/seeder/seeder.command.ts admin",
     "seed:clear": "ts-node -r tsconfig-paths/register src/seeder/seeder.command.ts clear",
+    "seed:clear-demo-users": "ts-node -r tsconfig-paths/register src/seeder/seeder.command.ts clear-demo-users",
+    "seed:normalize-mekong": "ts-node -r tsconfig-paths/register src/seeder/seeder.command.ts normalize-mekong",
     "seed:reset": "ts-node -r tsconfig-paths/register src/seeder/seeder.command.ts reset",
     "clean": "shx rm -rf node_modules dist out .next"
   },

@@ -65,7 +65,7 @@ export default function AIProjectPlannerPanel() {
     setMessage("");
     setIsApplying(true);
     try {
-      const result = await aiProjectPlannerApi.apply(workspaceId, plan, true);
+      const result = await aiProjectPlannerApi.apply(workspaceId, plan, false);
       setMessage(
         `Đã tạo ${result.createdProjects.length} dự án và ${result.createdTasks.length} công việc.`
       );
@@ -88,7 +88,7 @@ export default function AIProjectPlannerPanel() {
               Lập kế hoạch dự án bằng AI
             </h2>
             <p className="text-sm text-[var(--muted-foreground)]">
-              Nhập mô tả, AI sẽ chia dự án, tạo task và gợi ý người phụ trách.
+              Nhập mô tả, AI sẽ chia dự án và tạo task để bạn duyệt trước khi tạo thật.
             </p>
           </div>
         </div>
@@ -150,7 +150,7 @@ export default function AIProjectPlannerPanel() {
               <div>
                 <h3 className="font-semibold text-[var(--foreground)]">{plan.summary}</h3>
                 <p className="text-sm text-[var(--muted-foreground)]">
-                  {plan.projects.length} dự án, {taskCount} công việc
+                  {plan.projects.length} dự án, {taskCount} công việc · chưa gán người phụ trách
                 </p>
               </div>
             </div>

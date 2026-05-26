@@ -346,25 +346,6 @@ export function LoginForm() {
           </motion.div>
         </>
       )}
-
-      {/* Footer */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5, delay: 0.7 }}
-        className="login-footer"
-      >
-        <p className="login-footer-text">
-          Khi đăng nhập, bạn đồng ý với{" "}
-          <Link href="/terms-of-service" className="login-footer-link">
-            Điều khoản dịch vụ
-          </Link>{" "}
-          và{" "}
-          <Link href="/privacy-policy" className="login-footer-link">
-            Chính sách quyền riêng tư
-          </Link>
-        </p>
-      </motion.div>
     </motion.div>
   );
 }

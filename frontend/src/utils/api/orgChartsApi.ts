@@ -1,5 +1,12 @@
 import api from "@/lib/api";
-import { ChartDataResponse, ChartType } from "@/types";
+import { ChartDataResponse, ChartScope, ChartType } from "@/types";
+
+type OrganizationChartFilters = {
+  workspaceId?: string;
+  projectId?: string;
+  minMemberCount?: number;
+  scope?: ChartScope;
+};
 
 // Chart type enum matching backend
 
@@ -10,7 +17,7 @@ export const orgChartsApi = {
   getMultipleCharts: async (
     orgId: string,
     chartTypes: ChartType[],
-    filters: { workspaceId?: string; projectId?: string } = {}
+    filters: OrganizationChartFilters = {}
   ): Promise<ChartDataResponse> => {
     try {
       const params = new URLSearchParams();
@@ -19,6 +26,7 @@ export const orgChartsApi = {
       // Append filters
       if (filters.workspaceId) params.append("workspaceId", filters.workspaceId);
       if (filters.projectId) params.append("projectId", filters.projectId);
+      if (filters.scope) params.append("scope", filters.scope);
 
       const response = await api.get(`/organizations/${orgId}/charts?${params.toString()}`);
       return response.data;
@@ -34,7 +42,7 @@ export const orgChartsApi = {
   getSingleChart: async (
     orgId: string,
     chartType: ChartType,
-    filters: { workspaceId?: string; projectId?: string; minMemberCount?: number } = {}
+    filters: OrganizationChartFilters = {}
   ): Promise<any> => {
     try {
       const results = await orgChartsApi.getMultipleCharts(orgId, [chartType], filters);
@@ -50,7 +58,7 @@ export const orgChartsApi = {
    */
   getAllCharts: async (
     orgId: string,
-    filters: { workspaceId?: string; projectId?: string; minMemberCount?: number } = {}
+    filters: OrganizationChartFilters = {}
   ): Promise<ChartDataResponse> => {
     try {
       const allChartTypes = Object.values(ChartType);

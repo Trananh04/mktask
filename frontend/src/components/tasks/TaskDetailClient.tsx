@@ -2245,6 +2245,7 @@ export default function TaskDetailClient({
                 <MemberSelect
                   label={t("detail.assignees")}
                   editMode={isAuth && canEditGeneral}
+                  type="assignee"
                   selectedMembers={assignees}
                   projectId={task.projectId || task.project?.id}
                   onChange={async (newAssignees) => {
@@ -2271,6 +2272,7 @@ export default function TaskDetailClient({
                   label={t("detail.reporters")}
                   selectedMembers={reporters}
                   editMode={isAuth && canEditGeneral}
+                  type="reporter"
                   projectId={task.projectId || task.project?.id}
                   onChange={async (newReporters) => {
                     setReporters(newReporters);

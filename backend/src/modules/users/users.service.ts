@@ -145,7 +145,16 @@ export class UsersService {
       throw new NotFoundException('User not found');
     }
 
-    return user;
+    let avatarUrl: string | null = null;
+    if (user.avatar) {
+      if (this.storageService.isUsingS3()) {
+        avatarUrl = await this.storageService.getFileUrl(user.avatar);
+      } else {
+        avatarUrl = user.avatar;
+      }
+    }
+
+    return { ...user, avatar: avatarUrl };
   }
 
   async getPublicProfile(identifier: string, requesterId: string) {

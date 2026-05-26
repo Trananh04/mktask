@@ -31,6 +31,48 @@ export interface ApplyProjectPlanResponse {
   warnings: string[];
 }
 
+export interface ReportSummaryItem {
+  reporterName?: string;
+  taskTitle?: string;
+  reportType?: string;
+  status?: string;
+  progressPercent?: number;
+  content: string;
+  blockers?: string;
+}
+
+export interface ReportStatusRequestItem {
+  requesterName?: string;
+  taskTitle?: string;
+  requestedStatusName?: string;
+  note?: string;
+}
+
+export interface ProjectReportsForSummary {
+  projectId?: string;
+  projectName: string;
+  workspaceName?: string;
+  reports: ReportSummaryItem[];
+  pendingRequests?: ReportStatusRequestItem[];
+}
+
+export interface AiProjectReportSummary {
+  projectId?: string;
+  projectName: string;
+  rewrittenSummary: string;
+  progressAssessment: string;
+  issues: string[];
+  recommendations: string[];
+  nextActions: string[];
+  riskLevel: "LOW" | "MEDIUM" | "HIGH";
+}
+
+export interface AiReportSummaryResponse {
+  overallSummary: string;
+  projects: AiProjectReportSummary[];
+  generatedAt: string;
+}
+
 export const aiProjectPlannerApi = {
   plan: async (workspaceId: string, description: string): Promise<ProjectPlan> => {
     const response = await api.post<ProjectPlan>("/ai-project-planner/plan", {
@@ -43,13 +85,24 @@ export const aiProjectPlannerApi = {
   apply: async (
     workspaceId: string,
     plan: ProjectPlan,
-    createAssignments = true
+    createAssignments = false
   ): Promise<ApplyProjectPlanResponse> => {
     const response = await api.post<ApplyProjectPlanResponse>("/ai-project-planner/apply", {
       workspaceId,
       plan,
       createAssignments,
     });
+    return response.data;
+  },
+
+  summarizeReports: async (data: {
+    date: string;
+    projects: ProjectReportsForSummary[];
+  }): Promise<AiReportSummaryResponse> => {
+    const response = await api.post<AiReportSummaryResponse>(
+      "/ai-project-planner/summarize-reports",
+      data
+    );
     return response.data;
   },
 };

@@ -10,6 +10,8 @@ import {
   ApplyProjectPlanResponseDto,
   PlanProjectRequestDto,
   ProjectPlanDto,
+  SummarizeReportsRequestDto,
+  SummarizeReportsResponseDto,
 } from './dto/ai-project-planner.dto';
 import { AiProjectPlannerService } from './ai-project-planner.service';
 
@@ -35,5 +37,15 @@ export class AiProjectPlannerController {
     @Body() dto: ApplyProjectPlanRequestDto,
   ): Promise<ApplyProjectPlanResponseDto> {
     return this.plannerService.apply(dto, user.id);
+  }
+
+  @Post('summarize-reports')
+  @ApiOperation({ summary: 'Rewrite daily reports and summarize project issues with AI' })
+  @ApiResponse({ status: 200, type: SummarizeReportsResponseDto })
+  summarizeReports(
+    @CurrentUser() user: User,
+    @Body() dto: SummarizeReportsRequestDto,
+  ): Promise<SummarizeReportsResponseDto> {
+    return this.plannerService.summarizeReports(dto, user.id);
   }
 }

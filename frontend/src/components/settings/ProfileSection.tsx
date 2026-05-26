@@ -227,17 +227,23 @@ export default function ProfileSection() {
     fetchingRef.current = true;
     setLoading(true);
     try {
-      // Update main profile fields
+      const avatarUpload = selectedFile
+        ? await uploadFileToS3(selectedFile, "avatar")
+        : null;
+
       const updatedUser = await updateUser(currentUser.id, {
         firstName: profileData.firstName,
         lastName: profileData.lastName,
         email: profileData.email,
         mobileNumber: profileData.mobileNumber,
         bio: profileData.bio,
+        ...(avatarUpload ? { avatar: avatarUpload.key } : {}),
       });
       toast.success(t("profile_section.profile_updated"));
       setIsEditing(false);
-      // Refresh UI with updated user profile
+      setSelectedFile(null);
+      setPreviewUrl(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
       setCurrentUser(updatedUser);
     } catch {
       toast.error(t("profile_section.profile_update_failed"));

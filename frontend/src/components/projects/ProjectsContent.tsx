@@ -21,7 +21,6 @@ import { CheckSquare, Flame } from "lucide-react";
 import ErrorState from "@/components/common/ErrorState";
 import { EmptyState } from "@/components/ui";
 import { projectApi } from "@/utils/api/projectApi";
-import { invitationApi } from "@/utils/api/invitationsApi";
 import { roles } from "@/utils/data/projectData";
 
 import { toast } from "sonner";
@@ -78,7 +77,7 @@ const ProjectsContent: React.FC<ProjectsContentProps> = ({
   generateProjectLink,
 }) => {
   const { t } = useTranslation("projects");
-  const { isAuthenticated, getUserAccess } = useAuth();
+  const { isAuthenticated, getCurrentUser, getUserAccess } = useAuth();
   const { getWorkspaceBySlug } = useWorkspaceContext();
   const router = useRouter();
   const {
@@ -89,6 +88,7 @@ const ProjectsContent: React.FC<ProjectsContentProps> = ({
     getProjectsByOrganization,
     refreshProjects,
     clearError,
+    addMemberToProject,
   } = useProjectContext();
 
   const [hasAccess, setHasAccess] = useState(false);
@@ -144,8 +144,34 @@ const ProjectsContent: React.FC<ProjectsContentProps> = ({
   const debouncedSearchQuery = useDebounce(searchInput, 500);
 
   const { createSection } = useGenericFilters();
+  const currentUser = getCurrentUser();
 
-  const showLoader = isInitialLoad || (isFetching && projects.length === 0);
+  const isProjectCreatedByCurrentUser = useCallback(
+    (project: any) => {
+      if (!currentUser?.id) return false;
+      const creatorId =
+        project.createdBy ||
+        project.createdById ||
+        project.creatorId ||
+        project.createdByUser?.id ||
+        project.creator?.id ||
+        project.ownerId;
+      return creatorId === currentUser.id;
+    },
+    [currentUser?.id]
+  );
+
+  const visibleProjects = useMemo(
+    () => projects.filter(isProjectCreatedByCurrentUser),
+    [projects, isProjectCreatedByCurrentUser]
+  );
+
+  const visibleArchivedProjects = useMemo(
+    () => archivedProjects.filter(isProjectCreatedByCurrentUser),
+    [archivedProjects, isProjectCreatedByCurrentUser]
+  );
+
+  const showLoader = isInitialLoad || (isFetching && visibleProjects.length === 0);
   const showContent = !showLoader && !error;
 
   // Project icon component
@@ -232,11 +258,11 @@ const ProjectsContent: React.FC<ProjectsContentProps> = ({
         name: t(`status.${status.value.toLowerCase()}`),
         value: status.value,
         selected: selectedStatuses.includes(status.value),
-        count: projects.filter((project) => project.status === status.value).length,
+        count: visibleProjects.filter((project) => project.status === status.value).length,
         color: status.color,
         icon: status.icon,
       })),
-    [availableStatuses, selectedStatuses, projects, t]
+    [availableStatuses, selectedStatuses, visibleProjects, t]
   );
 
   const priorityFilters = useMemo(
@@ -246,11 +272,11 @@ const ProjectsContent: React.FC<ProjectsContentProps> = ({
         name: priority.name,
         value: priority.value,
         selected: selectedPriorities.includes(priority.value),
-        count: projects.filter((project) => project.priority === priority.value).length,
+        count: visibleProjects.filter((project) => project.priority === priority.value).length,
         color: priority.color,
         icon: priority.icon,
       })),
-    [availablePriorities, selectedPriorities, projects]
+    [availablePriorities, selectedPriorities, visibleProjects]
   );
 
   const filterSections = useMemo(
@@ -562,36 +588,25 @@ const ProjectsContent: React.FC<ProjectsContentProps> = ({
     setShowInviteModal(true);
   }, []);
 
-  const handleInvite = async (email: string, role: string) => {
+  const handleAddMember = async (userId: string, role: string) => {
     if (!selectedProjectForInvite) {
       toast.error("No project selected");
       return;
     }
 
-    const validation = invitationApi.validateInvitationData({
-      inviteeEmail: email,
-      projectId: selectedProjectForInvite.id,
-      role: role,
-    });
-
-    if (!validation.isValid) {
-      validation.errors.forEach((error) => toast.error(error));
-      throw new Error("Validation failed");
-    }
-
     try {
       setInviteLoading(true);
-      await invitationApi.createInvitation({
-        inviteeEmail: email,
+      await addMemberToProject({
+        userId,
         projectId: selectedProjectForInvite.id,
-        role: role,
+        role,
       });
 
-      toast.success(t("messages.invitation_sent", { email, defaultValue: `Invitation sent to ${email}` }));
+      toast.success(t("messages.member_added", { defaultValue: "Member added to project" }));
       setShowInviteModal(false);
       setSelectedProjectForInvite(null);
     } catch (error: any) {
-      const errorMessage = error?.response?.data?.message || error?.message || "Failed to send invitation";
+      const errorMessage = error?.response?.data?.message || error?.message || "Failed to add member";
       toast.error(errorMessage);
       throw error;
     } finally {
@@ -602,6 +617,13 @@ const ProjectsContent: React.FC<ProjectsContentProps> = ({
   const getAvailableRoles = () => {
     return roles.filter((role) => role.name !== "OWNER");
   };
+
+  const selectedProjectOrganizationId =
+    selectedProjectForInvite?.organizationId ||
+    selectedProjectForInvite?.workspace?.organizationId ||
+    selectedProjectForInvite?.workspace?.organization?.id ||
+    (contextType === "organization" ? contextId : workspace?.organizationId) ||
+    "";
 
   const goToPage = (page: number) => {
     if (!isFetching && enablePagination && page >= 1) {
@@ -709,15 +731,17 @@ const ProjectsContent: React.FC<ProjectsContentProps> = ({
             setShowInviteModal(false);
             setSelectedProjectForInvite(null);
           }}
-          onInvite={handleInvite}
+          onAddMember={handleAddMember}
           availableRoles={getAvailableRoles()}
+          projectId={selectedProjectForInvite?.id || ""}
+          organizationId={selectedProjectOrganizationId}
         />
 
         {/* Content Area */}
         {showContent && (
           <>
             {/* Project Grid */}
-            {projects.length === 0 ? (
+            {visibleProjects.length === 0 ? (
               searchInput || totalActiveFilters > 0 ? (
                 <EmptyState
                   icon={<HiSearch size={24} />}
@@ -750,7 +774,7 @@ const ProjectsContent: React.FC<ProjectsContentProps> = ({
             ) : (
               <>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-6">
-                  {projects.map((project) => {
+                  {visibleProjects.map((project) => {
                     const statusText = formatStatus(project.status);
 
                     return (
@@ -807,7 +831,7 @@ const ProjectsContent: React.FC<ProjectsContentProps> = ({
                 </div>
 
                 {/* Fixed Bottom Bar: Pagination + Counter */}
-                {projects.length > 0 && (
+                {visibleProjects.length > 0 && (
                   <div className="w-full flex flex-col items-center pb-4 pt-3 bg-[var(--background)] border-t border-[var(--border)]">
                     {enablePagination && (currentPage > 1 || hasMore) && (
                       <div className="flex items-center gap-3 mb-2">
@@ -843,7 +867,7 @@ const ProjectsContent: React.FC<ProjectsContentProps> = ({
                         <div className="w-4 h-4 border-2 border-[var(--primary)] border-t-transparent rounded-full animate-spin" />
                       ) : (
                         <>
-                          {t("showing_projects", { count: projects.length })}
+                          {t("showing_projects", { count: visibleProjects.length })}
                           {searchInput && t("matching", { query: searchInput })}
                           {totalActiveFilters > 0 &&
                             t("with_filters", { count: totalActiveFilters })}
@@ -858,13 +882,13 @@ const ProjectsContent: React.FC<ProjectsContentProps> = ({
         )}
 
         {/* Archived Projects Section */}
-        {hasAccess && archivedProjects.length > 0 && (
+        {hasAccess && visibleArchivedProjects.length > 0 && (
           <div className="mt-6">
             <h3 className="text-sm font-medium text-[var(--muted-foreground)] mb-3">
               {t("archived_projects", "Dự án đã lưu trữ")}
             </h3>
             <div className="space-y-3">
-              {archivedProjects.map((project: any) => {
+              {visibleArchivedProjects.map((project: any) => {
                 const isWorkspaceArchived = project.workspace?.archive === true;
                 return (
                   <div

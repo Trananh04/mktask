@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { useEffect, useState, useMemo } from "react";
+import { useCallback, useEffect, useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { getSidebarCollapsedState, toggleSidebar as toggleSidebarUtil } from "@/utils/sidebarUtils";
-import { Plus } from "lucide-react";
+import { MessageSquare, Plus } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
 import { useRouter } from "next/router";
 import ResizableSidebar from "./ResizableSidebar";
@@ -20,6 +20,8 @@ import {
   HiShieldCheck,
 } from "react-icons/hi";
 import { useProject } from "@/contexts/project-context";
+import { SocketEvents } from "@/types/socket";
+import { chatApi } from "@/utils/api/chatApi";
 
 // Type definitions
 interface NavItem {
@@ -28,6 +30,7 @@ interface NavItem {
   icon: React.ReactNode;
   title?: string;
   disabled?: boolean;
+  badge?: number;
 }
 
 const usePathnameParsing = (pathname: string, isMounted: boolean) => {
@@ -51,6 +54,7 @@ const usePathnameParsing = (pathname: string, isMounted: boolean) => {
       "tasks",
       "reports",
       "notifications",
+      "chat",
       "admin",
     ];
 
@@ -96,6 +100,7 @@ export default function Sidebar() {
   const [showWorkspaceSwitcher, setShowWorkspaceSwitcher] = useState(false);
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
   const [isMobileViewport, setIsMobileViewport] = useState(false);
+  const [chatUnreadCount, setChatUnreadCount] = useState(0);
 
   const { currentWorkspaceSlug, currentProjectSlug } = usePathnameParsing(pathname, isMounted);
 
@@ -111,6 +116,20 @@ export default function Sidebar() {
     setHasUserInteracted(true);
     toggleSidebarUtil(setIsSidebarCollapsed, forceValue);
   };
+
+  const refreshChatUnreadCount = useCallback(async () => {
+    if (!isAuth) {
+      setChatUnreadCount(0);
+      return;
+    }
+
+    try {
+      const summary = await chatApi.getUnreadSummary();
+      setChatUnreadCount(summary.unreadCount);
+    } catch {
+      // Chat can be unavailable while auth or the local API is still starting.
+    }
+  }, [isAuth]);
 
   useEffect(() => {
     if (!isMounted) return;
@@ -132,6 +151,22 @@ export default function Sidebar() {
 
     return () => window.removeEventListener("resize", handleResize);
   }, [isSidebarCollapsed, hasUserInteracted]);
+
+  useEffect(() => {
+    void refreshChatUnreadCount();
+
+    const handleChatUnreadChange = () => {
+      void refreshChatUnreadCount();
+    };
+
+    window.addEventListener(SocketEvents.CHAT_UNREAD, handleChatUnreadChange);
+    window.addEventListener("chat:read", handleChatUnreadChange);
+
+    return () => {
+      window.removeEventListener(SocketEvents.CHAT_UNREAD, handleChatUnreadChange);
+      window.removeEventListener("chat:read", handleChatUnreadChange);
+    };
+  }, [refreshChatUnreadCount]);
 
   // Handle disabled navigation click
   const handleDisabledClick = (e: React.MouseEvent) => {
@@ -165,6 +200,14 @@ export default function Sidebar() {
         icon: <HiClipboardList size={16} />,
         title: t("allTasks"),
         disabled: !isAuth,
+      },
+      {
+        name: "Trò chuyện",
+        href: "/chat",
+        icon: <MessageSquare size={16} />,
+        title: "Trò chuyện",
+        disabled: !isAuth,
+        badge: isAuth ? chatUnreadCount : 0,
       },
       ...(isAuth && (currentUser?.role === "SUPER_ADMIN" || currentUser?.role === "MANAGER")
         ? [
@@ -202,7 +245,7 @@ export default function Sidebar() {
           ]
         : []),
     ],
-    [isAuth, currentUser?.role, t]
+    [chatUnreadCount, isAuth, currentUser?.role, t]
   );
 
   const workspaceNavItems = useMemo(
@@ -378,7 +421,7 @@ export default function Sidebar() {
     defaultProjectNavItems,
   ]);
 
-  const miniSidebarNavItems = useMemo(() => {
+  const miniSidebarNavItems = useMemo<NavItem[]>(() => {
     // For unauthenticated users, use global nav items for mini sidebar (disabled)
     if (!isAuth) {
       setMiniPathName("/workspaces");
@@ -566,6 +609,11 @@ export default function Sidebar() {
                   >
                     <span className="layout-sidebar-nav-link-icon">{item.icon}</span>
                     <span className="layout-sidebar-nav-link-text">{item.name}</span>
+                    {!!item.badge && (
+                      <span className="ml-auto flex min-w-5 items-center justify-center rounded-full bg-[var(--primary)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--primary-foreground)]">
+                        {item.badge > 99 ? "99+" : item.badge}
+                      </span>
+                    )}
                   </Link>
                 )}
               </li>
@@ -629,10 +677,15 @@ export default function Sidebar() {
                   isItemActive
                     ? "layout-sidebar-nav-link-active"
                     : "layout-sidebar-mini-nav-link-inactive"
-                }`}
+                } relative`}
                 title={item.title || item.name}
               >
                 {item.icon}
+                {!!item.badge && (
+                  <span className="absolute -right-1 -top-1 flex min-w-4 items-center justify-center rounded-full bg-[var(--primary)] px-1 py-0.5 text-[9px] font-semibold leading-none text-[var(--primary-foreground)]">
+                    {item.badge > 9 ? "9+" : item.badge}
+                  </span>
+                )}
               </Link>
             );
           })}

@@ -111,6 +111,14 @@ model User {
   reviewedTaskStatusChanges  TaskStatusChangeRequest[] @relation("TaskStatusChangeReviewedBy")
   taskDailyReports           TaskDailyReport[]          @relation("TaskDailyReportReporter")
   reviewedTaskDailyReports   TaskDailyReport[]          @relation("TaskDailyReportReviewedBy")
+  authoredProjectStatusUpdates ProjectStatusUpdate[]    @relation("ProjectStatusUpdateAuthor")
+  createdChatConversations     ChatConversation[]       @relation("ChatConversationCreatedBy")
+  chatConversationMemberships   ChatConversationMember[]
+  chatConversationReadStates    ChatConversationReadState[]
+  sentChatMessages              ChatMessage[]            @relation("ChatMessageSender")
+  pinnedChatMessages            ChatMessage[]            @relation("ChatMessagePinnedBy")
+  chatMessageMentions           ChatMessageMention[]
+  chatMessageReactions          ChatMessageReaction[]
 
   // Project Inbox Relations
   defaultInboxes         ProjectInbox[] @relation("InboxDefaultAssignee")
@@ -154,6 +162,7 @@ model Organization {
   ActivityLog     ActivityLog[]
   Notification    Notification[]
   Invitation      Invitation[]
+  chatConversations ChatConversation[]
 
   @@map("organizations")
 }
@@ -204,6 +213,8 @@ model Workspace {
   updatedByUser   User?             @relation("WorkspaceUpdatedBy", fields: [updatedBy], references: [id])
   Invitation      Invitation[]
   workspaceLabels WorkspaceLabel[]
+  chatConversations ChatConversation[]
+  chatMessageAttachments ChatMessageAttachment[]
 
   @@unique([organizationId, slug])
   @@index([parentWorkspaceId])
@@ -235,6 +246,8 @@ model Project {
   slug            String            @unique
   taskPrefix      String?           @map("task_prefix") @db.VarChar(8)
   description     String?
+  goal            String?
+  scope           String?
   avatar          String? // Made required (removed ?)
   color           String // Made required (removed ?)
   status          ProjectStatus     @default(PLANNING)
@@ -259,11 +272,67 @@ model Project {
   updatedByUser   User?             @relation("ProjectUpdatedBy", fields: [updatedBy], references: [id])
   sprints         Sprint[]
   tasks           Task[]
+  milestones      ProjectMilestone[]
+  risks           ProjectRisk[]
+  statusUpdates   ProjectStatusUpdate[]
   Invitation      Invitation[]
+  chatConversations ChatConversation[]
   inbox           ProjectInbox?
+  chatMessageAttachments ChatMessageAttachment[]
 
   @@unique([workspaceId, slug])
   @@map("projects")
+}
+
+model ProjectMilestone {
+  id          String                 @id @default(uuid()) @db.Uuid
+  name        String
+  description String?
+  dueDate     DateTime?              @map("due_date")
+  status      ProjectMilestoneStatus @default(PLANNED)
+  projectId   String                 @map("project_id") @db.Uuid
+  createdBy   String?                @map("created_by_id") @db.Uuid
+  updatedBy   String?                @map("updated_by_id") @db.Uuid
+  createdAt   DateTime               @default(now()) @map("created_at")
+  updatedAt   DateTime               @updatedAt @map("updated_at")
+  project     Project                @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, dueDate])
+  @@map("project_milestones")
+}
+
+model ProjectRisk {
+  id          String            @id @default(uuid()) @db.Uuid
+  title       String
+  description String?
+  mitigation  String?
+  severity    ProjectRiskSeverity @default(MEDIUM)
+  status      ProjectRiskStatus @default(OPEN)
+  projectId   String            @map("project_id") @db.Uuid
+  createdBy   String?           @map("created_by_id") @db.Uuid
+  updatedBy   String?           @map("updated_by_id") @db.Uuid
+  createdAt   DateTime          @default(now()) @map("created_at")
+  updatedAt   DateTime          @updatedAt @map("updated_at")
+  project     Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, status])
+  @@map("project_risks")
+}
+
+model ProjectStatusUpdate {
+  id          String              @id @default(uuid()) @db.Uuid
+  health      ProjectHealthStatus
+  summary     String
+  nextSteps   String?             @map("next_steps")
+  projectId   String              @map("project_id") @db.Uuid
+  authorId    String?             @map("author_id") @db.Uuid
+  createdAt   DateTime            @default(now()) @map("created_at")
+  updatedAt   DateTime            @updatedAt @map("updated_at")
+  project     Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  author      User?               @relation("ProjectStatusUpdateAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+
+  @@index([projectId, createdAt])
+  @@map("project_status_updates")
 }
 
 model ProjectMember {
@@ -300,6 +369,9 @@ model Task {
   originalEstimate  Int?         @map("original_estimate")
   remainingEstimate Int?         @map("remaining_estimate")
   customFields      Json?        @map("custom_fields")
+  isBlocked         Boolean      @default(false) @map("is_blocked")
+  blockedReason     String?      @map("blocked_reason")
+  blockedAt         DateTime?    @map("blocked_at")
   projectId         String       @map("project_id") @db.Uuid
   statusId          String       @map("status_id") @db.Uuid
   sprintId          String?      @map("sprint_id") @db.Uuid
@@ -314,6 +386,7 @@ model Task {
   inboxMessageId    String? @unique @map("inbox_message_id") @db.Uuid
   emailThreadId     String? @map("email_thread_id")
   allowEmailReplies Boolean @default(false) @map("allow_email_replies")
+  sourceChatMessageId String? @map("source_chat_message_id") @db.Uuid
 
   // Recurrence fields
   isRecurring     Boolean @default(false) @map("is_recurring")
@@ -323,6 +396,7 @@ model Task {
   attachments     TaskAttachment[]
   comments        TaskComment[]
   inboxMessage    InboxMessage?    @relation(fields: [inboxMessageId], references: [id])
+  sourceChatMessage ChatMessage?    @relation("ChatMessageCreatedTasks", fields: [sourceChatMessageId], references: [id], onDelete: SetNull)
   recurringConfig RecurringTask?
   blocks          TaskDependency[] @relation("BlockingTask")
   dependsOn       TaskDependency[] @relation("DependentTask")
@@ -670,6 +744,126 @@ model TaskComment {
   @@map("task_comments")
 }
 
+model ChatConversation {
+  id             String                   @id @default(uuid()) @db.Uuid
+  type           ChatConversationType
+  organizationId String                   @map("organization_id") @db.Uuid
+  projectId      String?                  @map("project_id") @db.Uuid
+  workspaceId    String?                  @map("workspace_id") @db.Uuid
+  createdById    String                   @map("created_by_id") @db.Uuid
+  createdAt      DateTime                 @default(now()) @map("created_at")
+  updatedAt      DateTime                 @updatedAt @map("updated_at")
+  organization   Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  project        Project?                 @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  workspace      Workspace?               @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdBy      User                     @relation("ChatConversationCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+  members        ChatConversationMember[]
+  readStates     ChatConversationReadState[]
+  messages       ChatMessage[]
+
+  @@unique([projectId, type])
+  @@unique([workspaceId, type])
+  @@index([organizationId, updatedAt])
+  @@map("chat_conversations")
+}
+
+model ChatConversationMember {
+  conversationId String           @map("conversation_id") @db.Uuid
+  userId         String           @map("user_id") @db.Uuid
+  joinedAt       DateTime         @default(now()) @map("joined_at")
+  conversation   ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([conversationId, userId])
+  @@index([userId])
+  @@map("chat_conversation_members")
+}
+
+model ChatConversationReadState {
+  conversationId String           @map("conversation_id") @db.Uuid
+  userId         String           @map("user_id") @db.Uuid
+  lastReadAt     DateTime         @default(now()) @map("last_read_at")
+  conversation   ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([conversationId, userId])
+  @@index([userId, lastReadAt])
+  @@map("chat_conversation_read_states")
+}
+
+model ChatMessage {
+  id             String           @id @default(uuid()) @db.Uuid
+  conversationId String           @map("conversation_id") @db.Uuid
+  senderId       String           @map("sender_id") @db.Uuid
+  parentMessageId String?         @map("parent_message_id") @db.Uuid
+  content        String
+  isPinned       Boolean          @default(false) @map("is_pinned")
+  pinnedAt       DateTime?        @map("pinned_at")
+  pinnedById     String?          @map("pinned_by_id") @db.Uuid
+  createdAt      DateTime         @default(now()) @map("created_at")
+  conversation   ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender         User             @relation("ChatMessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  parentMessage  ChatMessage?     @relation("ChatMessageReplies", fields: [parentMessageId], references: [id], onDelete: SetNull)
+  replies        ChatMessage[]    @relation("ChatMessageReplies")
+  pinnedBy       User?            @relation("ChatMessagePinnedBy", fields: [pinnedById], references: [id], onDelete: SetNull)
+  mentions       ChatMessageMention[]
+  reactions      ChatMessageReaction[]
+  attachments    ChatMessageAttachment[]
+  createdTasks   Task[]           @relation("ChatMessageCreatedTasks")
+
+  @@index([conversationId, createdAt])
+  @@index([conversationId, isPinned])
+  @@index([parentMessageId])
+  @@map("chat_messages")
+}
+
+model ChatMessageMention {
+  messageId String      @map("message_id") @db.Uuid
+  userId    String      @map("user_id") @db.Uuid
+  createdAt DateTime    @default(now()) @map("created_at")
+  message   ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([messageId, userId])
+  @@index([userId])
+  @@map("chat_message_mentions")
+}
+
+model ChatMessageReaction {
+  messageId String      @map("message_id") @db.Uuid
+  userId    String      @map("user_id") @db.Uuid
+  type      String      @db.VarChar(24)
+  createdAt DateTime    @default(now()) @map("created_at")
+  message   ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([messageId, userId, type])
+  @@index([messageId, type])
+  @@index([userId])
+  @@map("chat_message_reactions")
+}
+
+model ChatMessageAttachment {
+  id         String      @id @default(uuid()) @db.Uuid
+  messageId  String      @map("message_id") @db.Uuid
+  projectId  String?     @map("project_id") @db.Uuid
+  workspaceId String?    @map("workspace_id") @db.Uuid
+  fileName   String      @map("file_name")
+  mimeType   String      @map("mime_type")
+  size       Int
+  url        String?
+  storageKey String?     @map("storage_key")
+  createdAt  DateTime    @default(now()) @map("created_at")
+  message    ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  project    Project?    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  workspace  Workspace?  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([messageId])
+  @@index([projectId])
+  @@index([workspaceId])
+  @@map("chat_message_attachments")
+}
+
 model TaskAttachment {
   id            String   @id @default(uuid()) @db.Uuid
   fileName      String   @map("file_name")
@@ -930,6 +1124,38 @@ enum ProjectVisibility {
   PRIVATE
   INTERNAL
   PUBLIC
+}
+
+enum ChatConversationType {
+  PROJECT
+  WORKSPACE
+  DIRECT
+}
+
+enum ProjectMilestoneStatus {
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+  MISSED
+}
+
+enum ProjectRiskSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum ProjectRiskStatus {
+  OPEN
+  MITIGATED
+  CLOSED
+}
+
+enum ProjectHealthStatus {
+  ON_TRACK
+  AT_RISK
+  OFF_TRACK
 }
 
 enum FileType {

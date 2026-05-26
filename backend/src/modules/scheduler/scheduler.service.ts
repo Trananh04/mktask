@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class SchedulerService {
@@ -10,6 +11,7 @@ export class SchedulerService {
   constructor(
     private prisma: PrismaService,
     private emailService: EmailService,
+    private notificationsService: NotificationsService,
   ) {}
 
   @Cron(CronExpression.EVERY_HOUR)
@@ -26,9 +28,6 @@ export class SchedulerService {
           dueDate: {
             gte: new Date(),
             lte: oneDayFromNow,
-          },
-          assignees: {
-            some: {}, // At least one assignee
           },
           status: {
             category: {
@@ -48,9 +47,6 @@ export class SchedulerService {
             gte: new Date(),
             lte: oneHourFromNow,
           },
-          assignees: {
-            some: {}, // At least one assignee
-          },
           status: {
             category: {
               not: 'DONE',
@@ -65,6 +61,7 @@ export class SchedulerService {
       // Send reminders
       for (const task of tasksDueSoon) {
         await this.emailService.sendDueDateReminderEmail(task.id);
+        await this.notificationsService.notifyTaskDueSoon(task.id);
       }
 
       // Log results
@@ -85,9 +82,6 @@ export class SchedulerService {
         where: {
           dueDate: {
             lt: new Date(),
-          },
-          assignees: {
-            some: {}, // At least one assignee
           },
           status: {
             category: {
@@ -184,6 +178,9 @@ export class SchedulerService {
 
       // Send all emails concurrently
       await Promise.all(emailPromises);
+      await Promise.all(
+        overdueTasks.map((task) => this.notificationsService.notifyTaskOverdue(task.id)),
+      );
 
       this.logger.log(
         `Sent overdue notifications to ${tasksByAssignee.size} users for ${overdueTasks.length} tasks`,

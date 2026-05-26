@@ -73,11 +73,11 @@ export class AdminSeederService {
     console.log('🌱 Seeding default organization...');
 
     const orgData = {
-      name: 'Default Organization',
-      slug: 'default-organization',
-      description: 'This is the default organization for admin user',
-      website: 'https://example.com',
-      avatar: 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=150',
+      name: 'mekong',
+      slug: 'mekong',
+      description: 'Default organization for Mekong projects',
+      website: 'https://mktask.app',
+      avatar: null,
       ownerId: adminUser.id,
       createdBy: adminUser.id,
       updatedBy: adminUser.id,
@@ -93,6 +93,7 @@ export class AdminSeederService {
           end: '17:00',
         },
         timezone: 'UTC',
+        singleCompanyMode: true,
       },
     };
 

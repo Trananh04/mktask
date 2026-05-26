@@ -24,11 +24,11 @@ export class OrganizationsSeederService {
 
     const organizationsData = [
       {
-        name: 'mktask Inc.',
-        slug: 'mktask-inc',
-        description: 'A comprehensive task management solution for modern teams',
+        name: 'mekong',
+        slug: 'mekong',
+        description: 'Default organization for Mekong projects',
         website: 'https://mktask.app',
-        avatar: 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=150',
+        avatar: null,
         ownerId: adminUser.id,
         createdBy: adminUser.id,
         updatedBy: adminUser.id,
@@ -44,29 +44,7 @@ export class OrganizationsSeederService {
             end: '17:00',
           },
           timezone: 'UTC',
-        },
-      },
-      {
-        name: 'Tech Innovators LLC',
-        slug: 'tech-innovators',
-        description: 'Innovation-driven technology consultancy',
-        website: 'https://techinnovators.example.com',
-        avatar: 'https://images.unsplash.com/photo-1549923746-c502d488b3ea?w=150',
-        ownerId: adminUser.id,
-        createdBy: adminUser.id,
-        updatedBy: adminUser.id,
-        settings: {
-          allowPublicSignup: true,
-          defaultUserRole: 'VIEWER',
-          requireEmailVerification: true,
-          enableTimeTracking: false,
-          enableAutomation: false,
-          workingDays: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
-          workingHours: {
-            start: '08:30',
-            end: '16:30',
-          },
-          timezone: 'America/New_York',
+          singleCompanyMode: true,
         },
       },
     ];
