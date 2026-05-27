@@ -19,15 +19,15 @@ export class SchedulerService {
     this.logger.log('Checking for due date reminders...');
 
     try {
-      const oneDayFromNow = new Date(Date.now() + 24 * 60 * 60 * 1000);
+      const threeDaysFromNow = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
       const oneHourFromNow = new Date(Date.now() + 60 * 60 * 1000);
 
-      // Find tasks due within 24 hours
+      // Find tasks due within 3 days so users see near-deadline work earlier.
       const tasksDueSoon = await this.prisma.task.findMany({
         where: {
           dueDate: {
             gte: new Date(),
-            lte: oneDayFromNow,
+            lte: threeDaysFromNow,
           },
           status: {
             category: {

@@ -120,6 +120,20 @@ export default function Header() {
     };
   }, [currentUser]);
 
+  useEffect(() => {
+    const handleOpenProjectModal = () => {
+      if (hasOrganizationAccess) {
+        setShowNewProjectModal(true);
+        setIsDropdownOpen(false);
+      }
+    };
+
+    window.addEventListener("ai:open-new-project-modal", handleOpenProjectModal);
+    return () => {
+      window.removeEventListener("ai:open-new-project-modal", handleOpenProjectModal);
+    };
+  }, [hasOrganizationAccess]);
+
   const pathname = router.pathname;
   const pathParts = pathname?.split("/").filter(Boolean);
 

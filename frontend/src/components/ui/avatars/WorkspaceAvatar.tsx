@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { resolveAssetUrl } from "@/utils/assetUrl";
 
 interface WorkspaceAvatarProps {
   workspace: string | { name: string; avatar?: string };
@@ -39,7 +40,7 @@ export default function WorkspaceAvatar({
   };
 
   const workspaceName = typeof workspace === "string" ? workspace : workspace.name;
-  const avatarImage = typeof workspace !== "string" ? workspace.avatar : undefined;
+  const avatarImage = typeof workspace !== "string" ? resolveAssetUrl(workspace.avatar) : undefined;
 
   const getInitial = (name: string) => {
     if (!name) return "W";

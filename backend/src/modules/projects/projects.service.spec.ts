@@ -26,7 +26,14 @@ describe('ProjectsService project listing', () => {
     };
   };
 
-  it('limits organization managers to projects where they are project members', async () => {
+  const expectedAccessRules = (userId: string) =>
+    expect.arrayContaining([
+      { members: { some: { userId } } },
+      { visibility: 'INTERNAL', workspace: { members: { some: { userId } } } },
+      { visibility: 'PUBLIC', workspace: { organization: { members: { some: { userId } } } } },
+    ]);
+
+  it('includes organization projects where the user has access', async () => {
     const { service, prisma } = createService();
 
     await service.findByOrganizationId({ organizationId }, managerId);
@@ -34,27 +41,14 @@ describe('ProjectsService project listing', () => {
     expect(prisma.project.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
-          members: { some: { userId: managerId } },
+          OR: expectedAccessRules(managerId),
         }),
       }),
     );
+    expect(prisma.project.findMany.mock.calls[0][0].where.createdBy).toBeUndefined();
   });
 
-  it('keeps organization members limited to projects where they are project members', async () => {
-    const { service, prisma } = createService();
-
-    await service.findByOrganizationId({ organizationId }, managerId);
-
-    expect(prisma.project.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: expect.objectContaining({
-          members: { some: { userId: managerId } },
-        }),
-      }),
-    );
-  });
-
-  it('limits workspace managers to projects where they are project members', async () => {
+  it('includes workspace projects where the user has access', async () => {
     const { service, prisma } = createService();
 
     await service.findAll(workspaceId, managerId);
@@ -62,10 +56,11 @@ describe('ProjectsService project listing', () => {
     expect(prisma.project.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
-          members: { some: { userId: managerId } },
+          OR: expectedAccessRules(managerId),
         }),
       }),
     );
+    expect(prisma.project.findMany.mock.calls[0][0].where.createdBy).toBeUndefined();
   });
 });
 

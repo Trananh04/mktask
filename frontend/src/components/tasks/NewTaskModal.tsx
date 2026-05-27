@@ -50,6 +50,7 @@ import { toast } from "sonner";
 import { formatDateForApi, getTodayDate } from "@/utils/handleDateChange";
 import { PRIORITY_OPTIONS, TASK_TYPE_OPTIONS } from "@/utils/data/taskData";
 import { TokenManager } from "@/lib/api";
+import { matchesSearchText } from "@/utils/fuzzySearch";
 interface FormData {
   title: string;
   project: {
@@ -125,10 +126,9 @@ export function NewTaskModal({
 
   const filteredParentTasks = parentTasks
     .filter((task) => {
-      const searchLower = parentTaskSearch.toLowerCase();
       return (
-        task.title.toLowerCase().includes(searchLower) ||
-        (task.taskNumber && task.taskNumber.toString().toLowerCase().includes(searchLower))
+        matchesSearchText(task.title, parentTaskSearch) ||
+        matchesSearchText(task.taskNumber?.toString(), parentTaskSearch)
       );
     })
     .slice(0, 5);
@@ -384,10 +384,9 @@ export function NewTaskModal({
 
   const filteredMembers = organizationMembers.filter((member) => {
     const user = getMemberUser(member);
-    const searchLower = memberSearch.toLowerCase();
     return (
-      getMemberName(member).toLowerCase().includes(searchLower) ||
-      (user?.email || "").toLowerCase().includes(searchLower)
+      matchesSearchText(getMemberName(member), memberSearch) ||
+      matchesSearchText(user?.email || "", memberSearch)
     );
   });
 
@@ -396,7 +395,7 @@ export function NewTaskModal({
   );
 
   const filteredProjects = projects.filter((project) =>
-    project.name.toLowerCase().includes(projectSearch.toLowerCase())
+    matchesSearchText(`${project.name || ""} ${project.slug || ""}`, projectSearch)
   );
 
   const handleSubmit = useCallback(

@@ -25,7 +25,7 @@ import { useProject } from "@/contexts/project-context";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { PROJECT_CATEGORIES } from "@/utils/data/projectData";
 import { workflowsApi } from "@/utils/api/workflowsApi";
-import { isValidSlug } from "@/utils/slugUtils";
+import { generateSlug, isValidSlug } from "@/utils/slugUtils";
 
 interface NewProjectModalProps {
   isOpen: boolean;
@@ -54,15 +54,6 @@ export function NewProjectModal({
     workflowId: "",
     visibility: "PRIVATE" as const,
   });
-
-  const generateSlug = (name: string) => {
-    return name
-      .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, "")
-      .replace(/\s+/g, "-")
-      .replace(/-+/g, "-")
-      .trim();
-  };
 
   // Use projectSlug everywhere it's needed
   const projectSlug = generateSlug(formData.name);

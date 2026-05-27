@@ -721,10 +721,7 @@ export default function Sidebar() {
               : "layout-sidebar-wrapper-expanded"
           }`}
         >
-          <div className="layout-sidebar-mini">
-            {/* Mini sidebar content */}
-            {renderMiniSidebar()}
-          </div>
+          {isSidebarCollapsed && renderMiniSidebar()}
 
           <div className="layout-sidebar-main">
             {isMounted ? (

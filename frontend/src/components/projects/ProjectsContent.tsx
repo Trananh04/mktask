@@ -77,7 +77,7 @@ const ProjectsContent: React.FC<ProjectsContentProps> = ({
   generateProjectLink,
 }) => {
   const { t } = useTranslation("projects");
-  const { isAuthenticated, getCurrentUser, getUserAccess } = useAuth();
+  const { isAuthenticated, getUserAccess } = useAuth();
   const { getWorkspaceBySlug } = useWorkspaceContext();
   const router = useRouter();
   const {
@@ -97,7 +97,6 @@ const ProjectsContent: React.FC<ProjectsContentProps> = ({
   const [isNewProjectModalOpen, setIsNewProjectModalOpen] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [selectedProjectForInvite, setSelectedProjectForInvite] = useState<any>(null);
-  const [inviteLoading, setInviteLoading] = useState(false);
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>(() => {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
@@ -144,32 +143,9 @@ const ProjectsContent: React.FC<ProjectsContentProps> = ({
   const debouncedSearchQuery = useDebounce(searchInput, 500);
 
   const { createSection } = useGenericFilters();
-  const currentUser = getCurrentUser();
+  const visibleProjects = useMemo(() => projects, [projects]);
 
-  const isProjectCreatedByCurrentUser = useCallback(
-    (project: any) => {
-      if (!currentUser?.id) return false;
-      const creatorId =
-        project.createdBy ||
-        project.createdById ||
-        project.creatorId ||
-        project.createdByUser?.id ||
-        project.creator?.id ||
-        project.ownerId;
-      return creatorId === currentUser.id;
-    },
-    [currentUser?.id]
-  );
-
-  const visibleProjects = useMemo(
-    () => projects.filter(isProjectCreatedByCurrentUser),
-    [projects, isProjectCreatedByCurrentUser]
-  );
-
-  const visibleArchivedProjects = useMemo(
-    () => archivedProjects.filter(isProjectCreatedByCurrentUser),
-    [archivedProjects, isProjectCreatedByCurrentUser]
-  );
+  const visibleArchivedProjects = useMemo(() => archivedProjects, [archivedProjects]);
 
   const showLoader = isInitialLoad || (isFetching && visibleProjects.length === 0);
   const showContent = !showLoader && !error;
@@ -595,22 +571,15 @@ const ProjectsContent: React.FC<ProjectsContentProps> = ({
     }
 
     try {
-      setInviteLoading(true);
       await addMemberToProject({
         userId,
         projectId: selectedProjectForInvite.id,
         role,
       });
-
-      toast.success(t("messages.member_added", { defaultValue: "Member added to project" }));
-      setShowInviteModal(false);
-      setSelectedProjectForInvite(null);
     } catch (error: any) {
       const errorMessage = error?.response?.data?.message || error?.message || "Failed to add member";
       toast.error(errorMessage);
       throw error;
-    } finally {
-      setInviteLoading(false);
     }
   };
 

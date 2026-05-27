@@ -8,11 +8,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "../ui/dialog";
-import { HiUserAdd } from "react-icons/hi";
+import { HiCheck, HiUserAdd } from "react-icons/hi";
 import { Label, Select } from "../ui";
+import { Input } from "../ui/input";
 import { SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { projectApi } from "@/utils/api/projectApi";
 import { OrganizationMember, ProjectMember } from "@/types";
+import { matchesSearchText } from "@/utils/fuzzySearch";
+import { toast } from "sonner";
 
 interface ProjectInviteMemberModalProps {
   isOpen: boolean;
@@ -31,8 +34,9 @@ export const ProjectInviteMemberModal = ({
   projectId,
   organizationId,
 }: ProjectInviteMemberModalProps) => {
-  const [selectedUserId, setSelectedUserId] = useState("");
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   const [role, setRole] = useState("");
+  const [memberSearch, setMemberSearch] = useState("");
   const [adding, setAdding] = useState(false);
   const [organizationMembers, setOrganizationMembers] = useState<OrganizationMember[]>([]);
   const [projectMembers, setProjectMembers] = useState<ProjectMember[]>([]);
@@ -75,6 +79,11 @@ export const ProjectInviteMemberModal = ({
     };
   }, [isOpen, organizationId, projectId]);
 
+  const getMemberName = (member: OrganizationMember) => {
+    const fullName = `${member.user?.firstName || ""} ${member.user?.lastName || ""}`.trim();
+    return fullName || member.user?.username || member.user?.email || "Nhân viên";
+  };
+
   const selectableMembers = useMemo(() => {
     const projectMemberIds = new Set(projectMembers.map((member) => member.userId));
     return organizationMembers.filter(
@@ -82,23 +91,39 @@ export const ProjectInviteMemberModal = ({
     );
   }, [organizationMembers, projectMembers]);
 
-  const getMemberName = (member: OrganizationMember) => {
-    const fullName = `${member.user?.firstName || ""} ${member.user?.lastName || ""}`.trim();
-    return fullName || member.user?.username || member.user?.email || "Nhân viên";
-  };
+  const filteredSelectableMembers = useMemo(
+    () =>
+      selectableMembers.filter((member) =>
+        matchesSearchText(
+          `${getMemberName(member)} ${member.user?.email || ""} ${member.user?.username || ""}`,
+          memberSearch
+        )
+      ),
+    [selectableMembers, memberSearch]
+  );
 
   const resetForm = () => {
-    setSelectedUserId("");
+    setSelectedUserIds([]);
     setRole("");
+    setMemberSearch("");
+  };
+
+  const toggleSelectedUser = (userId: string) => {
+    setSelectedUserIds((prev) =>
+      prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]
+    );
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!selectedUserId || !role) return;
+    if (selectedUserIds.length === 0 || !role) return;
 
     setAdding(true);
     try {
-      await onAddMember(selectedUserId, role);
+      for (const userId of selectedUserIds) {
+        await onAddMember(userId, role);
+      }
+      toast.success(`Đã thêm ${selectedUserIds.length} thành viên vào dự án`);
       resetForm();
       onClose();
     } catch (error) {
@@ -123,16 +148,23 @@ export const ProjectInviteMemberModal = ({
               Thêm thành viên vào dự án
             </DialogTitle>
             <DialogDescription className="text-[var(--muted-foreground)]">
-              Chọn nhân viên có sẵn để thêm vào dự án này.
+              Chọn một hoặc nhiều nhân viên có sẵn để thêm vào dự án này.
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <Label className="text-sm font-medium text-[var(--foreground)]">Nhân viên</Label>
+              <Input
+                value={memberSearch}
+                onChange={(event) => setMemberSearch(event.target.value)}
+                placeholder="Tìm theo tên hoặc email..."
+                className="mt-2 h-9 border border-[var(--border)] bg-[var(--background)]"
+                disabled={membersLoading || adding}
+              />
               <div
                 id="invite-member"
-                className="mt-1 max-h-52 overflow-y-auto rounded-md bg-background p-1"
+                className="mt-2 max-h-52 overflow-y-auto rounded-md bg-background p-1"
               >
                 {membersLoading && (
                   <p className="px-3 py-4 text-sm text-[var(--muted-foreground)]">
@@ -149,34 +181,49 @@ export const ProjectInviteMemberModal = ({
                 )}
                 {!membersLoading &&
                   !membersError &&
-                  selectableMembers.map((member) => (
-                    <button
-                      key={member.id}
-                      type="button"
-                      onClick={() => setSelectedUserId(member.userId)}
-                      className={`flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-left transition-colors ${
-                        selectedUserId === member.userId
-                          ? "bg-[var(--primary)]/10 text-[var(--foreground)]"
-                          : "hover:bg-[var(--hover-bg)]"
-                      }`}
-                    >
-                      <span className="min-w-0">
-                        <span className="block truncate text-sm font-medium">
-                          {getMemberName(member)}
-                        </span>
-                        <span className="block truncate text-xs text-[var(--muted-foreground)]">
-                          {member.user?.email}
-                        </span>
-                      </span>
-                      <span
-                        className={`size-4 shrink-0 rounded-full border ${
-                          selectedUserId === member.userId
-                            ? "border-[var(--primary)] bg-[var(--primary)]"
-                            : "border-[var(--border)]"
+                  selectableMembers.length > 0 &&
+                  filteredSelectableMembers.length === 0 && (
+                    <p className="px-3 py-4 text-sm text-[var(--muted-foreground)]">
+                      Không tìm thấy nhân viên phù hợp.
+                    </p>
+                  )}
+                {!membersLoading &&
+                  !membersError &&
+                  filteredSelectableMembers.map((member) => {
+                    const isSelected = selectedUserIds.includes(member.userId);
+                    return (
+                      <button
+                        key={member.id}
+                        type="button"
+                        onClick={() => toggleSelectedUser(member.userId)}
+                        className={`flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-left transition-colors ${
+                          isSelected
+                            ? "bg-[var(--primary)]/10 text-[var(--foreground)]"
+                            : "hover:bg-[var(--hover-bg)]"
                         }`}
-                      />
-                    </button>
-                  ))}
+                      >
+                        <span className="min-w-0">
+                          <span className="block truncate text-sm font-medium">
+                            {getMemberName(member)}
+                          </span>
+                          <span className="block truncate text-xs text-[var(--muted-foreground)]">
+                            {member.user?.email}
+                          </span>
+                        </span>
+                        <span
+                          className={`flex size-4 shrink-0 items-center justify-center rounded-full border ${
+                            isSelected
+                              ? "border-[var(--primary)] bg-[var(--primary)]"
+                              : "border-[var(--border)]"
+                          }`}
+                        >
+                          {isSelected && (
+                            <HiCheck className="size-3 text-[var(--primary-foreground)]" />
+                          )}
+                        </span>
+                      </button>
+                    );
+                  })}
               </div>
             </div>
 
@@ -235,10 +282,10 @@ export const ProjectInviteMemberModal = ({
               <ActionButton
                 primary
                 type="submit"
-                disabled={adding || !selectedUserId || !role}
-                className="w-32"
+                disabled={adding || selectedUserIds.length === 0 || !role}
+                className="w-40"
               >
-                {adding ? "Đang thêm..." : "Thêm thành viên"}
+                {adding ? "Đang thêm..." : `Thêm ${selectedUserIds.length || ""} thành viên`}
               </ActionButton>
             </DialogFooter>
           </form>

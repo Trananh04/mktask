@@ -63,6 +63,14 @@ export class ProjectsService {
     return user?.role === 'SUPER_ADMIN';
   }
 
+  private buildAccessibleProjectWhere(userId: string): Prisma.ProjectWhereInput[] {
+    return [
+      { members: { some: { userId } } },
+      { visibility: 'INTERNAL', workspace: { members: { some: { userId } } } },
+      { visibility: 'PUBLIC', workspace: { organization: { members: { some: { userId } } } } },
+    ];
+  }
+
   async create(
     createProjectDto: CreateProjectDto,
     userId: string,
@@ -509,7 +517,7 @@ export class ProjectsService {
       workspace: { archive: false },
     };
     if (!isSuperAdmin) {
-      whereClause.createdBy = userId;
+      whereClause.OR = this.buildAccessibleProjectWhere(userId);
     }
     if (workspaceId) {
       whereClause.workspace.id = workspaceId;
@@ -651,7 +659,7 @@ export class ProjectsService {
       archive: false,
     };
     if (!isSuperAdmin) {
-      whereClause.createdBy = userId;
+      whereClause.OR = this.buildAccessibleProjectWhere(userId);
     }
     if (workspaceId) {
       whereClause.workspace.id = workspaceId;
