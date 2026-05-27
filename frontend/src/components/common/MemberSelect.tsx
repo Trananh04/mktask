@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { ChevronDown, Plus, Search, UserPlus } from "lucide-react";
 import UserAvatar from "@/components/ui/avatars/UserAvatar";
@@ -12,6 +12,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { useProject } from "@/contexts/project-context";
 import { toast } from "sonner";
+import { matchesSearchText } from "@/utils/fuzzySearch";
 
 interface MemberSelectProps {
   label: string;
@@ -49,6 +50,25 @@ function MemberSelect({
 
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  const displayedMembers = useMemo(() => {
+    const merged = new Map<string, any>();
+    [...members, ...initialMembers].forEach((member) => {
+      if (member?.id) {
+        merged.set(member.id, member);
+      }
+    });
+
+    const candidates = Array.from(merged.values());
+    if (!search.trim()) return candidates;
+
+    return candidates.filter((member) =>
+      matchesSearchText(
+        `${member.firstName || ""} ${member.lastName || ""} ${member.email || ""}`,
+        search
+      )
+    );
+  }, [members, initialMembers, search]);
 
   useEffect(() => {
     if (autoOpenDropdown && isEditing && !isOpen) {
@@ -248,10 +268,10 @@ function MemberSelect({
                 <div className="max-h-48 overflow-y-auto">
                   {searchError ? (
                     <div className="p-2 text-sm text-red-500 text-center">{searchError}</div>
-                  ) : members.length === 0 ? (
+                  ) : displayedMembers.length === 0 ? (
                     <div className="p-2 text-sm text-muted-foreground">Không tìm thấy thành viên.</div>
                   ) : (
-                    members.map((member) => {
+                    displayedMembers.map((member) => {
                       const isSelected = selectedMembers.some((m) => m.id === member.id);
                       return (
                         <div
@@ -343,10 +363,10 @@ function MemberSelect({
           <div className="max-h-48 overflow-y-auto">
             {searchError ? (
               <div className="p-2 text-sm text-red-500 text-center">{searchError}</div>
-            ) : members.length === 0 ? (
+            ) : displayedMembers.length === 0 ? (
               <div className="p-2 text-sm text-muted-foreground">Không tìm thấy thành viên.</div>
             ) : (
-              members.map((member) => {
+              displayedMembers.map((member) => {
                 const isSelected = selectedMembers.some((m) => m.id === member.id);
                 return (
                   <div

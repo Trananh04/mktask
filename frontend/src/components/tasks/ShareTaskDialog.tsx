@@ -17,13 +17,14 @@ import {
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { shareApi, ShareResponse } from '@/utils/api/shareApi';
-import { HiClipboard, HiTrash, HiCheck, HiGlobeAlt } from 'react-icons/hi2';
+import { HiClipboard, HiTrash, HiCheck } from 'react-icons/hi2';
 import { formatDateTimeForDisplay } from '@/utils/date';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { HiLink } from 'react-icons/hi';
 import ActionButton from '@/components/common/ActionButton';
+
 interface ShareTaskDialogProps {
   taskId: string;
   isOpen: boolean;
@@ -62,11 +63,9 @@ export default function ShareTaskDialog({ taskId, isOpen, onClose }: ShareTaskDi
         taskId,
         expiresInDays: parseInt(expiryDays),
       });
-      setShares([newShare, ...shares]);
+      setShares((currentShares) => [newShare, ...currentShares]);
       toast.success('Đã tạo liên kết công khai');
-      
-      // Auto copy
-      copyToClipboard(newShare.shareUrl, newShare.id);
+      await copyToClipboard(newShare.shareUrl, newShare.id, false);
     } catch (error) {
       toast.error('Không thể tạo liên kết chia sẻ');
     } finally {
@@ -77,18 +76,39 @@ export default function ShareTaskDialog({ taskId, isOpen, onClose }: ShareTaskDi
   const handleRevokeShare = async (shareId: string) => {
     try {
       await shareApi.revokeShare(shareId);
-      setShares(shares.filter(s => s.id !== shareId));
+      setShares((currentShares) => currentShares.filter((share) => share.id !== shareId));
       toast.success('Đã thu hồi liên kết');
     } catch (error) {
       toast.error('Không thể thu hồi liên kết');
     }
   };
 
-  const copyToClipboard = (url: string, id: string) => {
-    navigator.clipboard.writeText(url);
-    setCopiedId(id);
-    toast.success('Đã sao chép liên kết');
-    setTimeout(() => setCopiedId(null), 2000);
+  const copyToClipboard = async (url: string, id: string, showFailureToast = true) => {
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(url);
+      } else {
+        const textArea = document.createElement('textarea');
+        textArea.value = url;
+        textArea.style.position = 'fixed';
+        textArea.style.opacity = '0';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+      }
+
+      setCopiedId(id);
+      toast.success('Đã sao chép liên kết');
+      setTimeout(() => setCopiedId(null), 2000);
+    } catch (error) {
+      if (showFailureToast) {
+        toast.error('Không thể sao chép liên kết');
+      } else {
+        toast.warning('Đã tạo liên kết, nhưng không thể sao chép tự động');
+      }
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -132,7 +152,7 @@ export default function ShareTaskDialog({ taskId, isOpen, onClose }: ShareTaskDi
                     <SelectItem value="30">30 ngày</SelectItem>
                   </SelectContent>
                 </Select>
-                <ActionButton 
+                <ActionButton
                   onClick={handleCreateShare}
                   disabled={creating}
                   className="flex-1"
@@ -150,8 +170,8 @@ export default function ShareTaskDialog({ taskId, isOpen, onClose }: ShareTaskDi
               <ScrollArea className="h-[200px] w-full rounded-md border p-3" orientation='both'>
                 <div className="space-y-3">
                   {shares.map((share) => (
-                    <div 
-                      key={share.id} 
+                    <div
+                      key={share.id}
                       className="flex flex-col gap-2 rounded-lg border bg-card p-3 shadow-sm min-w-0"
                     >
                       <div className="flex items-center justify-between min-w-0">
@@ -173,10 +193,10 @@ export default function ShareTaskDialog({ taskId, isOpen, onClose }: ShareTaskDi
                           <HiTrash className="h-4 w-4" />
                         </Button>
                       </div>
-                      
+
                       <div className="flex items-center gap-2 rounded-md bg-muted p-2">
                         <HiLink className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
-                        <div className="flex-1 min-w-0"> 
+                        <div className="flex-1 min-w-0">
                           <p className="truncate text-xs font-mono text-muted-foreground w-full">
                             {share.shareUrl}
                           </p>
@@ -185,7 +205,7 @@ export default function ShareTaskDialog({ taskId, isOpen, onClose }: ShareTaskDi
                           variant="ghost"
                           size="icon"
                           className="h-6 w-6 flex-shrink-0"
-                          onClick={() => copyToClipboard(share.shareUrl, share.id)}
+                          onClick={() => void copyToClipboard(share.shareUrl, share.id)}
                         >
                           {copiedId === share.id ? (
                             <HiCheck className="h-4 w-4 text-green-500" />

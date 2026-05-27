@@ -26,12 +26,17 @@ export const generateSlug = (text: string): string => {
   if (!text) return '';
   return text
     .toString()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D')
     .toLowerCase()
     .trim()
-    .replace(/\s+/g, '-')     // Replace spaces with -
-    .replace(/&/g, '-and-')   // Replace & with 'and'
-    .replace(/[^\w\-]+/g, '') // Remove all non-word chars
-    .replace(/\-\-+/g, '-');  // Replace multiple - with single -
+    .replace(/&/g, '-and-')     // Replace & with 'and'
+    .replace(/[^a-z0-9\s._-]/g, '') // Remove unsafe chars
+    .replace(/[\s_]+/g, '-')    // Replace spaces/underscores with -
+    .replace(/-+/g, '-')        // Replace multiple - with single -
+    .replace(/^-|-$/g, '');
 };
 /**
  * Validates if a string is a safe slug (alphanumeric and hyphens only).

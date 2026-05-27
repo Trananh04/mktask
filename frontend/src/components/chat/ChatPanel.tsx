@@ -1,7 +1,15 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { formatDateTimeForDisplay } from "@/utils/date";
 import { isValidSlug } from "@/utils/slugUtils";
-import { HiXMark, HiPaperAirplane, HiSparkles, HiArrowPath, HiStop, HiMicrophone } from "react-icons/hi2";
+import {
+  HiXMark,
+  HiPaperAirplane,
+  HiSparkles,
+  HiArrowPath,
+  HiStop,
+  HiMicrophone,
+  HiClock,
+} from "react-icons/hi2";
 import { useChatContext } from "@/contexts/chat-context";
 import { mcpServer, extractContextFromPath } from "@/lib/mcp-server";
 import { usePathname, useRouter } from "next/navigation";
@@ -35,6 +43,16 @@ interface Message {
 interface ChatMessage {
   role: "system" | "user" | "assistant";
   content: string;
+}
+
+const CHAT_MESSAGES_STORAGE_KEY = "mktask_ai_chat_messages_v1";
+const CHAT_PANEL_WIDTH_STORAGE_KEY = "mktask_ai_chat_panel_width";
+const CHAT_PANEL_DEFAULT_WIDTH = 420;
+const CHAT_PANEL_MIN_WIDTH = 360;
+const CHAT_PANEL_MAX_WIDTH = 720;
+
+function clampPanelWidth(width: number): number {
+  return Math.min(Math.max(width, CHAT_PANEL_MIN_WIDTH), CHAT_PANEL_MAX_WIDTH);
 }
 
 function sanitizeErrorMessage(msg: string): string {
@@ -77,6 +95,7 @@ function normalizeVietnamese(text: string): string {
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/đ/g, "d")
+    .replace(/Đ/g, "D")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -85,7 +104,9 @@ function isAutoProjectCreateRequest(message: string): boolean {
   const normalized = normalizeVietnamese(message);
   const wantsProject =
     normalized.includes("tao du an") ||
+    /tao\s+.+\s+du an/.test(normalized) ||
     normalized.includes("tao project") ||
+    /create\s+.+\s+project/.test(normalized) ||
     normalized.includes("create project");
   const wantsTasks =
     normalized.includes("cong viec") ||
@@ -95,6 +116,23 @@ function isAutoProjectCreateRequest(message: string): boolean {
     normalized.includes("tasks");
 
   return wantsProject && wantsTasks;
+}
+
+function isProjectModalRequest(message: string): boolean {
+  const normalized = normalizeVietnamese(message);
+  const wantsProject =
+    /(tao|them|create|new).*(du an|project)/.test(normalized) ||
+    /(du an|project).*(moi|new)/.test(normalized);
+  const wantsTaskPlan =
+    normalized.includes("task") ||
+    normalized.includes("cong viec") ||
+    normalized.includes("viec can lam") ||
+    normalized.includes("lap ke hoach") ||
+    normalized.includes("len ke hoach") ||
+    normalized.includes("chia task") ||
+    normalized.includes("chia viec");
+
+  return wantsProject && !wantsTaskPlan;
 }
 
 function extractRequestedProjectName(message: string): string | null {
@@ -212,11 +250,19 @@ export default function ChatPanel() {
   const [isContextManuallyCleared, setIsContextManuallyCleared] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const hasLoadedChatHistoryRef = useRef(false);
   const pathname = usePathname();
   const router = useRouter();
   const [currentOrganizationId, setCurrentOrganizationId] = useState<string | null>(null);
   const { getCurrentUser } = useAuth();
-  const [panelWidth, setPanelWidth] = useState(400);
+  const [panelWidth, setPanelWidth] = useState(() => {
+    if (typeof window === "undefined") return CHAT_PANEL_DEFAULT_WIDTH;
+    const storedWidth = Number(localStorage.getItem(CHAT_PANEL_WIDTH_STORAGE_KEY));
+    return Number.isFinite(storedWidth)
+      ? clampPanelWidth(storedWidth)
+      : CHAT_PANEL_DEFAULT_WIDTH;
+  });
+  const [showHistory, setShowHistory] = useState(false);
   const [bulkTaskDraft, setBulkTaskDraft] = useState<BulkTaskDraft | null>(null);
   const [autoProjectDraft, setAutoProjectDraft] = useState<AutoProjectDraft | null>(null);
   const resizing = useRef(false);
@@ -271,16 +317,23 @@ export default function ChatPanel() {
   const handleMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
     resizing.current = true;
+    document.body.classList.add("select-none", "cursor-col-resize");
   };
 
   const handleMouseMove = (e: MouseEvent) => {
     if (!resizing.current) return;
-    const newWidth = Math.min(Math.max(window.innerWidth - e.clientX, 400), 650);
+    const viewportMax = Math.max(CHAT_PANEL_MIN_WIDTH, window.innerWidth - 64);
+    const newWidth = Math.min(
+      clampPanelWidth(window.innerWidth - e.clientX),
+      Math.min(CHAT_PANEL_MAX_WIDTH, viewportMax)
+    );
     setPanelWidth(newWidth);
+    localStorage.setItem(CHAT_PANEL_WIDTH_STORAGE_KEY, String(newWidth));
   };
 
   const handleMouseUp = () => {
     resizing.current = false;
+    document.body.classList.remove("select-none", "cursor-col-resize");
   };
 
   useEffect(() => {
@@ -291,6 +344,10 @@ export default function ChatPanel() {
       window.removeEventListener("mouseup", handleMouseUp);
     };
   }, []);
+
+  useEffect(() => {
+    document.documentElement.style.setProperty("--chat-panel-width", `${panelWidth}px`);
+  }, [panelWidth]);
 
   // Initialize browser agent and clear stale history on mount
   useEffect(() => {
@@ -303,9 +360,6 @@ export default function ChatPanel() {
       } else {
         browserAgentRef.current.reset();
       }
-      sessionStorage.removeItem("mcp_conversation_history");
-      mcpServer.clearHistory();
-
       // Initialize voice controller
       voiceControllerRef.current = new VoiceController({
         callbacks: {
@@ -392,7 +446,23 @@ export default function ChatPanel() {
     try {
       // Only load if we don't have any messages yet
       if (messages.length > 0) {
+        hasLoadedChatHistoryRef.current = true;
         return false;
+      }
+
+      const storedMessages = localStorage.getItem(CHAT_MESSAGES_STORAGE_KEY);
+      if (storedMessages) {
+        const parsedMessages: Message[] = JSON.parse(storedMessages).map((message: Message) => ({
+          ...message,
+          timestamp: new Date(message.timestamp),
+          isStreaming: false,
+        }));
+
+        if (parsedMessages.length > 0) {
+          setMessages(parsedMessages);
+          hasLoadedChatHistoryRef.current = true;
+          return true;
+        }
       }
 
       const storedHistory = sessionStorage.getItem("mcp_conversation_history");
@@ -409,14 +479,28 @@ export default function ChatPanel() {
           }));
 
           setMessages(convertedMessages);
+          hasLoadedChatHistoryRef.current = true;
           return true;
         }
       }
     } catch (error) {
       console.warn("Failed to load messages from session storage:", error);
     }
+    hasLoadedChatHistoryRef.current = true;
     return false;
   }, [messages.length]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!hasLoadedChatHistoryRef.current) return;
+
+    if (messages.length === 0) {
+      localStorage.removeItem(CHAT_MESSAGES_STORAGE_KEY);
+      return;
+    }
+
+    localStorage.setItem(CHAT_MESSAGES_STORAGE_KEY, JSON.stringify(messages));
+  }, [messages]);
 
   // Initialize services on mount
   useEffect(() => {
@@ -475,6 +559,11 @@ export default function ChatPanel() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  const chatHistoryItems = useMemo(
+    () => messages.filter((message) => message.role === "user").slice(-10).reverse(),
+    [messages]
+  );
 
   // Listen for workspace/project creation events
   useEffect(() => {
@@ -674,6 +763,21 @@ export default function ChatPanel() {
       {
         role: "assistant",
         content: "Bạn muốn đặt tên dự án là gì?",
+        timestamp: new Date(),
+      },
+    ]);
+    return true;
+  };
+
+  const handleProjectModalIntent = (message: string) => {
+    if (!isProjectModalRequest(message)) return false;
+
+    window.dispatchEvent(new CustomEvent("ai:open-new-project-modal"));
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: "assistant",
+        content: "Đã mở cửa sổ tạo dự án mới.",
         timestamp: new Date(),
       },
     ]);
@@ -892,6 +996,9 @@ export default function ChatPanel() {
   };
 
   const processUserMessage = async (message: string) => {
+    if (handleProjectModalIntent(message)) {
+      return;
+    }
     if (await handleAutoProjectCreateIntent(message)) {
       return;
     }
@@ -968,6 +1075,8 @@ export default function ChatPanel() {
     setMessages([]);
     setAutoProjectDraft(null);
     setBulkTaskDraft(null);
+    localStorage.removeItem(CHAT_MESSAGES_STORAGE_KEY);
+    sessionStorage.removeItem("mcp_conversation_history");
     mcpServer.clearHistory();
     browserAgentRef.current?.reset();
   };
@@ -1059,7 +1168,7 @@ export default function ChatPanel() {
       >
         <div
           onMouseDown={handleMouseDown}
-          className="absolute left-0 top-0 bottom-0 w-0.5 cursor-col-resize bg-transparent hover:bg-gray-300/40"
+          className="absolute left-0 top-0 bottom-0 w-2 -translate-x-1 cursor-col-resize bg-transparent hover:bg-blue-500/25"
         />
         {/* Chat Header */}
         <div className="flex-shrink-0 flex items-center justify-between p-4 border-b border-[var(--border)] bg-[var(--background)]">
@@ -1069,6 +1178,16 @@ export default function ChatPanel() {
           </div>
           <div className="flex items-center gap-2">
             {/* Ngữ cảnh Xóa Button */}
+            {messages.length > 0 && (
+              <button
+                onClick={() => setShowHistory((prev) => !prev)}
+                className="flex items-center gap-1 px-2 py-1 text-xs text-[var(--muted-foreground)] hover:bg-[var(--accent)] rounded-md transition-all duration-200"
+                title="Lịch sử chat"
+              >
+                <HiClock className="w-3 h-3" />
+                Lịch sử
+              </button>
+            )}
             <button
               onClick={clearContext}
               className="flex items-center gap-1 px-2 py-1 text-xs text-[var(--muted-foreground)] hover:bg-[var(--accent)]  rounded-md transition-all duration-200"
@@ -1093,6 +1212,31 @@ export default function ChatPanel() {
             </button>
           </div>
         </div>
+
+        {showHistory && (
+          <div className="flex-shrink-0 border-b border-[var(--border)] bg-[var(--background)] px-4 py-3">
+            <div className="mb-2 text-xs font-medium text-[var(--muted-foreground)]">
+              Lịch sử tin nhắn gần đây
+            </div>
+            {chatHistoryItems.length === 0 ? (
+              <div className="text-xs text-[var(--muted-foreground)]">Chưa có lịch sử chat.</div>
+            ) : (
+              <div className="flex gap-2 overflow-x-auto pb-1">
+                {chatHistoryItems.map((item, index) => (
+                  <button
+                    key={`${item.timestamp}-${index}`}
+                    type="button"
+                    onClick={() => setInputValue(item.content)}
+                    className="max-w-[220px] shrink-0 truncate rounded-md border border-[var(--border)] px-3 py-2 text-left text-xs text-[var(--foreground)] hover:bg-[var(--accent)]"
+                    title={item.content}
+                  >
+                    {item.content}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Messages Area */}
         <div
@@ -1393,7 +1537,7 @@ export default function ChatPanel() {
       {/* Global styles for content squeeze and hidden scrollbars */}
       <style jsx global>{`
         body.chat-open .flex-1.overflow-y-scroll {
-          margin-right: 400px !important;
+          margin-right: var(--chat-panel-width, ${CHAT_PANEL_DEFAULT_WIDTH}px) !important;
           transition: margin-right 300ms ease-in-out;
         }
 

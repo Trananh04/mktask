@@ -14,6 +14,7 @@ import {
   WorkspaceStats,
 } from "@/types";
 import validator from "validator";
+import { generateSlug } from "@/utils/slugUtils";
 
 // Utility functions for validation
 function isValidUUID(id: string) {
@@ -44,14 +45,7 @@ export const workspaceApi = {
       // Generate slug if not provided
       const finalWorkspaceData = {
         ...workspaceData,
-        slug:
-          workspaceData.slug ||
-          workspaceData.name
-            .toLowerCase()
-            .replace(/[^a-z0-9\s-]/g, "") // Remove special characters
-            .replace(/\s+/g, "-") // Replace spaces with hyphens
-            .replace(/-+/g, "-") // Replace multiple hyphens with single
-            .trim(),
+        slug: workspaceData.slug || generateSlug(workspaceData.name),
       };
 
       const response = await api.post<Workspace>("/workspaces", finalWorkspaceData);

@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { resolveAssetUrl } from "@/utils/assetUrl";
 
 interface ProjectAvatarProps {
   project: string | { name: string; avatar?: string };
@@ -18,7 +19,7 @@ export default function ProjectAvatar({
 
   const projectName = typeof project === "string" ? project : project.name;
   const initial = projectName.charAt(0).toUpperCase();
-  const avatarImage = typeof project !== "string" ? project.avatar : undefined;
+  const avatarImage = typeof project !== "string" ? resolveAssetUrl(project.avatar) : undefined;
 
   return (
     <div className={`project-avatar ${sizeClass} ${colorClass} ${className}`}>

@@ -1,5 +1,6 @@
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { resolveAssetUrl } from "@/utils/assetUrl";
 
 interface UserAvatarProps {
   user:
@@ -9,6 +10,7 @@ interface UserAvatarProps {
         firstName?: string;
         lastName?: string;
         avatar?: string;
+        avatarUrl?: string;
         id?: string;
       };
   size?: "xs" | "sm" | "md" | "lg" | "xl";
@@ -67,25 +69,20 @@ export default function UserAvatar({ user, size = "md", color = "primary", class
     return "User";
   };
 
-  const isValidUrl = (string: string) => {
-    try {
-      new URL(string);
-      return true;
-    } catch (error_) {
-      return string.startsWith("/");
-    }
-  };
-
   const userName = getUserName();
   const initial = userName ? userName.charAt(0).toUpperCase() : "U";
-  const avatarImage = typeof user !== "string" && user ? user.avatar : undefined;
+  const avatarImage =
+    typeof user !== "string" && user ? resolveAssetUrl(user.avatar || user.avatarUrl) : undefined;
+
+  useEffect(() => {
+    setImageError(false);
+  }, [avatarImage]);
 
   // Only show image if we have a valid URL/path and no error occurred
   const shouldShowImage =
     avatarImage &&
     !imageError &&
-    !avatarImage.includes("/api/placeholder") &&
-    isValidUrl(avatarImage);
+    !avatarImage.includes("/api/placeholder");
   return (
     <div
       className={className}

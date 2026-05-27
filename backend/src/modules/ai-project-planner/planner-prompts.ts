@@ -32,7 +32,12 @@ Quy tắc:
 - Chỉ trả JSON hợp lệ.
 - Dùng tiếng Việt cho summary, name, title, description, warnings.
 - Nếu người dùng yêu cầu một dự án hoặc cung cấp một tên dự án cụ thể, chỉ tạo đúng 1 project với tên đó.
-- Chỉ tạo nhiều project khi người dùng nói rõ cần nhiều dự án; mỗi project từ 5 đến 12 task.
+- Chỉ tạo nhiều project khi người dùng nói rõ cần nhiều dự án; mỗi project từ 6 đến 12 task.
+- Task phải cụ thể, có đầu ra rõ ràng, có thể giao cho một người và hoàn thành trong 0.5 đến 2 ngày.
+- Không tạo task chung chung như "Phát triển hệ thống", "Hoàn thiện dự án", "Kiểm tra toàn bộ" nếu chưa chia nhỏ thành việc cụ thể.
+- Với dự án phần mềm, ưu tiên đủ các nhóm việc: phân tích yêu cầu, thiết kế UX/UI hoặc luồng dữ liệu, backend/API, database, frontend, kiểm thử, triển khai, tài liệu hoặc bàn giao.
+- Với dự án không phải phần mềm, thay các nhóm trên bằng các bước phù hợp nhưng vẫn phải có chuẩn bị, thực hiện, kiểm tra chất lượng và bàn giao.
+- Mỗi task description nêu rõ cần làm gì và kết quả mong đợi.
 - requiredSkills dùng keyword ngắn không dấu nếu phù hợp: frontend, backend, design, qa, devops, database, marketing, content, sales.
 - priority chỉ dùng LOWEST, LOW, MEDIUM, HIGH hoặc HIGHEST.
 - Không tự bịa assigneeId. Việc phân công sẽ do hệ thống mktask xử lý sau.

@@ -29,6 +29,10 @@ export class WorkspacesService {
       userId,
     );
 
+    if (!orgAccess.isElevated && !orgAccess.isSuperAdmin) {
+      throw new ForbiddenException('Only organization managers and owners can create workspaces');
+    }
+
     // Check global setting for workspace creation
     const allowWsCreation = await this.settingsService.get('allow_workspace_creation');
     if (allowWsCreation === 'false') {

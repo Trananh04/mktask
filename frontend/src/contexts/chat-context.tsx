@@ -3,6 +3,8 @@ import { createContext, useContext, useState, useEffect, ReactNode } from "react
 interface ChatContextType {
   isChatOpen: boolean;
   toggleChat: () => void;
+  openChat: () => void;
+  closeChat: () => void;
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
@@ -14,6 +16,8 @@ export const useChatContext = () => {
     return {
       isChatOpen: false,
       toggleChat: () => {},
+      openChat: () => {},
+      closeChat: () => {},
     };
   }
   return context;
@@ -30,6 +34,14 @@ export function ChatProvider({ children }: ChatProviderProps) {
     setIsChatOpen((prev) => !prev);
   };
 
+  const openChat = () => {
+    setIsChatOpen(true);
+  };
+
+  const closeChat = () => {
+    setIsChatOpen(false);
+  };
+
   useEffect(() => {
     // Apply body class for layout shift when chat is open
     if (typeof document !== "undefined") {
@@ -43,7 +55,11 @@ export function ChatProvider({ children }: ChatProviderProps) {
     };
   }, [isChatOpen]);
 
-  return <ChatContext.Provider value={{ isChatOpen, toggleChat }}>{children}</ChatContext.Provider>;
+  return (
+    <ChatContext.Provider value={{ isChatOpen, toggleChat, openChat, closeChat }}>
+      {children}
+    </ChatContext.Provider>
+  );
 }
 
 export default ChatProvider;
