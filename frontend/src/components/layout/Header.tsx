@@ -54,6 +54,7 @@ export default function Header() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
   const [showNewTaskModal, setShowNewTaskModal] = useState(false);
+  const [pendingOpenProjectModal, setPendingOpenProjectModal] = useState(false);
   const [hasOrganizationAccess, setHasOrganizationAccess] = useState(false);
   const { getCurrentUser, logout, checkOrganizationAndRedirect, isAuthenticated } = useAuth();
   const isAuth = isAuthenticated();
@@ -122,17 +123,22 @@ export default function Header() {
 
   useEffect(() => {
     const handleOpenProjectModal = () => {
-      if (hasOrganizationAccess) {
-        setShowNewProjectModal(true);
-        setIsDropdownOpen(false);
-      }
+      setPendingOpenProjectModal(true);
+      setIsDropdownOpen(false);
     };
 
     window.addEventListener("ai:open-new-project-modal", handleOpenProjectModal);
     return () => {
       window.removeEventListener("ai:open-new-project-modal", handleOpenProjectModal);
     };
-  }, [hasOrganizationAccess]);
+  }, []);
+
+  useEffect(() => {
+    if (!pendingOpenProjectModal || !hasOrganizationAccess || !hasAccess) return;
+
+    setShowNewProjectModal(true);
+    setPendingOpenProjectModal(false);
+  }, [pendingOpenProjectModal, hasOrganizationAccess, hasAccess]);
 
   const pathname = router.pathname;
   const pathParts = pathname?.split("/").filter(Boolean);

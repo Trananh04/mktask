@@ -23,6 +23,7 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { HiCheck, HiChevronDown } from "react-icons/hi2";
+import { resolveAssetUrl } from "@/utils/assetUrl";
 
 export default function ProfileSection() {
   const { t } = useTranslation("settings");
@@ -275,11 +276,7 @@ export default function ProfileSection() {
   if (previewUrl) {
     avatarSrc = previewUrl;
   } else if (currentUser?.avatar) {
-    if (/^https?:\/\//.test(currentUser.avatar)) {
-      avatarSrc = currentUser.avatar; // S3 or external
-    } else {
-      avatarSrc = `${process.env.NEXT_PUBLIC_API_BASE_URL}/uploads/${currentUser.avatar}`; // Local
-    }
+    avatarSrc = resolveAssetUrl(currentUser.avatar) || "";
   }
   return (
     <div className="pt-5">

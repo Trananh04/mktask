@@ -1,9 +1,11 @@
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { HiFolder } from "react-icons/hi2";
 import { InfoPanel } from "../common/InfoPanel";
 import ActionButton from "@/components/common/ActionButton";
 import NewWorkspaceDialog from "../workspace/NewWorkspaceDialogProps";
+import { useAuth } from "@/contexts/auth-context";
+import { useWorkspaceContext } from "@/contexts/workspace-context";
 
 interface Workspace {
   id: string;
@@ -38,7 +40,23 @@ export function WorkspacesCard({
     buttonHref: "/workspaces/new",
   },
 }: WorkspacesCardProps) {
+  const { getUserAccess } = useAuth();
+  const { getCurrentOrganizationId } = useWorkspaceContext();
   const [showNewWorkspaceDialog, setShowNewWorkspaceDialog] = useState(false);
+  const [canCreateWorkspace, setCanCreateWorkspace] = useState(false);
+
+  useEffect(() => {
+    const organizationId = workspaces?.[0]?.organizationId || getCurrentOrganizationId();
+    if (!organizationId) {
+      setCanCreateWorkspace(false);
+      return;
+    }
+
+    getUserAccess({ name: "organization", id: organizationId })
+      .then((access) => setCanCreateWorkspace(Boolean(access?.canChange)))
+      .catch(() => setCanCreateWorkspace(false));
+  }, [getCurrentOrganizationId, getUserAccess, workspaces]);
+
   const renderWorkspaceContent = () => {
     if (workspaces && workspaces.length > 0) {
       return (
@@ -82,9 +100,11 @@ export function WorkspacesCard({
         <p className="text-xs text-[var(--muted-foreground)] mb-3">
           {emptyStateConfig.description}
         </p>
-        <ActionButton onClick={() => setShowNewWorkspaceDialog(true)} primary showPlusIcon>
-          {emptyStateConfig.buttonText}
-        </ActionButton>
+        {canCreateWorkspace && (
+          <ActionButton onClick={() => setShowNewWorkspaceDialog(true)} primary showPlusIcon>
+            {emptyStateConfig.buttonText}
+          </ActionButton>
+        )}
       </div>
     );
   };
@@ -95,11 +115,13 @@ export function WorkspacesCard({
         {renderWorkspaceContent()}
       </InfoPanel>
 
-      <NewWorkspaceDialog
-        open={showNewWorkspaceDialog}
-        onOpenChange={setShowNewWorkspaceDialog}
-        refetchWorkspaces={async () => window.location.reload()}
-      />
+      {canCreateWorkspace && (
+        <NewWorkspaceDialog
+          open={showNewWorkspaceDialog}
+          onOpenChange={setShowNewWorkspaceDialog}
+          refetchWorkspaces={async () => window.location.reload()}
+        />
+      )}
     </>
   );
 }

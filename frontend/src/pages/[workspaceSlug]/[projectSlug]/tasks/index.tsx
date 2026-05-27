@@ -1168,13 +1168,14 @@ function ProjectTasksContent() {
             currentView={currentView}
             onViewChange={(v) => {
               setCurrentView(v);
+              const safeWorkspaceSlug = sanitizeSlug(workspaceSlug);
               const safeProjectSlug = sanitizeSlug(projectSlug);
-              if (!safeProjectSlug) {
-                console.error('Invalid project slug');
+              if (!safeWorkspaceSlug || !safeProjectSlug) {
+                console.error('Invalid workspace or project slug');
                 router.push('/');
                 return;
               }
-              const path = `/projects/${safeProjectSlug}/tasks?type=${v}`;
+              const path = `/${safeWorkspaceSlug}/${safeProjectSlug}/tasks?type=${v}`;
               if (isValidInternalPath(path.split('?')[0])) {
                 router.push(path, undefined, {
                   shallow: true,
@@ -1234,7 +1235,7 @@ function ProjectTasksContent() {
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <ActionButton
-                          leftIcon={<Upload className="w-4 h-4" />}
+                          leftIcon={<Download className="w-4 h-4" />}
                           variant="outline"
                         >
                           {t("export")}
@@ -1257,7 +1258,7 @@ function ProjectTasksContent() {
                     </DropdownMenu>
 
                     <ActionButton
-                      leftIcon={<Download className="w-4 h-4" />}
+                      leftIcon={<Upload className="w-4 h-4" />}
                       variant="outline"
                       onClick={() => setCsvImportOpen(true)}
                     >

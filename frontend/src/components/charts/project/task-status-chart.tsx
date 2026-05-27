@@ -26,7 +26,9 @@ interface TaskStatusChartProps {
 export function TaskStatusChart({ data }: TaskStatusChartProps) {
   const { t } = useTranslation(["analytics"]);
   const router = useRouter();
-  const { projectSlug } = router.query;
+  const { workspaceSlug, projectSlug } = router.query;
+  const isSafeSlug = (slug: unknown): slug is string =>
+    typeof slug === "string" && /^[a-zA-Z0-9._-]+$/.test(slug);
 
   // Sort data by status position for better visualization
   const safeData = Array.isArray(data) ? data : [];
@@ -46,14 +48,13 @@ export function TaskStatusChart({ data }: TaskStatusChartProps) {
 
   const handleClick = (entry: any) => {
     if (
-      projectSlug &&
-      typeof projectSlug === "string" &&
-      /^[a-zA-Z0-9-]+$/.test(projectSlug) &&
+      isSafeSlug(workspaceSlug) &&
+      isSafeSlug(projectSlug) &&
       entry?.id
     ) {
       router.push({
-        pathname: "/projects/[projectSlug]/tasks",
-        query: { projectSlug, statuses: entry.id },
+        pathname: "/[workspaceSlug]/[projectSlug]/tasks",
+        query: { workspaceSlug, projectSlug, statuses: entry.id },
       });
     }
   };

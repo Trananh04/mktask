@@ -173,23 +173,34 @@ function parseSuggestedTasks(text: string): Array<{ title: string; description?:
   const lines = text.split(/\r?\n/);
 
   for (const line of lines) {
-    const normalized = line
-      .replace(/\*\*/g, "")
-      .replace(/^[-*]\s+/, "")
-      .trim();
-    const match = normalized.match(/^\d+[\).:-]?\s+(.+)$/);
+    const normalized = line.replace(/\*\*/g, "").trim();
+    const match =
+      normalized.match(/^(?:[-*\u2022]\s+|\[[ xX]\]\s+)(.+)$/) ||
+      normalized.match(/^\d+[\).:-]?\s+(.+)$/) ||
+      normalized.match(/^(?:task|todo|viec|cong viec)\s*\d*[:.-]\s*(.+)$/i);
     if (!match) continue;
 
     const title = match[1]
       .replace(/\s+/g, " ")
       .replace(/^task\s*[:.-]\s*/i, "")
+      .replace(/^(?:nen|can|hay)\s+/i, "")
       .trim();
-    if (title.length >= 3) {
+    const looksLikeInstruction =
+      /^(toi|ban|hay|vui long|duoi day|neu|sau day)\b/i.test(title) ||
+      /[:：]$/.test(title);
+
+    if (title.length >= 3 && !looksLikeInstruction) {
       tasks.push({ title: title.slice(0, 240) });
     }
   }
 
-  return tasks;
+  const seen = new Set<string>();
+  return tasks.filter((task) => {
+    const key = normalizeVietnamese(task.title);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 function isBulkTaskCreateRequest(message: string) {
@@ -314,14 +325,25 @@ export default function ChatPanel() {
     }
   }, []);
 
-  const handleMouseDown = (e: React.MouseEvent) => {
+  const stopPanelResize = useCallback(() => {
+    if (!resizing.current) return;
+
+    resizing.current = false;
+    document.body.classList.remove("select-none", "cursor-col-resize");
+  }, []);
+
+  const handleResizeStart = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+
     e.preventDefault();
     resizing.current = true;
+    e.currentTarget.setPointerCapture?.(e.pointerId);
     document.body.classList.add("select-none", "cursor-col-resize");
   };
 
-  const handleMouseMove = (e: MouseEvent) => {
+  const handleResizeMove = useCallback((e: PointerEvent) => {
     if (!resizing.current) return;
+
     const viewportMax = Math.max(CHAT_PANEL_MIN_WIDTH, window.innerWidth - 64);
     const newWidth = Math.min(
       clampPanelWidth(window.innerWidth - e.clientX),
@@ -329,21 +351,18 @@ export default function ChatPanel() {
     );
     setPanelWidth(newWidth);
     localStorage.setItem(CHAT_PANEL_WIDTH_STORAGE_KEY, String(newWidth));
-  };
-
-  const handleMouseUp = () => {
-    resizing.current = false;
-    document.body.classList.remove("select-none", "cursor-col-resize");
-  };
+  }, []);
 
   useEffect(() => {
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseup", handleMouseUp);
+    window.addEventListener("pointermove", handleResizeMove);
+    window.addEventListener("pointerup", stopPanelResize);
+    window.addEventListener("blur", stopPanelResize);
     return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup", handleMouseUp);
+      window.removeEventListener("pointermove", handleResizeMove);
+      window.removeEventListener("pointerup", stopPanelResize);
+      window.removeEventListener("blur", stopPanelResize);
     };
-  }, []);
+  }, [handleResizeMove, stopPanelResize]);
 
   useEffect(() => {
     document.documentElement.style.setProperty("--chat-panel-width", `${panelWidth}px`);
@@ -1167,8 +1186,11 @@ export default function ChatPanel() {
         style={{ width: `${panelWidth}px` }}
       >
         <div
-          onMouseDown={handleMouseDown}
-          className="absolute left-0 top-0 bottom-0 w-2 -translate-x-1 cursor-col-resize bg-transparent hover:bg-blue-500/25"
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Resize AI chat panel"
+          onPointerDown={handleResizeStart}
+          className="absolute left-0 top-0 bottom-0 z-50 w-3 -translate-x-1.5 cursor-col-resize touch-none bg-transparent hover:bg-blue-500/25"
         />
         {/* Chat Header */}
         <div className="flex-shrink-0 flex items-center justify-between p-4 border-b border-[var(--border)] bg-[var(--background)]">

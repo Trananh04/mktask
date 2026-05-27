@@ -65,7 +65,11 @@ export default function ShareTaskDialog({ taskId, isOpen, onClose }: ShareTaskDi
       });
       setShares((currentShares) => [newShare, ...currentShares]);
       toast.success('Đã tạo liên kết công khai');
-      await copyToClipboard(newShare.shareUrl, newShare.id, false);
+      if (newShare.shareUrl) {
+        await copyToClipboard(newShare.shareUrl, newShare.id, false);
+      } else {
+        await loadShares();
+      }
     } catch (error) {
       toast.error('Không thể tạo liên kết chia sẻ');
     } finally {
