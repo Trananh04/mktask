@@ -642,6 +642,7 @@ export default function Sidebar() {
           onClick={() => toggleSidebar(!isSidebarCollapsed)}
           className="layout-sidebar-mini-expand-button"
           title={t("expandNavigation")}
+          aria-label={t("expandNavigation")}
         >
           <HiMenu size={16} />
         </button>
@@ -708,6 +709,7 @@ export default function Sidebar() {
           onClick={() => toggleSidebar(!isSidebarCollapsed)}
           className="layout-sidebar-toggle-button"
           title={t("showNavigation")}
+          aria-label={t("showNavigation")}
         >
           <HiMenu size={16} />
         </button>

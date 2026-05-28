@@ -57,6 +57,10 @@ export function NewProjectModal({
 
   // Use projectSlug everywhere it's needed
   const projectSlug = generateSlug(formData.name);
+  const workspaceSlugPreview =
+    typeof router.query.workspaceSlug === "string" && isValidSlug(router.query.workspaceSlug)
+      ? router.query.workspaceSlug
+      : "workspace";
 
   const themeColor = formData.color;
   const themeColorWithOpacity = (opacity: number) =>
@@ -330,7 +334,7 @@ export function NewProjectModal({
                   className="projects-url-preview-code border-none"
                   style={{ color: "var(--dynamic-primary)" }}
                 >
-                  /projects/{projectSlug || t("modal.urlProject")}
+                  /{workspaceSlugPreview}/{projectSlug || t("modal.urlProject")}
                 </code>
               </div>
             )}

@@ -73,7 +73,7 @@ function SortableStatCard({ id, label, value, icon, description, onClick }: Sort
         label={label} 
         value={value} 
         icon={icon} 
-        className={`transition-colors hover:bg-[var(--accent)]/50`}
+        className={onClick ? "cursor-pointer" : ""}
       />
     </div>
   );
@@ -83,7 +83,9 @@ export function ProjectKPIMetrics({ data, taskStatus }: ProjectKPIMetricsProps) 
   const { t } = useTranslation(["analytics"]);
   const router = useRouter();
 
-  const { projectSlug } = router.query;
+  const { workspaceSlug, projectSlug } = router.query;
+  const isSafeSlug = (slug: unknown): slug is string =>
+    typeof slug === "string" && /^[a-zA-Z0-9._-]+$/.test(slug);
 
   const [orderedIds, setOrderedIds] = useState<string[]>([
     "total-tasks",
@@ -134,10 +136,10 @@ export function ProjectKPIMetrics({ data, taskStatus }: ProjectKPIMetricsProps) 
   };
 
   const handleNavigate = (path: string, query?: Record<string, string>) => {
-    if (!projectSlug) return;
+    if (!isSafeSlug(workspaceSlug) || !isSafeSlug(projectSlug)) return;
     
     router.push({
-      pathname: `/projects/${projectSlug}${path}`,
+      pathname: `/${workspaceSlug}/${projectSlug}${path}`,
       query,
     });
   };
@@ -222,7 +224,7 @@ export function ProjectKPIMetrics({ data, taskStatus }: ProjectKPIMetricsProps) 
           return null;
       }
     }).filter((c): c is NonNullable<typeof c> => c !== null);
-  }, [orderedIds, data, projectSlug, doneStatusIds]);
+  }, [orderedIds, data, workspaceSlug, projectSlug, doneStatusIds, openStatusIds]);
 
 
   if (!router.isReady) {

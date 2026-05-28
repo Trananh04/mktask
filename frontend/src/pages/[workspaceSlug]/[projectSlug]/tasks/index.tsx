@@ -1168,13 +1168,14 @@ function ProjectTasksContent() {
             currentView={currentView}
             onViewChange={(v) => {
               setCurrentView(v);
+              const safeWorkspaceSlug = sanitizeSlug(workspaceSlug);
               const safeProjectSlug = sanitizeSlug(projectSlug);
-              if (!safeProjectSlug) {
-                console.error('Invalid project slug');
+              if (!safeWorkspaceSlug || !safeProjectSlug) {
+                console.error('Invalid workspace or project slug');
                 router.push('/');
                 return;
               }
-              const path = `/projects/${safeProjectSlug}/tasks?type=${v}`;
+              const path = `/${safeWorkspaceSlug}/${safeProjectSlug}/tasks?type=${v}`;
               if (isValidInternalPath(path.split('?')[0])) {
                 router.push(path, undefined, {
                   shallow: true,

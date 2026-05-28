@@ -108,13 +108,13 @@
     --secondary: oklch(0.269 0 0);
     --secondary-foreground: oklch(0.985 0 0);
     --muted: oklch(0.269 0 0);
-    --muted-foreground: oklch(0.708 0 0);
+    --muted-foreground: oklch(0.85 0 0); /* Lighter for better contrast */
     --accent: oklch(0.269 0 0);
     --accent-foreground: oklch(0.985 0 0);
     --destructive: oklch(0.704 0.191 22.216);
-    --border: oklch(1 0 0 / 10%);
-    --input: oklch(1 0 0 / 15%);
-    --ring: oklch(0.556 0 0);
+    --border: oklch(1 0 0 / 15%);
+    --input: oklch(1 0 0 / 20%);
+    --ring: oklch(0.65 0 0);
     --chart-1: oklch(0.488 0.243 264.376);
     --chart-2: oklch(0.696 0.17 162.48);
     --chart-3: oklch(0.769 0.188 70.08);
@@ -137,14 +137,14 @@
     /* Sidebar Colors - Dark Theme */
     --sidebar: oklch(0.18 0 0); /* Slightly lighter dark */
     --mini-sidebar: oklch(0.22 0 0); /* Slightly lighter for mini sidebar */
-    --sidebar-foreground: oklch(0.9 0 0); /* Lighter text for good contrast */
+    --sidebar-foreground: oklch(0.95 0 0); /* Lighter text for good contrast */
     --sidebar-primary: oklch(0.488 0.243 264.376);
     --sidebar-primary-foreground: oklch(0.985 0 0);
     --sidebar-accent: oklch(0.25 0 0); /* Lighter for hover visibility */
-    --sidebar-accent-foreground: oklch(0.95 0 0); /* Very light text */
-    --sidebar-border: oklch(1 0 0 / 0.02); /* More visible border */
-    --sidebar-ring: oklch(0.556 0 0);
-    --sidebar-muted: oklch(0.7 0 0); /* Better contrast for muted icons */
+    --sidebar-accent-foreground: oklch(0.985 0 0); /* Very light text */
+    --sidebar-border: oklch(1 0 0 / 0.1); /* More visible border */
+    --sidebar-ring: oklch(0.65 0 0);
+    --sidebar-muted: oklch(0.85 0 0); /* Better contrast for muted icons */
     --hover-bg: oklch(0.3 0 0); /* More visible hover state */
     --skeleton: #171719; /* slate-800 */
     --skeleton-foreground: #1f2227; /* slate-700 */

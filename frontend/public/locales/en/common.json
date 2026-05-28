@@ -30,5 +30,16 @@
     "of": "of",
     "page": "Page",
     "items": "items"
+  },
+  "empty_state": {
+    "no_tasks_found": "No tasks found",
+    "no_tasks_yet": "No tasks yet",
+    "adjust_filters": "Try adjusting your filters or search query.",
+    "create_first_task": "Create your first task to get started with project management.",
+    "no_data": "No data available",
+    "error_occurred": "An error occurred",
+    "unexpected_error": "An unexpected error occurred. Please try again.",
+    "retry": "Retry",
+    "back_to_dashboard": "Back to dashboard"
   }
 }

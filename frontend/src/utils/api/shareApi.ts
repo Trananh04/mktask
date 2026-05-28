@@ -30,15 +30,21 @@ export interface PublicSharedTask {
   }>;
 }
 
+type ShareEnvelope = ShareResponse | { data: ShareResponse };
+
 // Base64url regex for token validation
 const TOKEN_REGEX = /^[A-Za-z0-9_-]{43}$/;
+
+function unwrapShareResponse(response: ShareEnvelope): ShareResponse {
+  return "data" in response ? response.data : response;
+}
 
 export const shareApi = {
   // Create a new share link
   createShare: async (data: CreateShareDto): Promise<ShareResponse> => {
     try {
-      const response = await api.post<ShareResponse>('/task-shares', data);
-      return response.data;
+      const response = await api.post<ShareEnvelope>('/task-shares', data);
+      return unwrapShareResponse(response.data);
     } catch (error) {
       console.error('Create share error:', error);
       throw error;

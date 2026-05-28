@@ -14,6 +14,7 @@ import {
 import { HiChevronDown, HiCog } from "react-icons/hi";
 import { RiLogoutCircleRLine } from "react-icons/ri";
 import ConfirmationModal from "../modals/ConfirmationModal";
+import { resolveAssetUrl } from "@/utils/assetUrl";
 
 interface User {
   id: string;
@@ -44,13 +45,7 @@ export default function UserProfileMenu({
   const [avatarSrc, setAvatar] = useState("");
   useEffect(() => {
     setIsClient(true);
-    if (!user?.avatar) {
-      setAvatar("");
-    } else if (/^https?:\/\//.test(user.avatar)) {
-      setAvatar(user.avatar);
-    } else {
-      setAvatar(`${process.env.NEXT_PUBLIC_API_BASE_URL}/uploads/${user.avatar}`);
-    }
+    setAvatar(resolveAssetUrl(user?.avatar) || "");
   }, [user]);
 
   const getInitials = () => {

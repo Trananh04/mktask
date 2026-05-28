@@ -162,9 +162,9 @@ function buildAutoProjectDescription(projectName: string, description: string): 
 function getPlannerErrorMessage(error: any): string {
   return sanitizeErrorMessage(
     error?.response?.data?.message ||
-      error?.response?.data?.error ||
-      error?.message ||
-      "Không lập được kế hoạch dự án."
+    error?.response?.data?.error ||
+    error?.message ||
+    "Không lập được kế hoạch dự án."
   );
 }
 
@@ -834,10 +834,10 @@ export default function ChatPanel() {
         prev.map((message, index) =>
           index === messageIndex
             ? {
-                ...message,
-                plannerApplied: true,
-                content: `${message.content}\n\nĐã tạo ${result.createdProjects.length} dự án và ${result.createdTasks.length} công việc.`,
-              }
+              ...message,
+              plannerApplied: true,
+              content: `${message.content}\n\nĐã tạo ${result.createdProjects.length} dự án và ${result.createdTasks.length} công việc.`,
+            }
             : message
         )
       );
@@ -926,9 +926,9 @@ export default function ChatPanel() {
           role: "assistant",
           content: sanitizeErrorMessage(
             error?.response?.data?.message ||
-              error?.response?.data?.error ||
-              error?.message ||
-              "Không tạo được các task này."
+            error?.response?.data?.error ||
+            error?.message ||
+            "Không tạo được các task này."
           ),
           timestamp: new Date(),
         },
@@ -983,9 +983,9 @@ export default function ChatPanel() {
           role: "assistant",
           content: sanitizeErrorMessage(
             error?.response?.data?.message ||
-              error?.response?.data?.error ||
-              error?.message ||
-              "I could not load the mktask guide right now."
+            error?.response?.data?.error ||
+            error?.message ||
+            "I could not load the mktask guide right now."
           ),
           timestamp: new Date(),
         },
@@ -1161,9 +1161,8 @@ export default function ChatPanel() {
       {/* Chat Panel - positioned below header */}
       <div
         id="chat-panel"
-        className={`fixed top-0 right-0 bottom-0 bg-[var(--background)] border-l border-[var(--border)] z-40 transform transition-transform duration-300 ease-in-out flex flex-col ${
-          isChatOpen ? "translate-x-0" : "translate-x-full"
-        }`}
+        className={`fixed top-0 right-0 bottom-0 bg-[var(--background)] border-l border-[var(--border)] z-40 transform transition-transform duration-300 ease-in-out flex flex-col ${isChatOpen ? "translate-x-0" : "translate-x-full"
+          }`}
         style={{ width: `${panelWidth}px` }}
       >
         <div
@@ -1249,168 +1248,168 @@ export default function ChatPanel() {
             msOverflowStyle: "none" /* Internet Explorer 10+ */,
           }}
         >
-            {messages.length === 0 ? (
-              <div className="flex items-center justify-center h-full">
-                <div className="text-center text-[var(--muted)] max-w-sm">
-                  <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-400 flex items-center justify-center">
-                    <HiSparkles className="w-8 h-8 text-white" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-primary mb-2">
-                    Xin chào! Tôi là trợ lý AI của mktask
-                  </h3>
-                  <p className="text-sm mb-4 text-gray-600 dark:text-gray-400">
-                    Tôi có thể giúp bạn quản lý công việc, dự án và không gian làm việc
+          {messages.length === 0 ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center text-[var(--muted)] max-w-sm">
+                <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-400 flex items-center justify-center">
+                  <HiSparkles className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="text-lg font-semibold text-primary mb-2">
+                  Xin chào! Tôi là trợ lý AI của mktask
+                </h3>
+                <p className="text-sm mb-4 text-gray-600 dark:text-gray-400">
+                  Tôi có thể giúp bạn quản lý công việc, dự án và không gian làm việc
+                </p>
+                <div className="text-left bg-[var(--accent)] rounded-lg p-4">
+                  <p className="text-sm font-medium mb-2 text-[var(--muted-foreground)]">
+                    Thử các lệnh sau:
                   </p>
-                  <div className="text-left bg-[var(--accent)] rounded-lg p-4">
-                    <p className="text-sm font-medium mb-2 text-[var(--muted-foreground)]">
-                      Thử các lệnh sau:
-                    </p>
-                    <ul className="text-sm space-y-1.5 text-gray-600 dark:text-gray-400">
-                      <li className="flex items-start gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-2 flex-shrink-0"></span>
-                        "Tạo công việc tên là [tên]"
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-2 flex-shrink-0"></span>
-                        "Hiển thị các công việc ưu tiên cao"
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-2 flex-shrink-0"></span>
-                        "Đánh dấu [công việc] là đã xong"
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-2 flex-shrink-0"></span>
-                        "Tạo không gian làm việc tên là [tên]"
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-2 flex-shrink-0"></span>
-                        "Liệt kê các dự án của tôi"
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-2 flex-shrink-0"></span>
-                        "Mở không gian làm việc [tên]"
-                      </li>
-                    </ul>
-                  </div>
+                  <ul className="text-sm space-y-1.5 text-gray-600 dark:text-gray-400">
+                    <li className="flex items-start gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-2 flex-shrink-0"></span>
+                      "Tạo công việc tên là [tên]"
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-2 flex-shrink-0"></span>
+                      "Hiển thị các công việc ưu tiên cao"
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-2 flex-shrink-0"></span>
+                      "Đánh dấu [công việc] là đã xong"
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-2 flex-shrink-0"></span>
+                      "Tạo không gian làm việc tên là [tên]"
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-2 flex-shrink-0"></span>
+                      "Liệt kê các dự án của tôi"
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-2 flex-shrink-0"></span>
+                      "Mở không gian làm việc [tên]"
+                    </li>
+                  </ul>
                 </div>
               </div>
-            ) : (
-              <>
-                {messages.map((message, index) => (
-                  <div key={index} className="group">
-                    {message.role === "user" ? (
-                      // User Message - Right aligned like
-                      <div className="flex justify-end mb-4">
-                        <div className="flex items-start gap-3 max-w-[80%]">
-                          <div className="bg-[#1E2939] text-white rounded-2xl rounded-tr-sm px-4 py-2.5 shadow-sm">
-                            <div className="text-sm whitespace-pre-wrap break-words">
-                              {message.content}
-                            </div>
-                          </div>
-                          <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-[#1E2939] text-sm font-medium flex-shrink-0">
-                            {user?.firstName?.[0]?.toUpperCase() +
-                              user?.lastName?.[0]?.toUpperCase() || "U"}
+            </div>
+          ) : (
+            <>
+              {messages.map((message, index) => (
+                <div key={index} className="group">
+                  {message.role === "user" ? (
+                    // User Message - Right aligned like
+                    <div className="flex justify-end mb-4">
+                      <div className="flex items-start gap-3 max-w-[80%]">
+                        <div className="bg-[#1E2939] text-white rounded-2xl rounded-tr-sm px-4 py-2.5 shadow-sm">
+                          <div className="text-sm whitespace-pre-wrap break-words">
+                            {message.content}
                           </div>
                         </div>
-                      </div>
-                    ) : message.role === "system" ? (
-                      // System Message - Centered
-                      <div className="flex justify-center mb-4">
-                        <div className="bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-200 border border-amber-200 dark:border-amber-800 rounded-lg px-4 py-2 text-sm max-w-[90%]">
-                          {message.content}
+                        <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-[#1E2939] text-sm font-medium flex-shrink-0">
+                          {user?.firstName?.[0]?.toUpperCase() +
+                            user?.lastName?.[0]?.toUpperCase() || "U"}
                         </div>
                       </div>
-                    ) : (
-                      // Assistant Message - Left aligned like
-                      <div className="flex justify-start mb-4">
-                        <div className="flex items-start gap-3 max-w-[85%]">
-                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-400 flex items-center justify-center flex-shrink-0">
-                            <HiSparkles className="w-4 h-4 text-white" />
-                          </div>
-                          <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl rounded-tl-sm px-4 py-2.5 shadow-sm">
-                            <div className="text-sm text-gray-900 dark:text-gray-100 whitespace-pre-wrap break-words">
-                              {message.content}
-                              {message.isStreaming && (
-                                <span className="inline-block w-2 h-4 ml-1 bg-blue-600 animate-pulse rounded" />
-                              )}
-                            </div>
-                            {message.plannerPlan && (
-                              <div className="mt-3 space-y-3 text-sm">
-                                <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-3">
-                                  <div className="font-semibold text-gray-900 dark:text-gray-100">
-                                    {message.plannerPlan.summary}
-                                  </div>
-                                  <div className="mt-2 space-y-3">
-                                    {message.plannerPlan.projects.map((project) => (
-                                      <div key={project.id} className="border-t border-gray-100 dark:border-gray-800 pt-2">
-                                        <div className="font-medium text-gray-900 dark:text-gray-100">
-                                          {project.name}
-                                        </div>
-                                        {project.description && (
-                                          <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                                            {project.description}
-                                          </div>
-                                        )}
-                                        <div className="mt-2 space-y-1">
-                                          {project.tasks.slice(0, 8).map((task) => (
-                                            <div key={task.id} className="rounded-md bg-gray-50 dark:bg-gray-800 px-2 py-1.5">
-                                              <div className="font-medium">{task.title}</div>
-                                              <div className="text-xs text-gray-500 dark:text-gray-400">
-                                                {task.assigneeName
-                                                  ? `Gợi ý: ${task.assigneeName}`
-                                                  : "Chưa có người phù hợp"}
-                                                {task.estimateHours ? ` · ${task.estimateHours} giờ` : ""}
-                                              </div>
-                                            </div>
-                                          ))}
-                                          {project.tasks.length > 8 && (
-                                            <div className="text-xs text-gray-500 dark:text-gray-400">
-                                              Còn {project.tasks.length - 8} công việc khác
-                                            </div>
-                                          )}
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                  {message.plannerPlan.warnings.length > 0 && (
-                                    <div className="mt-3 rounded-md bg-yellow-50 border border-yellow-200 p-2 text-xs text-yellow-800">
-                                      {message.plannerPlan.warnings.join("\n")}
-                                    </div>
-                                  )}
-                                </div>
-                                <button
-                                  type="button"
-                                  onClick={() => handleApplyProjectPlan(index)}
-                                  disabled={message.plannerApplied || isLoading}
-                                  className="w-full rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white disabled:bg-gray-300 disabled:text-gray-600"
-                                >
-                                  {message.plannerApplied
-                                    ? "Đã tạo dự án và công việc"
-                                    : isLoading
-                                    ? "Đang xử lý..."
-                                    : "Tạo dự án và công việc"}
-                                </button>
-                              </div>
+                    </div>
+                  ) : message.role === "system" ? (
+                    // System Message - Centered
+                    <div className="flex justify-center mb-4">
+                      <div className="bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-200 border border-amber-200 dark:border-amber-800 rounded-lg px-4 py-2 text-sm max-w-[90%]">
+                        {message.content}
+                      </div>
+                    </div>
+                  ) : (
+                    // Assistant Message - Left aligned like
+                    <div className="flex justify-start mb-4">
+                      <div className="flex items-start gap-3 max-w-[85%]">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-400 flex items-center justify-center flex-shrink-0">
+                          <HiSparkles className="w-4 h-4 text-white" />
+                        </div>
+                        <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl rounded-tl-sm px-4 py-2.5 shadow-sm">
+                          <div className="text-sm text-gray-900 dark:text-gray-100 whitespace-pre-wrap break-words">
+                            {message.content}
+                            {message.isStreaming && (
+                              <span className="inline-block w-2 h-4 ml-1 bg-blue-600 animate-pulse rounded" />
                             )}
                           </div>
+                          {message.plannerPlan && (
+                            <div className="mt-3 space-y-3 text-sm">
+                              <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-3">
+                                <div className="font-semibold text-gray-900 dark:text-gray-100">
+                                  {message.plannerPlan.summary}
+                                </div>
+                                <div className="mt-2 space-y-3">
+                                  {message.plannerPlan.projects.map((project) => (
+                                    <div key={project.id} className="border-t border-gray-100 dark:border-gray-800 pt-2">
+                                      <div className="font-medium text-gray-900 dark:text-gray-100">
+                                        {project.name}
+                                      </div>
+                                      {project.description && (
+                                        <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                          {project.description}
+                                        </div>
+                                      )}
+                                      <div className="mt-2 space-y-1">
+                                        {project.tasks.slice(0, 8).map((task) => (
+                                          <div key={task.id} className="rounded-md bg-gray-50 dark:bg-gray-800 px-2 py-1.5">
+                                            <div className="font-medium">{task.title}</div>
+                                            <div className="text-xs text-gray-500 dark:text-gray-400">
+                                              {task.assigneeName
+                                                ? `Gợi ý: ${task.assigneeName}`
+                                                : "Chưa có người phù hợp"}
+                                              {task.estimateHours ? ` · ${task.estimateHours} giờ` : ""}
+                                            </div>
+                                          </div>
+                                        ))}
+                                        {project.tasks.length > 8 && (
+                                          <div className="text-xs text-gray-500 dark:text-gray-400">
+                                            Còn {project.tasks.length - 8} công việc khác
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                                {message.plannerPlan.warnings.length > 0 && (
+                                  <div className="mt-3 rounded-md bg-yellow-50 border border-yellow-200 p-2 text-xs text-yellow-800">
+                                    {message.plannerPlan.warnings.join("\n")}
+                                  </div>
+                                )}
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => handleApplyProjectPlan(index)}
+                                disabled={message.plannerApplied || isLoading}
+                                className="w-full rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white disabled:bg-gray-300 disabled:text-gray-600"
+                              >
+                                {message.plannerApplied
+                                  ? "Đã tạo dự án và công việc"
+                                  : isLoading
+                                    ? "Đang xử lý..."
+                                    : "Tạo dự án và công việc"}
+                              </button>
+                            </div>
+                          )}
                         </div>
                       </div>
-                    )}
-                    {/* Timestamp - appears on hover */}
-                    {message.timestamp && (
-                      <div className="flex justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 -mt-2 mb-2">
-                        <span className="text-xs text-gray-400 dark:text-gray-500">
-                          {formatDateTimeForDisplay(message.timestamp, {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                            hour12: true,
-                          })}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                ))}
-                {(isBrowserAgentRunning || isLoading) && (
+                    </div>
+                  )}
+                  {/* Timestamp - appears on hover */}
+                  {message.timestamp && (
+                    <div className="flex justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 -mt-2 mb-2">
+                      <span className="text-xs text-gray-400 dark:text-gray-500">
+                        {formatDateTimeForDisplay(message.timestamp, {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          hour12: true,
+                        })}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              ))}
+              {(isBrowserAgentRunning || isLoading) && (
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-400 flex items-center justify-center flex-shrink-0">
                     <HiSparkles className="w-4 h-4 text-white" />
@@ -1426,9 +1425,9 @@ export default function ChatPanel() {
                   </div>
                 </div>
               )}
-                <div ref={messagesEndRef} />
-              </>
-            )}
+              <div ref={messagesEndRef} />
+            </>
+          )}
 
           {error && (
             <div className="mx-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
@@ -1444,96 +1443,95 @@ export default function ChatPanel() {
 
         {/* Chat Input Area - Fixed at bottom with auto-expanding textarea */}
         <div className="flex-shrink-0 border-t border-[var(--border)] bg-[var(--background)] p-4">
-            {/* Interim transcript display (shown while listening) */}
-            {isListening && interimTranscript && (
-              <div className="mb-2 px-1">
-                <span className="text-xs text-gray-400 dark:text-gray-500 italic">
-                  {interimTranscript}
-                </span>
-              </div>
-            )}
+          {/* Interim transcript display (shown while listening) */}
+          {isListening && interimTranscript && (
+            <div className="mb-2 px-1">
+              <span className="text-xs text-gray-400 dark:text-gray-500 italic">
+                {interimTranscript}
+              </span>
+            </div>
+          )}
 
-            {/* Voice error display */}
-            {voiceError && (
-              <div className="mb-2 px-1">
-                <span className="text-xs text-red-500 dark:text-red-400">
-                  {voiceError}
-                </span>
-              </div>
-            )}
+          {/* Voice error display */}
+          {voiceError && (
+            <div className="mb-2 px-1">
+              <span className="text-xs text-red-500 dark:text-red-400">
+                {voiceError}
+              </span>
+            </div>
+          )}
 
-            {/* Cancel hint while listening */}
-            {isListening && (
-              <div className="mb-1 px-1">
-                <span className="text-xs text-gray-400 dark:text-gray-500">
-                  Press <kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-[10px] font-mono">Esc</kbd> to cancel
-                </span>
-              </div>
-            )}
+          {/* Cancel hint while listening */}
+          {isListening && (
+            <div className="mb-1 px-1">
+              <span className="text-xs text-gray-400 dark:text-gray-500">
+                Press <kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-[10px] font-mono">Esc</kbd> to cancel
+              </span>
+            </div>
+          )}
 
-            <div className="flex gap-3 items-end">
-              {/* Microphone button */}
-              <button
-                onClick={handleToggleVoice}
-                disabled={isLoading || isBrowserAgentRunning}
-                className={`p-3 rounded-full flex items-center justify-center transition-all duration-200 shadow-sm hover:shadow-md flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed ${
-                  isListening
-                    ? "bg-red-500 hover:bg-red-600 text-white animate-pulse"
-                    : "bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300"
+          <div className="flex gap-3 items-end">
+            {/* Microphone button */}
+            <button
+              onClick={handleToggleVoice}
+              disabled={isLoading || isBrowserAgentRunning}
+              className={`p-3 rounded-full flex items-center justify-center transition-all duration-200 shadow-sm hover:shadow-md flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed ${isListening
+                  ? "bg-red-500 hover:bg-red-600 text-white animate-pulse"
+                  : "bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300"
                 }`}
-                title={isListening ? "Stop listening" : "Start voice input"}
-              >
-                <HiMicrophone className="w-4 h-4" />
-              </button>
+              title={isListening ? "Stop listening" : "Start voice input"}
+            >
+              <HiMicrophone className="w-4 h-4" />
+            </button>
 
-              <textarea
-                ref={textareaRef}
-                value={inputValue}
-                onChange={handleInputChange}
-                onKeyDown={handleKeyPress}
-                placeholder={
-                  !user
-                    ? "Please log in to use AI assistant..."
-                    : isListening
+            <textarea
+              ref={textareaRef}
+              value={inputValue}
+              onChange={handleInputChange}
+              onKeyDown={handleKeyPress}
+              placeholder={
+                !user
+                  ? "Please log in to use AI assistant..."
+                  : isListening
                     ? "Listening..."
                     : "Message Trợ lý AI..."
-                }
-                disabled={isLoading || isBrowserAgentRunning || !user || isListening}
-                rows={1}
-                className="flex-1 px-4 py-3 bg-[var(--muted)] border-[var(--border)] focus:ring-1 focus:ring-[var(--border)] focus:border-transparent transition-all duration-200 rounded-xl shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden"
-                style={{
-                  minHeight: "48px",
-                  maxHeight: "120px",
-                  lineHeight: "1.5",
-                  height: "48px",
-                }}
-              />
-              {isBrowserAgentRunning || isLoading ? (
-                <button
-                  onClick={handleStopAgent}
-                  disabled={isLoading && !isBrowserAgentRunning}
-                  className="p-3 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center transition-all duration-200 shadow-sm hover:shadow-md flex-shrink-0"
-                >
-                  <HiStop className="w-4 h-4" />
-                </button>
-              ) : isListening ? (
-                <button
-                  onClick={() => voiceControllerRef.current?.stopListening()}
-                  className="p-3 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center transition-all duration-200 shadow-sm hover:shadow-md flex-shrink-0 animate-pulse"
-                  title="Stop listening and send"
-                >
-                  <HiStop className="w-4 h-4" />
-                </button>
-              ) : (
-                <button
-                  onClick={handleSendMessage}
-                  disabled={!inputValue.trim() || isLoading || !user}
-                  className="p-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-full flex items-center justify-center transition-all duration-200 shadow-sm hover:shadow-md disabled:shadow-none flex-shrink-0"
-                >
-                  <HiPaperAirplane className="w-4 h-4" />
-                </button>
-              )}
-            </div>
+              }
+              disabled={isLoading || isBrowserAgentRunning || !user || isListening}
+              rows={1}
+              className="flex-1 px-4 py-3 bg-[var(--muted)] border-[var(--border)] focus:ring-1 focus:ring-[var(--border)] focus:border-transparent transition-all duration-200 rounded-xl shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden"
+              style={{
+                minHeight: "48px",
+                maxHeight: "120px",
+                lineHeight: "1.5",
+                height: "48px",
+              }}
+            />
+            {isBrowserAgentRunning || isLoading ? (
+              <button
+                onClick={handleStopAgent}
+                disabled={isLoading && !isBrowserAgentRunning}
+                className="p-3 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center transition-all duration-200 shadow-sm hover:shadow-md flex-shrink-0"
+              >
+                <HiStop className="w-4 h-4" />
+              </button>
+            ) : isListening ? (
+              <button
+                onClick={() => voiceControllerRef.current?.stopListening()}
+                className="p-3 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center transition-all duration-200 shadow-sm hover:shadow-md flex-shrink-0 animate-pulse"
+                title="Stop listening and send"
+              >
+                <HiStop className="w-4 h-4" />
+              </button>
+            ) : (
+              <button
+                onClick={handleSendMessage}
+                disabled={!inputValue.trim() || isLoading || !user}
+                className="p-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-full flex items-center justify-center transition-all duration-200 shadow-sm hover:shadow-md disabled:shadow-none flex-shrink-0"
+              >
+                <HiPaperAirplane className="w-4 h-4" />
+              </button>
+            )}
+          </div>
         </div>
       </div>
 

@@ -2,6 +2,7 @@ import * as React from "react";
 import * as AvatarPrimitive from "@radix-ui/react-avatar";
 
 import { cn } from "@/lib/utils";
+import { resolveAssetUrl } from "@/utils/assetUrl";
 
 function Avatar({ className, ...props }: React.ComponentProps<typeof AvatarPrimitive.Root>) {
   return (
@@ -13,11 +14,18 @@ function Avatar({ className, ...props }: React.ComponentProps<typeof AvatarPrimi
   );
 }
 
-function AvatarImage({ className, ...props }: React.ComponentProps<typeof AvatarPrimitive.Image>) {
+function AvatarImage({
+  className,
+  src,
+  ...props
+}: React.ComponentProps<typeof AvatarPrimitive.Image>) {
+  const resolvedSrc = resolveAssetUrl(typeof src === "string" ? src : undefined);
+
   return (
     <AvatarPrimitive.Image
       data-slot="avatar-image"
       className={cn("avatar-image", className)}
+      src={resolvedSrc}
       {...props}
     />
   );

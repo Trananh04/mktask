@@ -176,50 +176,76 @@ export class ProjectMembersService {
       throw new BadRequestException(`Invalid role: ${role}`);
     }
 
+    const shouldAddWorkspaceMember =
+      user.workspaceMembers.length === 0 && user.organizationMembers.length > 0;
+
     try {
-      const createdMember = await this.prisma.projectMember.create({
-        data: {
-          userId,
-          projectId,
-          role,
-          createdBy: requestUserId,
-        },
-        include: {
-          user: {
-            select: {
-              id: true,
-              email: true,
-              firstName: true,
-              lastName: true,
-              username: true,
-              avatar: true,
-              status: true,
+      const createdMember = await this.prisma.$transaction(async (tx) => {
+        if (shouldAddWorkspaceMember) {
+          await tx.workspaceMember.upsert({
+            where: {
+              userId_workspaceId: {
+                userId,
+                workspaceId: project.workspaceId,
+              },
             },
+            update: {
+              updatedBy: requestUserId,
+            },
+            create: {
+              userId,
+              workspaceId: project.workspaceId,
+              role: WorkspaceRole.MEMBER,
+              createdBy: requestUserId,
+              updatedBy: requestUserId,
+            },
+          });
+        }
+
+        return tx.projectMember.create({
+          data: {
+            userId,
+            projectId,
+            role,
+            createdBy: requestUserId,
           },
-          project: {
-            select: {
-              id: true,
-              name: true,
-              slug: true,
-              avatar: true,
-              color: true,
-              workspace: {
-                select: {
-                  id: true,
-                  name: true,
-                  slug: true,
-                  organization: {
-                    select: {
-                      id: true,
-                      name: true,
-                      slug: true,
+          include: {
+            user: {
+              select: {
+                id: true,
+                email: true,
+                firstName: true,
+                lastName: true,
+                username: true,
+                avatar: true,
+                status: true,
+              },
+            },
+            project: {
+              select: {
+                id: true,
+                name: true,
+                slug: true,
+                avatar: true,
+                color: true,
+                workspace: {
+                  select: {
+                    id: true,
+                    name: true,
+                    slug: true,
+                    organization: {
+                      select: {
+                        id: true,
+                        name: true,
+                        slug: true,
+                      },
                     },
                   },
                 },
               },
             },
           },
-        },
+        });
       });
 
       if (userId !== requestUserId) {
