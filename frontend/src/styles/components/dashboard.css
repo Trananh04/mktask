@@ -97,7 +97,7 @@
 }
 
 .dashboard-loading-placeholder {
-  @apply animate-pulse bg-[var(--muted)] h-5 w-8 rounded block;
+  @apply animate-pulse bg-[var(--muted)] h-5 w-12 rounded block;
 }
 
 .dashboard-stat-label {

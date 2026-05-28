@@ -156,6 +156,8 @@ export default function ProfileSection() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [uploadingProfilePic, setUploadingProfilePic] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showCropper, setShowCropper] = useState(false);
+  const [tempImageUrl, setTempImageUrl] = useState<string | null>(null);
 
   // Load and synchronize current user
   useEffect(() => {
@@ -187,8 +189,9 @@ export default function ProfileSection() {
   useEffect(() => {
     return () => {
       if (previewUrl) URL.revokeObjectURL(previewUrl);
+      if (tempImageUrl) URL.revokeObjectURL(tempImageUrl);
     };
-  }, [previewUrl]);
+  }, [previewUrl, tempImageUrl]);
 
   const handleUploadButtonClick = () => fileInputRef.current?.click();
 
@@ -200,8 +203,23 @@ export default function ProfileSection() {
       e.target.value = "";
       return;
     }
+    const url = URL.createObjectURL(file);
+    setTempImageUrl(url);
+    setShowCropper(true);
+    e.target.value = "";
+  };
+
+  const handleCropComplete = (croppedBlob: Blob) => {
+    const file = new File([croppedBlob], "avatar.jpg", { type: "image/jpeg" });
     setSelectedFile(file);
-    setPreviewUrl(URL.createObjectURL(file));
+    setPreviewUrl(URL.createObjectURL(croppedBlob));
+    setShowCropper(false);
+    setTempImageUrl(null);
+  };
+
+  const handleCancelCrop = () => {
+    setShowCropper(false);
+    setTempImageUrl(null);
   };
 
   const handleProfilePicUpload = useCallback(async () => {
@@ -394,9 +412,13 @@ export default function ProfileSection() {
                       firstName: e.target.value,
                     }))
                   }
-                  className="bg-[var(--background)] border-[var(--border)] text-xs"
+                  className={`bg-[var(--background)] border-[var(--border)] text-xs ${!profileData.firstName.trim() ? "border-red-500 focus-visible:ring-red-500" : ""}`}
                   placeholder={t("profile_section.first_name")}
+                  aria-invalid={!profileData.firstName.trim()}
                 />
+                {!profileData.firstName.trim() && (
+                  <p className="text-xs text-red-500">{t("profile_section.first_name")} is required.</p>
+                )}
               </div>
 
               {/* Last Name */}
@@ -413,9 +435,13 @@ export default function ProfileSection() {
                       lastName: e.target.value,
                     }))
                   }
-                  className="bg-[var(--background)] border-[var(--border)] text-xs"
+                  className={`bg-[var(--background)] border-[var(--border)] text-xs ${!profileData.lastName.trim() ? "border-red-500 focus-visible:ring-red-500" : ""}`}
                   placeholder={t("profile_section.last_name")}
+                  aria-invalid={!profileData.lastName.trim()}
                 />
+                {!profileData.lastName.trim() && (
+                  <p className="text-xs text-red-500">{t("profile_section.last_name")} is required.</p>
+                )}
               </div>
 
               {/* Email */}
@@ -432,12 +458,42 @@ export default function ProfileSection() {
                       email: e.target.value,
                     }))
                   }
-                  className="bg-[var(--background)] border-[var(--border)] text-xs"
+                  className={`bg-[var(--background)] border-[var(--border)] text-xs ${!profileData.email.trim() || !/\S+@\S+\.\S+/.test(profileData.email) ? "border-red-500 focus-visible:ring-red-500" : ""}`}
                   placeholder={t("profile_section.email")}
+                  aria-invalid={!profileData.email.trim() || !/\S+@\S+\.\S+/.test(profileData.email)}
                 />
-                <p className="text-xs text-[var(--muted-foreground)]">
-                  We'll send a verification email if the address is changed.
-                </p>
+                {!profileData.email.trim() ? (
+                  <p className="text-xs text-red-500">{t("profile_section.email")} is required.</p>
+                ) : !/\S+@\S+\.\S+/.test(profileData.email) ? (
+                  <p className="text-xs text-red-500">Invalid email format.</p>
+                ) : (
+                  <p className="text-xs text-[var(--muted-foreground)]">
+                    We'll send a verification email if the address is changed.
+                  </p>
+                )}
+              </div>
+
+              {/* Username */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-[var(--foreground)]">
+                  {t("profile_section.username")} <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  type="text"
+                  value={profileData.username}
+                  onChange={(e) =>
+                    setProfileData((prev) => ({
+                      ...prev,
+                      username: e.target.value,
+                    }))
+                  }
+                  className={`bg-[var(--background)] border-[var(--border)] text-xs ${!profileData.username.trim() ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+                  placeholder={t("profile_section.username")}
+                  aria-invalid={!profileData.username.trim()}
+                />
+                {!profileData.username.trim() && (
+                  <p className="text-xs text-red-500">{t("profile_section.username")} is required.</p>
+                )}
               </div>
 
               {/* Mobile Number */}
@@ -626,6 +682,14 @@ export default function ProfileSection() {
           )}
         </div>
       </div>
+      {/* Image Cropper Modal */}
+      {showCropper && tempImageUrl && (
+        <ImageCropper
+          imageSrc={tempImageUrl}
+          onCropComplete={handleCropComplete}
+          onCancel={handleCancelCrop}
+        />
+      )}
     </div>
   );
 }

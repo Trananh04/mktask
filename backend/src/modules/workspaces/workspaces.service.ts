@@ -29,17 +29,14 @@ export class WorkspacesService {
       userId,
     );
 
-    if (!orgAccess.isElevated && !orgAccess.isSuperAdmin) {
-      throw new ForbiddenException('Only organization managers and owners can create workspaces');
-    }
-
-    // Check global setting for workspace creation
+    // By default, only OWNER/MANAGER (elevated) or SUPER_ADMIN can create workspaces.
+    // Setting allow_workspace_creation=true allows all org members to create workspaces.
     const allowWsCreation = await this.settingsService.get('allow_workspace_creation');
-    if (allowWsCreation === 'false') {
-      // Only elevated users (OWNER/MANAGER) and SUPER_ADMIN can create when disabled
+    if (allowWsCreation !== 'true') {
+      // Only elevated users (OWNER/MANAGER) and SUPER_ADMIN can create by default
       if (!orgAccess.isElevated && !orgAccess.isSuperAdmin) {
         throw new ForbiddenException(
-          'Workspace creation is restricted. Please contact your organization admin.',
+          'Chỉ quản trị viên (OWNER/MANAGER) mới có thể tạo không gian làm việc mới.',
         );
       }
     }

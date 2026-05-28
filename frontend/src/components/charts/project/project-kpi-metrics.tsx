@@ -73,7 +73,7 @@ function SortableStatCard({ id, label, value, icon, description, onClick }: Sort
         label={label} 
         value={value} 
         icon={icon} 
-        className={`transition-colors hover:bg-[var(--accent)]/50`}
+        className={onClick ? "cursor-pointer" : ""}
       />
     </div>
   );

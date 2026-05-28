@@ -530,24 +530,24 @@ export default function ReportsPage() {
                   <div className="mt-4 grid gap-2 sm:grid-cols-4">
                     <div className="rounded-md bg-slate-50 p-3">
                       <ClipboardList className="h-4 w-4 text-slate-600" />
-                      <p className="mt-2 text-xl font-bold">{dailyReports.length}</p>
-                      <p className="text-xs font-semibold text-[var(--muted-foreground)]">
+                      <p className="mt-2 text-xl font-bold text-slate-900">{dailyReports.length}</p>
+                      <p className="text-xs font-semibold text-slate-700">
                         Báo cáo
                       </p>
                     </div>
                     <div className="rounded-md bg-amber-50 p-3">
                       <AlertCircle className="h-4 w-4 text-amber-700" />
-                      <p className="mt-2 text-xl font-bold">{statusRequests.length}</p>
+                      <p className="mt-2 text-xl font-bold text-amber-900">{statusRequests.length}</p>
                       <p className="text-xs font-semibold text-amber-800">Chờ duyệt</p>
                     </div>
                     <div className="rounded-md bg-blue-50 p-3">
                       <Clock3 className="h-4 w-4 text-blue-700" />
-                      <p className="mt-2 text-xl font-bold">{dailySummary.unreviewedCount}</p>
+                      <p className="mt-2 text-xl font-bold text-blue-900">{dailySummary.unreviewedCount}</p>
                       <p className="text-xs font-semibold text-blue-800">Chưa xem</p>
                     </div>
                     <div className="rounded-md bg-red-50 p-3">
                       <X className="h-4 w-4 text-red-700" />
-                      <p className="mt-2 text-xl font-bold">
+                      <p className="mt-2 text-xl font-bold text-red-900">
                         {dailySummary.blockerReports.length}
                       </p>
                       <p className="text-xs font-semibold text-red-800">Vướng mắc</p>

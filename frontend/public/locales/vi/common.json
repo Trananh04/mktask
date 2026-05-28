@@ -30,5 +30,16 @@
     "of": "trên",
     "page": "Trang",
     "items": "mục"
+  },
+  "empty_state": {
+    "no_tasks_found": "Không tìm thấy công việc",
+    "no_tasks_yet": "Chưa có công việc nào",
+    "adjust_filters": "Hãy thử điều chỉnh bộ lọc hoặc từ khóa tìm kiếm.",
+    "create_first_task": "Tạo công việc đầu tiên để bắt đầu quản lý dự án.",
+    "no_data": "Không có dữ liệu",
+    "error_occurred": "Đã xảy ra lỗi",
+    "unexpected_error": "Đã xảy ra lỗi không mong muốn. Vui lòng thử lại.",
+    "retry": "Thử lại",
+    "back_to_dashboard": "Về bảng điều khiển"
   }
 }
