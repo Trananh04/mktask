@@ -176,32 +176,8 @@ export class ProjectMembersService {
       throw new BadRequestException(`Invalid role: ${role}`);
     }
 
-    const shouldAddWorkspaceMember =
-      user.workspaceMembers.length === 0 && user.organizationMembers.length > 0;
-
     try {
       const createdMember = await this.prisma.$transaction(async (tx) => {
-        if (shouldAddWorkspaceMember) {
-          await tx.workspaceMember.upsert({
-            where: {
-              userId_workspaceId: {
-                userId,
-                workspaceId: project.workspaceId,
-              },
-            },
-            update: {
-              updatedBy: requestUserId,
-            },
-            create: {
-              userId,
-              workspaceId: project.workspaceId,
-              role: WorkspaceRole.MEMBER,
-              createdBy: requestUserId,
-              updatedBy: requestUserId,
-            },
-          });
-        }
-
         return tx.projectMember.create({
           data: {
             userId,

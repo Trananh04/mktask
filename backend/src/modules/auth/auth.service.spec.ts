@@ -22,6 +22,8 @@ describe('AuthService internal registration model', () => {
       },
       organization: { findUnique: jest.fn() },
       organizationMember: { findUnique: jest.fn(), create: jest.fn() },
+      workspace: { findFirst: jest.fn(), create: jest.fn() },
+      workspaceMember: { upsert: jest.fn() },
       ...overrides.prisma,
     };
     const jwtService = {
@@ -32,6 +34,7 @@ describe('AuthService internal registration model', () => {
     };
     const settingsService = {
       get: jest.fn().mockResolvedValue(null),
+      ...overrides.settingsService,
     };
     const service = new AuthService(
       prisma as any,
@@ -62,5 +65,51 @@ describe('AuthService internal registration model', () => {
 
     expect(result.user.role).toBe(Role.MEMBER);
     expect(prisma.user.update).not.toHaveBeenCalled();
+  });
+
+  it('does not make newly registered users workspace members of the default organization', async () => {
+    const organizationId = '11111111-1111-4111-8111-111111111111';
+    const user = {
+      id: 'new-user',
+      email: 'new@example.com',
+      role: Role.MEMBER,
+      firstName: 'New',
+      lastName: 'User',
+    };
+    const { service, prisma, usersService } = createService({
+      settingsService: {
+        get: jest.fn(async (key: string) =>
+          key === 'default_organization_id' ? organizationId : null,
+        ),
+      },
+    });
+    usersService.findByEmail.mockResolvedValue(null);
+    usersService.findByUsername.mockResolvedValue(null);
+    usersService.create.mockResolvedValue(user);
+    prisma.organization.findUnique.mockResolvedValue({ id: organizationId });
+    prisma.organizationMember.findUnique.mockResolvedValue(null);
+    prisma.workspace.findFirst.mockResolvedValue({ id: 'workspace-id' });
+
+    await service.register({
+      email: user.email,
+      password: 'StrongPassword123!',
+      firstName: user.firstName,
+      lastName: user.lastName,
+    });
+
+    expect(prisma.organizationMember.create).toHaveBeenCalledWith({
+      data: {
+        userId: user.id,
+        organizationId,
+        role: Role.MEMBER,
+      },
+    });
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: { id: user.id },
+      data: { defaultOrganizationId: organizationId },
+    });
+    expect(prisma.workspace.findFirst).not.toHaveBeenCalled();
+    expect(prisma.workspace.create).not.toHaveBeenCalled();
+    expect(prisma.workspaceMember.upsert).not.toHaveBeenCalled();
   });
 });

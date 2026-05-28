@@ -83,31 +83,14 @@ describe('ProjectMembersService create', () => {
     };
   };
 
-  it('adds organization-only users to the workspace before creating a project membership', async () => {
+  it('adds organization-only users only to the requested project', async () => {
     const { service, prisma, notificationsService, createdMember } = createService();
 
     await expect(
       service.create({ userId, projectId, role: Role.MEMBER }, ownerId),
     ).resolves.toEqual(createdMember);
 
-    expect(prisma.workspaceMember.upsert).toHaveBeenCalledWith({
-      where: {
-        userId_workspaceId: {
-          userId,
-          workspaceId,
-        },
-      },
-      update: {
-        updatedBy: ownerId,
-      },
-      create: {
-        userId,
-        workspaceId,
-        role: Role.MEMBER,
-        createdBy: ownerId,
-        updatedBy: ownerId,
-      },
-    });
+    expect(prisma.workspaceMember.upsert).not.toHaveBeenCalled();
     expect(prisma.projectMember.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: {

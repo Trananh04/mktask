@@ -393,23 +393,6 @@ export class InvitationsService {
         if (!project) {
           throw new NotFoundException('Project not found');
         }
-        const isWorkspaceMember = await prisma.workspaceMember.findUnique({
-          where: {
-            userId_workspaceId: {
-              userId,
-              workspaceId: project.workspaceId,
-            },
-          },
-        });
-        if (!isWorkspaceMember) {
-          await this.workspaceMemberService.create({
-            userId,
-            workspaceId: project.workspaceId,
-            role: 'MEMBER',
-            createdBy: inviterId,
-          });
-        }
-
         // Add to project
         const projectMember = await prisma.projectMember.create({
           data: {
@@ -473,7 +456,7 @@ export class InvitationsService {
             firstName: user.firstName,
             lastName: user.lastName,
           },
-          addedToWorkspace: !isWorkspaceMember,
+          addedToWorkspace: false,
         };
       }
     });
@@ -621,20 +604,6 @@ export class InvitationsService {
             role: 'MEMBER',
             createdBy: invitation.inviterId,
           },
-        });
-      }
-
-      const workspaceId = invitation.project.workspace.id;
-      const existingWorkspaceMember = await this.prisma.workspaceMember.findFirst({
-        where: { userId, workspaceId },
-      });
-
-      if (!existingWorkspaceMember) {
-        await this.workspaceMemberService.create({
-          userId,
-          workspaceId,
-          role: 'MEMBER',
-          createdBy: invitation.inviterId,
         });
       }
 

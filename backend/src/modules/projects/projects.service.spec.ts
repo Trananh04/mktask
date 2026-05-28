@@ -30,7 +30,6 @@ describe('ProjectsService project listing', () => {
     expect.arrayContaining([
       { members: { some: { userId } } },
       { visibility: 'INTERNAL', workspace: { members: { some: { userId } } } },
-      { visibility: 'PUBLIC', workspace: { organization: { members: { some: { userId } } } } },
     ]);
 
   it('includes organization projects where the user has access', async () => {
@@ -61,6 +60,17 @@ describe('ProjectsService project listing', () => {
       }),
     );
     expect(prisma.project.findMany.mock.calls[0][0].where.createdBy).toBeUndefined();
+  });
+
+  it('does not include public projects through organization membership alone', async () => {
+    const { service, prisma } = createService();
+
+    await service.findAll(undefined, managerId);
+
+    expect(prisma.project.findMany.mock.calls[0][0].where.OR).not.toContainEqual({
+      visibility: 'PUBLIC',
+      workspace: { organization: { members: { some: { userId: managerId } } } },
+    });
   });
 });
 

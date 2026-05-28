@@ -222,37 +222,6 @@ export class AuthService {
       where: { id: userId },
       data: { defaultOrganizationId: defaultOrgId },
     });
-
-    let workspace = await this.prisma.workspace.findFirst({
-      where: { organizationId: defaultOrgId, slug: { in: ['mekong', 'projects'] }, archive: false },
-      select: { id: true },
-    });
-
-    if (!workspace) {
-      workspace = await this.prisma.workspace.create({
-        data: {
-          name: 'Projects',
-          slug: 'mekong',
-          description: 'Default project workspace for mekong',
-          organizationId: defaultOrgId,
-          createdBy: userId,
-          updatedBy: userId,
-        },
-        select: { id: true },
-      });
-    }
-
-    await this.prisma.workspaceMember.upsert({
-      where: { userId_workspaceId: { userId, workspaceId: workspace.id } },
-      update: { role: Role.MEMBER },
-      create: {
-        userId,
-        workspaceId: workspace.id,
-        role: Role.MEMBER,
-        createdBy: userId,
-        updatedBy: userId,
-      },
-    });
   }
 
   async refreshToken(refreshToken: string): Promise<AuthResponseDto> {

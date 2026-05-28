@@ -67,7 +67,6 @@ export class ProjectsService {
     return [
       { members: { some: { userId } } },
       { visibility: 'INTERNAL', workspace: { members: { some: { userId } } } },
-      { visibility: 'PUBLIC', workspace: { organization: { members: { some: { userId } } } } },
     ];
   }
 
@@ -752,7 +751,6 @@ export class ProjectsService {
     };
     if (!isSuperAdmin) {
       whereClause.OR = [
-        { visibility: 'PUBLIC', workspace: { organization: { members: { some: { userId } } } } },
         { members: { some: { userId } } },
         {
           visibility: 'INTERNAL',
