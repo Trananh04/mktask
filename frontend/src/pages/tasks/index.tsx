@@ -1159,7 +1159,7 @@ function TasksPageContent() {
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <ActionButton
-                          leftIcon={<Upload className="w-4 h-4" />}
+                          leftIcon={<Download className="w-4 h-4" />}
                           variant="outline"
                         >
                           {t("export")}
@@ -1182,7 +1182,7 @@ function TasksPageContent() {
                     </DropdownMenu>
 
                     <ActionButton
-                      leftIcon={<Download className="w-4 h-4" />}
+                      leftIcon={<Upload className="w-4 h-4" />}
                       variant="outline"
                       onClick={() => setCsvImportOpen(true)}
                     >

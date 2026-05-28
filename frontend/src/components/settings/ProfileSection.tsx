@@ -24,7 +24,6 @@ import {
 } from "@/components/ui/command";
 import { HiCheck, HiChevronDown } from "react-icons/hi2";
 import { resolveAssetUrl } from "@/utils/assetUrl";
-import { ImageCropper } from "@/components/common/ImageCropper";
 
 export default function ProfileSection() {
   const { t } = useTranslation("settings");
