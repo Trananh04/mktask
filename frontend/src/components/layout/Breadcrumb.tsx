@@ -15,6 +15,12 @@ import { useWorkspace } from "@/contexts/workspace-context";
 
 // Helper: Convert slug-like text into Title Case
 const formatSegment = (segment: string) => {
+  // Decode URI-encoded characters first
+  try {
+    segment = decodeURIComponent(segment);
+  } catch {
+    // ignore decoding errors
+  }
   return segment.replace(/-/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
 };
 
@@ -118,7 +124,8 @@ export default function Breadcrumb() {
           projectName = projectNameCache.get(projectSlug) || null;
         } else {
           try {
-            const response = await api.get(`/projects/slug/${encodeURIComponent(projectSlug)}`);
+            // Correct endpoint: /projects/by-slug/:slug
+            const response = await api.get(`/projects/by-slug/${encodeURIComponent(projectSlug)}`);
             if (response.data?.name) {
               projectName = response.data.name;
               projectNameCache.set(projectSlug, projectName as string);
@@ -200,8 +207,9 @@ export default function Breadcrumb() {
 
           // Add workspace
           if (segments[0]) {
+            const ws = workspaceTree?.find(w => w.slug === segments[0]);
             items.push({
-              name: formatSegment(segments[0]),
+              name: ws?.name || formatSegment(segments[0]),
               href: `/${segments[0]}`,
               current: false,
             });
@@ -215,7 +223,7 @@ export default function Breadcrumb() {
                 projectDisplayName = projectNameCache.get(segments[1]) || projectDisplayName;
               } else {
                 try {
-                  const projResponse = await api.get(`/projects/slug/${encodeURIComponent(segments[1])}`);
+                  const projResponse = await api.get(`/projects/by-slug/${encodeURIComponent(segments[1])}`);
                   if (projResponse.data?.name) {
                     projectDisplayName = projResponse.data.name;
                     projectNameCache.set(segments[1], projectDisplayName);
@@ -310,7 +318,7 @@ export default function Breadcrumb() {
 
     // Default: build breadcrumb from URL segments (with project name lookup)
     buildBreadcrumbFromSegments(segments);
-  }, [pathToUse, buildBreadcrumbFromSegments]);
+  }, [pathToUse, buildBreadcrumbFromSegments, workspaceTree]);
 
   if (
     !pathToUse ||

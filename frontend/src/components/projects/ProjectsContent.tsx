@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { formatDateForDisplay } from "@/utils/date";
 import { useWorkspaceContext } from "@/contexts/workspace-context";
 import { useProjectContext } from "@/contexts/project-context";
@@ -10,8 +10,9 @@ import { PageHeader } from "@/components/common/PageHeader";
 import { EntityCard } from "@/components/common/EntityCard";
 import ActionButton from "@/components/common/ActionButton";
 import { HiFolder, HiClipboardDocumentList, HiCalendarDays, HiXMark } from "react-icons/hi2";
-import { HiSearch, HiViewBoards } from "react-icons/hi";
+import { HiSearch, HiViewBoards, HiCog, HiTrash } from "react-icons/hi";
 import { HiUserPlus } from "react-icons/hi2";
+import DangerZoneModal from "@/components/common/DangerZoneModal";
 import { DynamicBadge } from "@/components/common/DynamicBadge";
 import { NewProjectModal } from "@/components/projects/NewProjectModal";
 import { ProjectInviteMemberModal } from "@/components/projects/ProjectInviteMemberModal";
@@ -89,6 +90,7 @@ const ProjectsContent: React.FC<ProjectsContentProps> = ({
     refreshProjects,
     clearError,
     addMemberToProject,
+    deleteProject,
   } = useProjectContext();
 
   const [hasAccess, setHasAccess] = useState(false);
@@ -97,6 +99,8 @@ const ProjectsContent: React.FC<ProjectsContentProps> = ({
   const [isNewProjectModalOpen, setIsNewProjectModalOpen] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [selectedProjectForInvite, setSelectedProjectForInvite] = useState<any>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [projectToDelete, setProjectToDelete] = useState<any>(null);
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>(() => {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
@@ -583,6 +587,25 @@ const ProjectsContent: React.FC<ProjectsContentProps> = ({
     }
   };
 
+  const handleDeleteClick = useCallback((project: any) => {
+    setProjectToDelete(project);
+    setIsDeleteModalOpen(true);
+  }, []);
+
+  const handleConfirmDelete = async () => {
+    if (!projectToDelete) return;
+    try {
+      await deleteProject(projectToDelete.id);
+      toast.success(t("messages.delete_success", "Đã xoá dự án thành công"));
+      setIsDeleteModalOpen(false);
+      setProjectToDelete(null);
+      await refreshProjects();
+      await fetchData(currentPage, false);
+    } catch (error: any) {
+      toast.error(error.message || t("messages.delete_failed", "Xoá dự án thất bại"));
+    }
+  };
+
   const getAvailableRoles = () => {
     return roles.filter((role) => role.name !== "OWNER");
   };
@@ -706,6 +729,28 @@ const ProjectsContent: React.FC<ProjectsContentProps> = ({
           organizationId={selectedProjectOrganizationId}
         />
 
+        {projectToDelete && (
+          <DangerZoneModal
+            open={isDeleteModalOpen}
+            onOpenChange={setIsDeleteModalOpen}
+            entity={{
+              type: "project",
+              name: projectToDelete.name,
+              displayName: projectToDelete.name,
+            }}
+            actions={[
+              {
+                name: "delete_project",
+                type: "delete",
+                label: t("danger_zone.delete_project", "Xoá dự án"),
+                description: t("danger_zone.delete_confirm", "Hành động này không thể hoàn tác. Tất cả dữ liệu của dự án sẽ bị xoá."),
+                variant: "destructive",
+                handler: handleConfirmDelete,
+              }
+            ]}
+          />
+        )}
+
         {/* Content Area */}
         {showContent && (
           <>
@@ -760,19 +805,49 @@ const ProjectsContent: React.FC<ProjectsContentProps> = ({
                         description={project.description}
                         trailing={
                           hasAccess && (
-                            <Tooltip content={t("invite_member", "Mời thành viên")} position="top" color="primary">
-                              <button
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  handleInviteMember(project);
-                                }}
-                                className="p-1.5 rounded-md hover:bg-[var(--accent)] text-[var(--muted-foreground)] hover:text-[var(--primary)] transition-colors"
-                                aria-label="Mời thành viên"
-                              >
-                                <HiUserPlus size={16} />
-                              </button>
-                            </Tooltip>
+                            <div className="flex items-center gap-1">
+                              <Tooltip content={t("invite_member", "Mời thành viên")} position="top" color="primary">
+                                <button
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    handleInviteMember(project);
+                                  }}
+                                  className="p-1.5 rounded-md hover:bg-[var(--accent)] text-[var(--muted-foreground)] hover:text-[var(--primary)] transition-colors"
+                                  aria-label="Mời thành viên"
+                                >
+                                  <HiUserPlus size={16} />
+                                </button>
+                              </Tooltip>
+                              
+                              <Tooltip content={t("settings", "Cài đặt & Sửa tên")} position="top" color="primary">
+                                <button
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    router.push(`${generateProjectLink(project, workspaceSlug)}/settings`);
+                                  }}
+                                  className="p-1.5 rounded-md hover:bg-[var(--accent)] text-[var(--muted-foreground)] hover:text-[var(--primary)] transition-colors"
+                                  aria-label="Cài đặt dự án"
+                                >
+                                  <HiCog size={16} />
+                                </button>
+                              </Tooltip>
+
+                              <Tooltip content={t("delete_project", "Xoá dự án")} position="top">
+                                <button
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    handleDeleteClick(project);
+                                  }}
+                                  className="p-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-950/50 text-[var(--muted-foreground)] hover:text-red-600 transition-colors"
+                                  aria-label="Xoá dự án"
+                                >
+                                  <HiTrash size={16} />
+                                </button>
+                              </Tooltip>
+                            </div>
                           )
                         }
                         footer={

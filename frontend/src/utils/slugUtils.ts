@@ -20,29 +20,40 @@ export const extractUuid = (id: string | undefined | null): string | null => {
 };
 
 /**
- * Generates a URL-friendly slug from a string (e.g., task title).
+ * Generates a URL-friendly slug from a string (e.g., task title or project name).
+ * Supports Vietnamese and other Unicode characters via NFD normalization.
+ * Vietnamese-specific characters (đ/Đ) are explicitly mapped before normalization.
  */
 export const generateSlug = (text: string): string => {
   if (!text) return '';
-  return text
+  const slug = text
     .toString()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
+    // Handle Vietnamese đ/Đ before NFD normalization (they don't decompose)
     .replace(/đ/g, 'd')
     .replace(/Đ/g, 'D')
+    // NFD decomposition separates base letters from diacritics
+    .normalize('NFD')
+    // Remove all combining diacritical marks (accents, tone marks, etc.)
+    .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
     .trim()
-    .replace(/&/g, '-and-')     // Replace & with 'and'
-    .replace(/[^a-z0-9\s._-]/g, '') // Remove unsafe chars
-    .replace(/[\s_]+/g, '-')    // Replace spaces/underscores with -
-    .replace(/-+/g, '-')        // Replace multiple - with single -
-    .replace(/^-|-$/g, '');
+    .replace(/&/g, '-and-')       // Replace & with 'and'
+    .replace(/[^a-z0-9\s._-]/g, '') // Remove remaining unsafe chars
+    .replace(/[\s_]+/g, '-')      // Replace spaces/underscores with -
+    .replace(/-+/g, '-')          // Replace multiple - with single -
+    .replace(/^-|-$/g, '');       // Remove leading/trailing dashes
+
+  // Ensure we always return something — fallback to timestamp if input maps to nothing
+  return slug || `project-${Date.now()}`;
 };
+
 /**
- * Validates if a string is a safe slug (alphanumeric and hyphens only).
+ * Validates if a string is a safe slug (alphanumeric, hyphens, dots, underscores).
  * Prevents open redirect attacks via malicious workspace/project slugs.
  */
 export const isValidSlug = (slug: any): slug is string => {
   if (typeof slug !== 'string') return false;
-  return /^[a-zA-Z0-9-]+$/.test(slug);
+  if (slug.length === 0) return false;
+  // Allow alphanumeric, hyphens, dots and underscores (consistent with sanitizeSlug in projectApi)
+  return /^[a-zA-Z0-9._-]+$/.test(slug);
 };

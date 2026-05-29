@@ -24,11 +24,12 @@ import {
 } from "@/components/ui/command";
 import { HiCheck, HiChevronDown } from "react-icons/hi2";
 import { resolveAssetUrl } from "@/utils/assetUrl";
+import { ImageCropper } from "../common/ImageCropper";
 
 export default function ProfileSection() {
   const { t } = useTranslation("settings");
   const [isEditing, setIsEditing] = useState(false);
-  const { getCurrentUser, updateUser, uploadFileToS3, getUserById } = useAuth();
+  const { getCurrentUser, updateUser, uploadFileToS3, getUserById, refreshCurrentUser } = useAuth();
   const { timezone, detectFromBrowser, isBrowserTimezoneDifferent, handleTimezoneChange } = useTimezone();
   const [tzPopoverOpen, setTzPopoverOpen] = useState(false);
   const [tzSearchTerm, setTzSearchTerm] = useState("");
@@ -134,8 +135,8 @@ export default function ProfileSection() {
 
   const filteredTimezones = tzSearchTerm
     ? TIMEZONES.filter((tz) =>
-        tz.toLowerCase().replace(/_/g, " ").includes(tzSearchTerm.toLowerCase())
-      )
+      tz.toLowerCase().replace(/_/g, " ").includes(tzSearchTerm.toLowerCase())
+    )
     : TIMEZONES;
 
   // Store the current user and profile data
@@ -210,7 +211,8 @@ export default function ProfileSection() {
   };
 
   const handleCropComplete = (croppedBlob: Blob) => {
-    const file = new File([croppedBlob], "avatar.jpg", { type: "image/jpeg" });
+    const uniqueName = `avatar_${currentUser?.id ?? "user"}_${Date.now()}.jpg`;
+    const file = new File([croppedBlob], uniqueName, { type: "image/jpeg" });
     setSelectedFile(file);
     setPreviewUrl(URL.createObjectURL(croppedBlob));
     setShowCropper(false);
@@ -263,7 +265,9 @@ export default function ProfileSection() {
       setSelectedFile(null);
       setPreviewUrl(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
-      setCurrentUser(updatedUser);
+      // Refresh từ server để lấy avatar URL đúng
+      const freshUser = await refreshCurrentUser();
+      setCurrentUser(freshUser ?? updatedUser);
     } catch {
       toast.error(t("profile_section.profile_update_failed"));
     } finally {
@@ -351,7 +355,7 @@ export default function ProfileSection() {
             </p>
           </div>
 
-          {/* Upload/Save Button - Only in edit mode */}
+          {/* Upload Button - Only in edit mode */}
           {isEditing && (
             <div className="">
               <input
@@ -361,33 +365,19 @@ export default function ProfileSection() {
                 ref={fileInputRef}
                 onChange={handleFileChange}
               />
-              {selectedFile ? (
-                <ActionButton
-                  type="button"
-                  secondary
-                  onClick={handleProfilePicUpload}
-                  disabled={uploadingProfilePic}
-                  className="text-sm w-full"
-                >
-                  {uploadingProfilePic ? (
-                    <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                      {t("profile_section.uploading")}
-                    </div>
-                  ) : (
-                    t("profile_section.update_pic")
-                  )}
-                </ActionButton>
-              ) : (
-                <ActionButton
-                  type="button"
-                  secondary
-                  onClick={handleUploadButtonClick}
-                  disabled={uploadingProfilePic}
-                  className="text-sm w-full"
-                >
-                  {t("profile_section.upload_pic")}
-                </ActionButton>
+              <ActionButton
+                type="button"
+                secondary
+                onClick={handleUploadButtonClick}
+                disabled={loading}
+                className="text-sm w-full"
+              >
+                {t("profile_section.upload_pic")}
+              </ActionButton>
+              {selectedFile && (
+                <p className="text-xs text-center text-[var(--primary)] mt-1">
+                  ✓ Ảnh mới đã được chọn
+                </p>
               )}
             </div>
           )}
@@ -570,9 +560,8 @@ export default function ProfileSection() {
                                 className="flex items-center gap-2 cursor-pointer hover:bg-[var(--muted)]"
                               >
                                 <HiCheck
-                                  className={`w-4 h-4 shrink-0 ${
-                                    timezone === tz ? "opacity-100" : "opacity-0"
-                                  }`}
+                                  className={`w-4 h-4 shrink-0 ${timezone === tz ? "opacity-100" : "opacity-0"
+                                    }`}
                                 />
                                 <span className="text-xs font-mono truncate">{tz}</span>
                               </CommandItem>
