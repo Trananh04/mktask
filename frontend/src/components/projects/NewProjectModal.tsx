@@ -190,19 +190,20 @@ export function NewProjectModal({
       };
 
       const newProject = await createProject(projectData);
+      // Use the slug returned by the API — it may have a suffix to avoid conflicts
       const projSlug = newProject?.slug;
+      const workspaceSlug =
+        typeof router.query.workspaceSlug === "string"
+          ? router.query.workspaceSlug
+          : newProject?.workspace?.slug;
 
       toast.success(t("modal.success", { name: formData.name }));
       handleClose();
       document.body.style.pointerEvents = "auto";
       onProjectCreated?.();
 
-      const workspaceSlug =
-        typeof router.query.workspaceSlug === "string"
-          ? router.query.workspaceSlug
-          : newProject?.workspace?.slug;
-
-      if (isValidSlug(projSlug) && isValidSlug(workspaceSlug)) {
+      // Always navigate if we have a valid project slug from the server
+      if (projSlug && workspaceSlug) {
         router.push(`/${workspaceSlug}/${projSlug}`);
       }
     } catch (error) {

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { formatDateTimeForDisplay } from "@/utils/date";
 import { isValidSlug } from "@/utils/slugUtils";
 import {
@@ -579,10 +579,26 @@ export default function ChatPanel() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // Chat history: include all user messages with timestamps for grouping
   const chatHistoryItems = useMemo(
-    () => messages.filter((message) => message.role === "user").slice(-10).reverse(),
+    () => messages
+      .map((message, idx) => ({ ...message, originalIndex: idx }))
+      .filter((message) => message.role === "user")
+      .slice(-15)
+      .reverse(),
     [messages]
   );
+
+  // Helper: get relative date label
+  const getDateLabel = (date: Date): string => {
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    if (days === 0) return 'Hôm nay';
+    if (days === 1) return 'Hôm qua';
+    if (days < 7) return `${days} ngày trước`;
+    return date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  };
 
   // Listen for workspace/project creation events
   useEffect(() => {
@@ -1197,65 +1213,110 @@ export default function ChatPanel() {
             <HiSparkles className="w-5 h-5 text-blue-600" />
             <h2 className="text-lg font-semibold text-primary">Trợ lý AI</h2>
           </div>
-          <div className="flex items-center gap-2">
-            {/* Ngữ cảnh Xóa Button */}
+          <div className="flex items-center gap-1">
+            {/* History Button */}
             {messages.length > 0 && (
               <button
                 onClick={() => setShowHistory((prev) => !prev)}
-                className="flex items-center gap-1 px-2 py-1 text-xs text-[var(--muted-foreground)] hover:bg-[var(--accent)] rounded-md transition-all duration-200"
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-md transition-all duration-200 ${
+                  showHistory
+                    ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                    : 'text-[var(--muted-foreground)] hover:bg-[var(--accent)]'
+                }`}
                 title="Lịch sử chat"
               >
-                <HiClock className="w-3 h-3" />
-                Lịch sử
+                <HiClock className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Lịch sử</span>
               </button>
             )}
+            {/* Context Reset Button */}
             <button
               onClick={clearContext}
-              className="flex items-center gap-1 px-2 py-1 text-xs text-[var(--muted-foreground)] hover:bg-[var(--accent)]  rounded-md transition-all duration-200"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-[var(--muted-foreground)] hover:bg-[var(--accent)] rounded-md transition-all duration-200"
               title="Xóa ngữ cảnh trò chuyện hiện tại"
             >
-              <HiArrowPath className="w-3 h-3" />
-              Ngữ cảnh
+              <HiArrowPath className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Ngữ cảnh</span>
             </button>
+            {/* Clear Chat Button */}
             {messages.length > 0 && (
               <button
                 onClick={clearChat}
-                className="px-2 py-1 text-xs text-[var(--muted-foreground)] hover:bg-[var(--accent)] rounded-md transition-all duration-200"
+                className="px-2.5 py-1.5 text-xs text-[var(--muted-foreground)] hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500 rounded-md transition-all duration-200"
+                title="Xóa toàn bộ hội thoại"
               >
                 Xóa
               </button>
             )}
+            {/* Close Button */}
             <button
               onClick={toggleChat}
-              className="p-1.5 rounded-md hover:bg-[var(--accent)] transition-all duration-200"
+              className="p-1.5 rounded-md hover:bg-[var(--accent)] transition-all duration-200 ml-1"
+              title="Đóng"
             >
               <HiXMark className="w-5 h-5 text-[var(--muted-foreground)]" />
             </button>
           </div>
         </div>
 
+        {/* Chat History Panel - Enhanced UX */}
         {showHistory && (
-          <div className="flex-shrink-0 border-b border-[var(--border)] bg-[var(--background)] px-4 py-3">
-            <div className="mb-2 text-xs font-medium text-[var(--muted-foreground)]">
-              Lịch sử tin nhắn gần đây
+          <div className="flex-shrink-0 border-b border-[var(--border)] bg-[var(--background)]">
+            <div className="px-4 pt-3 pb-1 flex items-center justify-between">
+              <span className="text-xs font-semibold text-[var(--foreground)] uppercase tracking-wider">Lịch sử trò chuyện</span>
+              <span className="text-xs text-[var(--muted-foreground)]">{chatHistoryItems.length} tin nhắn</span>
             </div>
-            {chatHistoryItems.length === 0 ? (
-              <div className="text-xs text-[var(--muted-foreground)]">Chưa có lịch sử chat.</div>
-            ) : (
-              <div className="flex gap-2 overflow-x-auto pb-1">
-                {chatHistoryItems.map((item, index) => (
-                  <button
-                    key={`${item.timestamp}-${index}`}
-                    type="button"
-                    onClick={() => setInputValue(item.content)}
-                    className="max-w-[220px] shrink-0 truncate rounded-md border border-[var(--border)] px-3 py-2 text-left text-xs text-[var(--foreground)] hover:bg-[var(--accent)]"
-                    title={item.content}
-                  >
-                    {item.content}
-                  </button>
-                ))}
-              </div>
-            )}
+            <div
+              className="overflow-y-auto px-4 pb-3"
+              style={{ maxHeight: '240px', scrollbarWidth: 'thin' }}
+            >
+              {chatHistoryItems.length === 0 ? (
+                <div className="flex items-center justify-center py-6">
+                  <p className="text-xs text-[var(--muted-foreground)] text-center">Chưa có lịch sử chat.<br />Hãy gửi tin nhắn đầu tiên!</p>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-1">
+                  {chatHistoryItems.map((item, index) => {
+                    const prevItem = chatHistoryItems[index + 1];
+                    const currentLabel = getDateLabel(new Date(item.timestamp));
+                    const prevLabel = prevItem ? getDateLabel(new Date(prevItem.timestamp)) : null;
+                    const showDateSeparator = currentLabel !== prevLabel;
+
+                    return (
+                      <React.Fragment key={`history-${index}-${String(item.timestamp)}`}>
+                        {showDateSeparator && (
+                          <div className="flex items-center gap-2 py-1">
+                            <div className="flex-1 h-px bg-[var(--border)]" />
+                            <span className="text-[10px] text-[var(--muted-foreground)] font-medium shrink-0">{currentLabel}</span>
+                            <div className="flex-1 h-px bg-[var(--border)]" />
+                          </div>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setInputValue(item.content);
+                            setShowHistory(false);
+                            setTimeout(() => textareaRef.current?.focus(), 50);
+                          }}
+                          className="group w-full text-left rounded-lg border border-[var(--border)] px-3 py-2.5 hover:bg-[var(--accent)] hover:border-[var(--primary)]/30 transition-all duration-150"
+                          title="Nhấp để dùng lại tin nhắn này"
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <p className="text-xs text-[var(--foreground)] line-clamp-2 leading-relaxed flex-1">{item.content}</p>
+                            <span className="text-[10px] text-[var(--muted-foreground)] shrink-0 mt-0.5">
+                              {new Date(item.timestamp).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          </div>
+                          <div className="mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <span className="text-[10px] text-[var(--primary)] font-medium">↑ Nhấp để điền vào ô chat</span>
+                          </div>
+                        </button>
+                      </React.Fragment>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
         )}
 

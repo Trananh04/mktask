@@ -18,6 +18,7 @@ import {
   HiLightningBolt,
   HiViewBoards,
   HiShieldCheck,
+  HiDocumentReport,
 } from "react-icons/hi";
 import { useProject } from "@/contexts/project-context";
 import { SocketEvents } from "@/types/socket";
@@ -214,7 +215,7 @@ export default function Sidebar() {
             {
               name: "Báo cáo",
               href: "/reports",
-              icon: <HiCalendar size={16} />,
+              icon: <HiDocumentReport size={16} />,
               title: "Báo cáo nhân viên theo ngày",
               disabled: false,
             },
@@ -276,7 +277,7 @@ export default function Sidebar() {
             {
               name: t("activities"),
               href: `/${currentWorkspaceSlug}/activities`,
-              icon: <HiCalendar size={16} />,
+              icon: <HiDocumentReport size={16} />,
               title: t("workspaceActivity"),
               disabled: !isAuth,
             },
