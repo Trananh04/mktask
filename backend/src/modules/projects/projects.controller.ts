@@ -277,14 +277,14 @@ export class ProjectsController {
     return this.projectsService.update(id, updateProjectDto, user.id);
   }
 
-  // Delete project - OWNER only
+  // Delete project - MANAGER/OWNER
   @Delete(':id')
   @ApiOperation({ summary: 'Delete a project' })
   @ApiParam({ name: 'id', description: 'Project ID (UUID)' })
   @ApiResponse({ status: 200, description: 'Project deleted successfully' })
   @ApiResponse({ status: 404, description: 'Project not found' })
   @Scope('PROJECT', 'id')
-  @Roles(Role.OWNER)
+  @Roles(Role.MANAGER, Role.OWNER)
   @LogActivity({
     type: 'PROJECT_DELETED',
     entityType: 'Project',

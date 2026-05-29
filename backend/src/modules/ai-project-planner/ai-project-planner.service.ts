@@ -33,7 +33,7 @@ export class AiProjectPlannerService {
     private readonly settingsService: SettingsService,
     private readonly projectsService: ProjectsService,
     private readonly tasksService: TasksService,
-  ) { }
+  ) {}
 
   async plan(dto: PlanProjectRequestDto, userId: string): Promise<ProjectPlanDto> {
     const workspaceId = await this.resolveWorkspaceId(dto.workspaceId, userId);
@@ -57,11 +57,11 @@ export class AiProjectPlannerService {
         const assignment = assignmentsByTaskId.get(`${project.id}:${task.id}`);
         return assignment
           ? {
-            ...task,
-            assigneeId: assignment.assigneeId,
-            assigneeName: assignment.assigneeName,
-            description: this.appendAssignmentReason(task.description, assignment.reason),
-          }
+              ...task,
+              assigneeId: assignment.assigneeId,
+              assigneeName: assignment.assigneeName,
+              description: this.appendAssignmentReason(task.description, assignment.reason),
+            }
           : task;
       }),
     }));
@@ -332,8 +332,6 @@ ${JSON.stringify(compactProjects, null, 2)}`;
     const text = this.extractAiText(provider, data);
     return this.parseJson(text);
   }
-
-
 
   private async callAiProvider(
     apiUrl: string,

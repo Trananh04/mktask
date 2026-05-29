@@ -1057,8 +1057,8 @@ export class ProjectsService {
 
   async remove(id: string, userId: string): Promise<void> {
     const { role } = await this.accessControl.getProjectAccess(id, userId);
-    if (role !== Role.OWNER && role !== Role.SUPER_ADMIN) {
-      throw new ForbiddenException('Only owners can delete projects');
+    if (role !== Role.OWNER && role !== Role.SUPER_ADMIN && role !== Role.MANAGER) {
+      throw new ForbiddenException('Only owners and managers can delete projects');
     }
     try {
       await this.prisma.$transaction(async (tx) => {

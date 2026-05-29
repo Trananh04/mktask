@@ -45,7 +45,7 @@ function sanitizeSlug(slug: string | string[] | undefined): string {
 function ProjectSettingsContent() {
   const router = useRouter();
   const { workspaceSlug, projectSlug } = router.query;
-  const { getProjectsByWorkspace, updateProject, deleteProject, archiveProject } = useProject();
+  const { getProjectBySlug, getProjectsByWorkspace, updateProject, deleteProject, archiveProject } = useProject();
   const { getWorkspaceBySlug } = useWorkspace();
   const { isAuthenticated, getUserAccess } = useAuth();
   const { t } = useTranslation("project-settings");
@@ -78,15 +78,11 @@ function ProjectSettingsContent() {
 
       try {
         setLoading(true);
-        const workspaceData = await getWorkspaceBySlug(workspaceSlug as string);
-        if (!workspaceData) {
-          setError(t("workspace_not_found"));
-          setLoading(false);
-          return;
-        }
-
-        const workspaceProjects = await getProjectsByWorkspace(workspaceData.id);
-        const projectData = workspaceProjects.find((p) => p.slug === projectSlug);
+        const projectData = await getProjectBySlug(
+          projectSlug as string,
+          isAuthenticated(),
+          workspaceSlug as string
+        );
 
         if (!projectData) {
           setError(t("project_not_found"));
@@ -116,7 +112,7 @@ function ProjectSettingsContent() {
     if (!project?.id) return;
     getUserAccess({ name: "project", id: project?.id })
       .then((data) => {
-        setHasAccess(data?.canChange);
+        setHasAccess(data?.isElevated);
       })
       .catch((error) => {
         console.error("Error fetching user access:", error);
@@ -199,19 +195,11 @@ function ProjectSettingsContent() {
 
       try {
         setLoading(true);
-        const workspaceData = await getWorkspaceBySlug(workspaceSlug as string);
-
-        if (!isActive) return;
-
-        if (!workspaceData) {
-          setError(t("workspace_not_found"));
-          setLoading(false);
-          router.replace("/workspaces");
-          return;
-        }
-
-        const workspaceProjects = await getProjectsByWorkspace(workspaceData.id);
-        const projectData = workspaceProjects.find((p) => p.slug === projectSlug);
+        const projectData = await getProjectBySlug(
+          projectSlug as string,
+          isAuthenticated(),
+          workspaceSlug as string
+        );
 
         if (!isActive) return;
 
@@ -234,7 +222,9 @@ function ProjectSettingsContent() {
         }
 
         // Cache slug→ID mappings
-        cacheSlugId("workspace", workspaceSlug as string, workspaceData.id);
+        if (projectData.workspaceId) {
+          cacheSlugId("workspace", workspaceSlug as string, projectData.workspaceId);
+        }
         cacheSlugId("project", projectSlug as string, projectData.id);
 
         setProject(projectData);
@@ -327,8 +317,9 @@ function ProjectSettingsContent() {
       }
 
       toast.success(t("general.save_success"));
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : t("general.save_failed"));
+    } catch (err: any) {
+      const backendMessage = err?.response?.data?.message || err?.message;
+      toast.error(backendMessage || t("general.save_failed"));
     } finally {
       setSaving(false);
     }
@@ -344,14 +335,7 @@ function ProjectSettingsContent() {
   };
 
   const handleInputChange = (field: string, value: string) => {
-    if (field === "name") {
-      // Auto-update slug when name changes
-      setFormData((prev) => ({
-        ...prev,
-        name: value,
-        slug: generateSlug(value),
-      }));
-    } else if (field === "taskPrefix") {
+    if (field === "taskPrefix") {
       const upperValue = value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8);
       setFormData((prev) => ({ ...prev, [field]: upperValue }));
     } else {
