@@ -242,6 +242,24 @@ export default function TaskCard({
           </div>
         )}
 
+        {/* Progress Bar */}
+        {typeof task.progressPercent === "number" && task.progressPercent > 0 && (
+          <div className="mb-3">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs text-gray-500 dark:text-gray-400">Tiến độ</span>
+              <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                {task.progressPercent}%
+              </span>
+            </div>
+            <div className="h-1.5 w-full rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
+              <div
+                className="h-full rounded-full bg-blue-500 transition-all duration-300"
+                style={{ width: `${Math.min(Math.max(task.progressPercent, 0), 100)}%` }}
+              />
+            </div>
+          </div>
+        )}
+
         {/* Footer */}
         <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-800">
           <div className="flex items-center space-x-2">

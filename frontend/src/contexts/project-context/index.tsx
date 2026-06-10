@@ -158,7 +158,8 @@ export function ProjectProvider({ children }: ProjectProviderProps) {
   // Helper to handle API operations with error handling
   const handleApiOperation = useCallback(async function <T>(
     operation: () => Promise<T>,
-    loadingState: boolean = true
+    loadingState: boolean = true,
+    setErrorState: boolean = true
   ): Promise<T> {
     try {
       if (loadingState) {
@@ -177,7 +178,7 @@ export function ProjectProvider({ children }: ProjectProviderProps) {
       setProjectState((prev) => ({
         ...prev,
         isLoading: false,
-        error: errorMessage,
+        ...(setErrorState && { error: errorMessage }),
       }));
       throw error;
     }
@@ -306,8 +307,10 @@ export function ProjectProvider({ children }: ProjectProviderProps) {
           search?: string;
         }
       ): Promise<Project[]> => {
-        const result = await handleApiOperation(() =>
-          projectApi.getProjectsByOrganization(organizationId, filters)
+        const result = await handleApiOperation(
+          () => projectApi.getProjectsByOrganization(organizationId, filters),
+          true,
+          false
         );
 
         setProjectState((prev) => ({
@@ -347,8 +350,10 @@ export function ProjectProvider({ children }: ProjectProviderProps) {
 
         const request = (async () => {
           try {
-            const result = await handleApiOperation(() =>
-              projectApi.getProjectsByWorkspace(workspaceId, filters)
+            const result = await handleApiOperation(
+              () => projectApi.getProjectsByWorkspace(workspaceId, filters),
+              true,
+              false
             );
 
             setProjectState((prev) => ({

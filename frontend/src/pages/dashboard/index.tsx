@@ -12,8 +12,7 @@ export default function DashboarPage() {
   const user = getCurrentUser();
   const canViewDashboard =
     user?.role === "SUPER_ADMIN" ||
-    user?.role === "MANAGER" ||
-    user?.role === "MEMBER";
+    user?.role === "MANAGER";
 
   useEffect(() => {
     if (!canViewDashboard) {

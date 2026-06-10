@@ -14,12 +14,20 @@ import { getAutomationPrompt } from './automation-prompts';
 import {
   buildAssistantSystemPrompt,
   buildAssistantUserContext,
+  buildQueryAnswerSystemPrompt,
+  buildQueryAnswerUserContext,
   isAutomationEnvelope,
 } from './assistant-prompts';
+import { AiDataToolsService, classifyChatIntent } from './ai-data-tools.service';
+import { QueryPlannerService } from './query-planner.service';
 
 @Injectable()
 export class AiChatService {
-  constructor(private settingsService: SettingsService) {}
+  constructor(
+    private settingsService: SettingsService,
+    private readonly aiDataTools: AiDataToolsService,
+    private readonly queryPlannerService: QueryPlannerService,
+  ) {}
 
   private detectProvider(apiUrl: string): string {
     try {
@@ -234,6 +242,7 @@ ADMIN PANEL RULES (SUPER_ADMIN ONLY):
       }
 
       const useAutomationPrompt = isAutomationEnvelope(chatRequest.message);
+      const intent = classifyChatIntent(chatRequest.message, useAutomationPrompt);
 
       // Build messages array with system prompt and conversation history
       const messages: ChatMessageDto[] = [];
@@ -241,7 +250,9 @@ ADMIN PANEL RULES (SUPER_ADMIN ONLY):
       // Generate system prompt
       const systemPrompt = useAutomationPrompt
         ? this.generateSystemPrompt()
-        : buildAssistantSystemPrompt();
+        : intent === 'QUERY_DATA'
+          ? buildQueryAnswerSystemPrompt()
+          : buildAssistantSystemPrompt();
       messages.push({
         role: 'system',
         content: systemPrompt,
@@ -271,6 +282,29 @@ ADMIN PANEL RULES (SUPER_ADMIN ONLY):
         if (automationPrompt) {
           userMessage = userMessage + `\n\n${automationPrompt}`;
         }
+      } else if (intent === 'QUERY_DATA') {
+        const userScope = await this.aiDataTools.resolveUserScope(userId, chatRequest.currentOrganizationId);
+        const queryPlan = await this.queryPlannerService.planQuery(userMessage, userScope, userId, chatRequest.currentOrganizationId);
+        console.log('--- QUERY PLANNER OUTPUT ---');
+        console.log(JSON.stringify(queryPlan, null, 2));
+
+        let groundedContext = '';
+        if (queryPlan && queryPlan.tools.length > 0) {
+          const results = await this.aiDataTools.executeTools(queryPlan, userScope);
+          groundedContext = `DATA TOOL RESULTS:\n${JSON.stringify(results, null, 2)}`;
+        } else {
+          // Fallback if planner failed or returned no tools
+          groundedContext = await this.aiDataTools.buildGroundedContext(
+            userMessage,
+            userId,
+            chatRequest,
+          );
+        }
+        
+        console.log('--- GROUNDED CONTEXT ---');
+        console.log(groundedContext);
+
+        userMessage = buildQueryAnswerUserContext(userMessage, groundedContext);
       } else {
         userMessage = buildAssistantUserContext(userMessage);
       }
@@ -292,7 +326,7 @@ ADMIN PANEL RULES (SUPER_ADMIN ONLY):
         model,
         messages,
         temperature: 0.1,
-        max_tokens: 500,
+        max_tokens: intent === 'QUERY_DATA' ? 900 : 500,
         stream: false,
       };
 
@@ -310,7 +344,7 @@ ADMIN PANEL RULES (SUPER_ADMIN ONLY):
         case 'openai':
           requestUrl = `${apiUrl}/chat/completions`;
           delete requestBody.max_tokens;
-          requestBody.max_completion_tokens = 500;
+          requestBody.max_completion_tokens = intent === 'QUERY_DATA' ? 900 : 500;
           if (isGpt5Model) {
             delete requestBody.temperature;
           } else {
@@ -347,7 +381,7 @@ ADMIN PANEL RULES (SUPER_ADMIN ONLY):
             model,
             messages: messages.filter((m) => m.role !== 'system'), // Anthropic doesn't use system role the same way
             system: messages.find((m) => m.role === 'system')?.content,
-            max_tokens: 500,
+            max_tokens: intent === 'QUERY_DATA' ? 900 : 500,
             temperature: 0.1,
           };
           break;
@@ -364,7 +398,7 @@ ADMIN PANEL RULES (SUPER_ADMIN ONLY):
             })),
             generationConfig: {
               temperature: 0.1,
-              maxOutputTokens: 500,
+              maxOutputTokens: intent === 'QUERY_DATA' ? 900 : 500,
             },
           };
           break;
@@ -421,6 +455,9 @@ ADMIN PANEL RULES (SUPER_ADMIN ONLY):
           aiMessage = data.choices?.[0]?.message?.content || '';
           break;
       }
+      
+      console.log('--- LLM OUTPUT ---');
+      console.log(aiMessage);
 
       return {
         message: aiMessage,

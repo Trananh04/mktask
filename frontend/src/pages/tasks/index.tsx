@@ -110,7 +110,6 @@ function TasksPageContent() {
   const [urlParamsInitialized, setUrlParamsInitialized] = useState(false);
   const [statusFilterEnabled, setStatusFilterEnabled] = useState(false);
   const [isNewTaskModalOpen, setNewTaskModalOpen] = useState(false);
-  const [isCsvImportOpen, setCsvImportOpen] = useState(false);
 
   // View and display state
   type ViewType = "list" | "kanban" | "gantt";
@@ -1156,38 +1155,35 @@ function TasksPageContent() {
                       onRemoveColumn={handleRemoveColumn}
                     />
 
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <ActionButton
-                          leftIcon={<Download className="w-4 h-4" />}
-                          variant="outline"
-                        >
-                          {t("export")}
-                        </ActionButton>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="bg-[var(--popover)] border-[var(--border)]">
-                        <DropdownMenuItem onClick={() => handleExport("csv")}>
-                          Export as CSV
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleExport("xlsx")}>
-                          Export as Excel (.xlsx)
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleExport("json")}>
-                          Export as JSON
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleExport("pdf")}>
-                          Export as PDF
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-
-                    <ActionButton
-                      leftIcon={<Upload className="w-4 h-4" />}
-                      variant="outline"
-                      onClick={() => setCsvImportOpen(true)}
-                    >
-                      Import
-                    </ActionButton>
+                    {(currentUser?.role === "SUPER_ADMIN" ||
+                      currentUser?.role === "MANAGER" ||
+                      userAccess?.role === "OWNER" ||
+                      userAccess?.role === "MANAGER") && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <ActionButton
+                            leftIcon={<Download className="w-4 h-4" />}
+                            variant="outline"
+                          >
+                            {t("export")}
+                          </ActionButton>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="bg-[var(--popover)] border-[var(--border)]">
+                          <DropdownMenuItem onClick={() => handleExport("csv")}>
+                            Export as CSV
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleExport("xlsx")}>
+                            Export as Excel (.xlsx)
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleExport("json")}>
+                            Export as JSON
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleExport("pdf")}>
+                            Export as PDF
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
                   </div>
                 )}
               </>
@@ -1213,11 +1209,6 @@ function TasksPageContent() {
       )}
 
       <NewTaskModal isOpen={isNewTaskModalOpen} onClose={() => setNewTaskModalOpen(false)} />
-      <CsvImportModal
-        isOpen={isCsvImportOpen}
-        onClose={() => setCsvImportOpen(false)}
-        onImportComplete={loadTasks}
-      />
     </div>
   );
 }

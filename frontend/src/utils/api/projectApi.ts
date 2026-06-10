@@ -21,7 +21,7 @@ function sanitizeSlug(slug: string): string {
   if (!slug || typeof slug !== 'string') {
     throw new Error('Invalid slug: must be a non-empty string');
   }
-  if (!/^[a-zA-Z0-9._-]+$/.test(slug)) {
+  if (!/^[\p{L}0-9._-]+$/u.test(slug)) {
     throw new Error('Invalid slug format: contains invalid characters');
   }
   if (slug.includes('..') || slug.includes('//')) {

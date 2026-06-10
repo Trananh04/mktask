@@ -53,6 +53,13 @@ export class ChatRequestDto {
   projectId?: string;
 
   @ApiPropertyOptional({
+    description: 'Current sprint context',
+  })
+  @IsOptional()
+  @IsString()
+  sprintId?: string;
+
+  @ApiPropertyOptional({
     description: 'Session ID for context tracking',
   })
   @IsOptional()

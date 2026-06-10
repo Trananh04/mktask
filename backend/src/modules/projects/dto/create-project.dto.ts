@@ -31,7 +31,7 @@ export class CreateProjectDto {
   })
   @IsString()
   @IsNotEmpty()
-  @Matches(/^[a-z0-9-]+$/, {
+  @Matches(/^[\p{Ll}0-9-]+$/u, {
     message: 'Slug can only contain lowercase letters, numbers, and hyphens',
   })
   slug: string;

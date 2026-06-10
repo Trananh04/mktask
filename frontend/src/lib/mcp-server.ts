@@ -1,4 +1,4 @@
-﻿import api from "@/lib/api";
+import api from "@/lib/api";
 import * as crypto from 'crypto';
 
 interface ChatMessage {
@@ -10,6 +10,7 @@ interface ChatMessage {
 export interface MktaskContext {
   currentWorkspace?: string;
   currentProject?: string;
+  currentSprint?: string;
   currentUser?: {
     id: string;
     email: string;
@@ -111,6 +112,7 @@ class MCPServer {
           history,
           workspaceId: this.context.currentWorkspace,
           projectId: this.context.currentProject,
+          sprintId: this.context.currentSprint,
           sessionId: this.sessionId,
           currentOrganizationId: currentOrganizationId,
         },
@@ -240,6 +242,16 @@ export function extractContextFromPath(pathname: string): Partial<MktaskContext>
     !workspaceSubRoutes.includes(pathParts[1])
   ) {
     context.currentProject = pathParts[1];
+  }
+
+  // Extract sprint from URL query params or path if possible
+  // Current pattern: ?sprint=id
+  if (typeof window !== "undefined") {
+    const urlParams = new URLSearchParams(window.location.search);
+    const sprintParam = urlParams.get('sprint');
+    if (sprintParam) {
+      context.currentSprint = sprintParam;
+    }
   }
 
   return context;

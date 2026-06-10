@@ -242,6 +242,17 @@ export class CreateTaskDto {
   allowEmailReplies?: boolean;
 
   @ApiProperty({
+    description: 'Task completion percentage (0-100)',
+    example: 50,
+    minimum: 0,
+    maximum: 100,
+    required: false,
+  })
+  @IsInt()
+  @IsOptional()
+  progressPercent?: number;
+
+  @ApiProperty({
     description: 'Whether this task is recurring',
     example: false,
     required: false,

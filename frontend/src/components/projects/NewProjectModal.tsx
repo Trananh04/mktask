@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import ActionButton from "@/components/common/ActionButton";
 import { toast } from "sonner";
 import {
@@ -22,6 +23,7 @@ import {
 } from "react-icons/hi2";
 import { HiColorSwatch } from "react-icons/hi";
 import { useProject } from "@/contexts/project-context";
+import { useWorkspace } from "@/contexts/workspace-context";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { PROJECT_CATEGORIES } from "@/utils/data/projectData";
 import { workflowsApi } from "@/utils/api/workflowsApi";
@@ -40,10 +42,12 @@ export function NewProjectModal({
   isOpen,
   onClose,
   onProjectCreated,
+  initialData,
 }: NewProjectModalProps) {
   const { t } = useTranslation("projects");
   const router = useRouter();
   const projectContext = useProject();
+  const { currentWorkspace, workspaces } = useWorkspace();
 
   const { createProject } = projectContext;
   const [formData, setFormData] = useState({
@@ -53,6 +57,7 @@ export function NewProjectModal({
     category: "operational",
     workflowId: "",
     visibility: "PRIVATE" as const,
+    workspaceId: currentWorkspace?.id || "",
   });
 
   // Use projectSlug everywhere it's needed
@@ -180,6 +185,8 @@ export function NewProjectModal({
         startDate: new Date().toISOString(),
         endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
         ...(formData.workflowId ? { workflowId: formData.workflowId } : {}),
+        organizationId: initialData?.organizationId,
+        workspaceId: formData.workspaceId || currentWorkspace?.id,
         settings: {
           methodology: "scrum" as const,
           defaultTaskType: "task" as const,
@@ -223,6 +230,7 @@ export function NewProjectModal({
       category: "operational",
       workflowId: "",
       visibility: "PRIVATE",
+      workspaceId: currentWorkspace?.id || "",
     });
     setCategoryOpen(false);
     setWorkflowOpen(false);
@@ -340,6 +348,36 @@ export function NewProjectModal({
               </div>
             )}
           </div>
+
+          {/* Workspace - Dropdown */}
+          {workspaces.length > 0 && (
+            <div className="projects-form-field">
+              <Label className="projects-form-label">
+                <HiFolderPlus
+                  className="projects-form-label-icon"
+                  style={{ color: "var(--dynamic-primary)" }}
+                />
+                {t("modal.workspace", { defaultValue: "Không gian làm việc" })} <span className="projects-form-label-required">*</span>
+              </Label>
+              <Select
+                value={formData.workspaceId}
+                onValueChange={(val) => setFormData({ ...formData, workspaceId: val })}
+              >
+                <SelectTrigger
+                  className="w-full bg-[var(--card)] hover:bg-[var(--accent)] transition-colors border-[var(--border)] focus:ring-[var(--dynamic-primary-20)] focus:border-[var(--dynamic-primary)]"
+                >
+                  <SelectValue placeholder={t("modal.selectWorkspace", { defaultValue: "Chọn không gian làm việc" })} />
+                </SelectTrigger>
+                <SelectContent className="border-[var(--border)] bg-[var(--card)] shadow-md">
+                  {workspaces.map((ws) => (
+                    <SelectItem key={ws.id} value={ws.id}>
+                      {ws.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           {/* Workflow - Dropdown  */}
           <div className="projects-form-field">

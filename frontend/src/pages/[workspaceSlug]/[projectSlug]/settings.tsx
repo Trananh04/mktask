@@ -37,8 +37,8 @@ function isValidInternalPath(path: string): boolean {
 // Helper function to sanitize slug inputs before URL construction
 function sanitizeSlug(slug: string | string[] | undefined): string {
   if (!slug || typeof slug !== 'string') return '';
-  // Allow alphanumeric, dash, underscore, and dot
-  if (!/^[a-zA-Z0-9._-]+$/.test(slug)) return '';
+  // Allow alphanumeric (Unicode letters allowed), dash, underscore, and dot
+  if (!/^[\p{L}0-9._-]+$/u.test(slug)) return '';
   return slug;
 }
 
@@ -284,7 +284,7 @@ function ProjectSettingsContent() {
     if (!project) return;
 
     // Validate slug format
-    if (formData.slug && !/^[a-z0-9-]+$/.test(formData.slug)) {
+    if (formData.slug && !/^[\p{Ll}0-9-]+$/u.test(formData.slug)) {
       toast.error(t("general.slug_error"));
       return;
     }

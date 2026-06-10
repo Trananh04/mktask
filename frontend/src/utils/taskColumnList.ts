@@ -64,20 +64,7 @@ export const AVAILABLE_COLUMN_TYPES = [
     icon: BarChart3,
     description: "Ước lượng thời gian còn lại",
   },
-  {
-    id: "reporter",
-    label: "Người báo cáo",
-    type: "user" as const,
-    icon: Users,
-    description: "Người báo cáo hoặc tạo công việc",
-  },
-  {
-    id: "updatedBy",
-    label: "Cập nhật bởi",
-    type: "user" as const,
-    icon: User,
-    description: "Người cập nhật công việc gần nhất",
-  },
+
   {
     id: "createdAt",
     label: "Ngày tạo",
@@ -92,13 +79,7 @@ export const AVAILABLE_COLUMN_TYPES = [
     icon: Calendar,
     description: "Ngày cập nhật gần nhất",
   },
-  {
-    id: "sprint",
-    label: "Sprint",
-    type: "text" as const,
-    icon: GitBranch,
-    description: "Sprint liên quan",
-  },
+
   {
     id: "parentTask",
     label: "Công việc cha",
@@ -128,10 +109,10 @@ export const AVAILABLE_COLUMN_TYPES = [
     description: "Số tệp đính kèm",
   },
   {
-    id: "timeEntries",
-    label: "Lượt ghi thời gian",
+    id: "progressPercent",
+    label: "Tiến độ",
     type: "number" as const,
     icon: Timer,
-    description: "Số lượt ghi thời gian",
+    description: "Tiến độ công việc (%)",
   },
 ];

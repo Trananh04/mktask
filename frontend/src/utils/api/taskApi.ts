@@ -100,7 +100,7 @@ function sanitizeSlug(slug: string): string {
   }
   // Slugs should only contain alphanumeric, hyphens, underscores, and dots
   // This prevents path traversal and other injection attacks
-  if (!/^[a-zA-Z0-9._-]+$/.test(slug)) {
+  if (!/^[\p{L}0-9._-]+$/u.test(slug)) {
     throw new Error('Invalid slug format: contains invalid characters');
   }
   // Prevent path traversal

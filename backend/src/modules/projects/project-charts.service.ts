@@ -155,6 +155,7 @@ export class ProjectChartsService {
                     tasks: {
                       where: {
                         project: { slug: projectSlug },
+                        isArchived: false,
                       },
                     },
                   },
@@ -192,6 +193,7 @@ export class ProjectChartsService {
 
     const taskWhere = {
       projectId: project.id,
+      isArchived: false,
     };
 
     return this.prisma.task.groupBy({
@@ -209,6 +211,7 @@ export class ProjectChartsService {
 
     const taskWhere = {
       projectId: project.id,
+      isArchived: false,
     };
 
     const [totalTasks, completedTasks, activeSprints, totalBugs, resolvedBugs] = await Promise.all([
@@ -248,6 +251,7 @@ export class ProjectChartsService {
 
     const taskWhere = {
       projectId: project.id,
+      isArchived: false,
     };
 
     return this.prisma.task.groupBy({
@@ -273,6 +277,7 @@ export class ProjectChartsService {
         tasks: {
           where: {
             completedAt: { not: null },
+            isArchived: false,
           },
           select: { storyPoints: true },
         },
@@ -298,6 +303,7 @@ export class ProjectChartsService {
     return this.prisma.task.findMany({
       where: {
         sprintId,
+        isArchived: false,
         project: { archive: false },
         sprint: { archive: false },
       },

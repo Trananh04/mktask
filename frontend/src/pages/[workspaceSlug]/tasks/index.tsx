@@ -96,7 +96,8 @@ function WorkspaceTasksContent() {
     updateTask,
   } = useTask();
 
-  const { isAuthenticated, getUserAccess } = useAuth();
+  const { isAuthenticated, getUserAccess, getCurrentUser } = useAuth();
+  const currentUser = getCurrentUser();
 
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -113,7 +114,6 @@ function WorkspaceTasksContent() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [isNewTaskModalOpen, setNewTaskModalOpen] = useState(false);
-  const [isCsvImportOpen, setCsvImportOpen] = useState(false);
   const [hasAccess, setHasAccess] = useState(false);
   const [userAccess, setUserAccess] = useState(null);
 
@@ -1322,13 +1322,6 @@ function WorkspaceTasksContent() {
                   }}
                   workspaceSlug={workspaceSlug as string}
                 />
-                <CsvImportModal
-                  isOpen={isCsvImportOpen}
-                  onClose={() => setCsvImportOpen(false)}
-                  onImportComplete={loadTasks}
-                  workspaceId={workspace?.id}
-                  workspaceName={workspace?.name}
-                />
               </div>
             }
           />
@@ -1404,38 +1397,35 @@ function WorkspaceTasksContent() {
                       onRemoveColumn={handleRemoveColumn}
                     />
 
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <ActionButton
-                          leftIcon={<Download className="w-4 h-4" />}
-                          variant="outline"
-                        >
-                          {t("export")}
-                        </ActionButton>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="bg-[var(--popover)] border-[var(--border)]">
-                        <DropdownMenuItem onClick={() => handleExport("csv")}>
-                          Export as CSV
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleExport("xlsx")}>
-                          Export as Excel (.xlsx)
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleExport("json")}>
-                          Export as JSON
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleExport("pdf")}>
-                          Export as PDF
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-
-                    <ActionButton
-                      leftIcon={<Upload className="w-4 h-4" />}
-                      variant="outline"
-                      onClick={() => setCsvImportOpen(true)}
-                    >
-                      Import
-                    </ActionButton>                  </div>
+                    {(currentUser?.role === "SUPER_ADMIN" ||
+                      currentUser?.role === "MANAGER" ||
+                      userAccess?.role === "OWNER" ||
+                      userAccess?.role === "MANAGER") && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <ActionButton
+                            leftIcon={<Download className="w-4 h-4" />}
+                            variant="outline"
+                          >
+                            {t("export")}
+                          </ActionButton>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="bg-[var(--popover)] border-[var(--border)]">
+                          <DropdownMenuItem onClick={() => handleExport("csv")}>
+                            Export as CSV
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleExport("xlsx")}>
+                            Export as Excel (.xlsx)
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleExport("json")}>
+                            Export as JSON
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleExport("pdf")}>
+                            Export as PDF
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}                  </div>
                 )}
               </>
             }

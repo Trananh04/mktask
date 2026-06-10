@@ -54,6 +54,6 @@ export const generateSlug = (text: string): string => {
 export const isValidSlug = (slug: any): slug is string => {
   if (typeof slug !== 'string') return false;
   if (slug.length === 0) return false;
-  // Allow alphanumeric, hyphens, dots and underscores (consistent with sanitizeSlug in projectApi)
-  return /^[a-zA-Z0-9._-]+$/.test(slug);
+  // Allow alphanumeric (Unicode letters allowed), hyphens, dots and underscores (consistent with sanitizeSlug in projectApi)
+  return /^[\p{L}0-9._-]+$/u.test(slug);
 };

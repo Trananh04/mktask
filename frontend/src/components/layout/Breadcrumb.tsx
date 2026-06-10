@@ -37,7 +37,7 @@ const extractUuid = (taskId: string) => {
 };
 
 // System page segments that are not project slugs
-const SYSTEM_PAGES = ['tasks', 'settings', 'members', 'sprints', 'calendar', 'activities'];
+const SYSTEM_PAGES = ['tasks', 'settings', 'members', 'calendar', 'activities'];
 
 interface BreadcrumbItem {
   name: string;
@@ -182,77 +182,9 @@ export default function Breadcrumb() {
 
     const segments = pathToUse.split("/").filter((seg) => seg.length > 0);
 
-    // Check if this is a sprint detail page: /[workspace]/[project]/sprints/[sprintId]
-    const isSprintDetail = segments.length === 4 &&
-                           segments[2] === 'sprints' &&
-                           segments[3];
-
     // Check if this is a task detail page
     // Patterns: /tasks/[slug], /[workspace]/tasks/[slug], /[workspace]/[project]/tasks/[slug]
     const taskSegmentIndex = segments.findIndex((seg, idx) => seg === 'tasks' && idx < segments.length - 1);
-
-    // Handle sprint detail page
-    if (isSprintDetail) {
-      const sprintIdOrSlug = segments[3];
-      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(sprintIdOrSlug);
-
-      const fetchSprintBreadcrumb = async () => {
-        try {
-          const sprintResponse = isUUID
-            ? await api.get(`/sprints/${encodeURIComponent(sprintIdOrSlug)}`)
-            : await api.get(`/sprints/by-slug/${encodeURIComponent(segments[1])}/${encodeURIComponent(sprintIdOrSlug)}`);
-          const sprint = sprintResponse.data;
-
-          const items: BreadcrumbItem[] = [];
-
-          // Add workspace
-          if (segments[0]) {
-            const ws = workspaceTree?.find(w => w.slug === segments[0]);
-            items.push({
-              name: ws?.name || formatSegment(segments[0]),
-              href: `/${segments[0]}`,
-              current: false,
-            });
-          }
-
-          // Add project (try to get real name)
-          if (segments[1]) {
-            let projectDisplayName = formatSegment(segments[1]);
-            if (!SYSTEM_PAGES.includes(segments[1])) {
-              if (projectNameCache.has(segments[1])) {
-                projectDisplayName = projectNameCache.get(segments[1]) || projectDisplayName;
-              } else {
-                try {
-                  const projResponse = await api.get(`/projects/by-slug/${encodeURIComponent(segments[1])}`);
-                  if (projResponse.data?.name) {
-                    projectDisplayName = projResponse.data.name;
-                    projectNameCache.set(segments[1], projectDisplayName);
-                  }
-                } catch { /* ignore */ }
-              }
-            }
-            items.push({
-              name: projectDisplayName,
-              href: `/${segments[0]}/${segments[1]}`,
-              current: false,
-            });
-          }
-
-          // Add sprint name (current)
-          items.push({
-            name: sprint?.name || formatSegment(sprintIdOrSlug),
-            current: true,
-          });
-
-          setBreadcrumbs(items);
-        } catch (error) {
-          console.error('Failed to fetch sprint data for breadcrumb:', error);
-          buildBreadcrumbFromSegments(segments);
-        }
-      };
-      fetchSprintBreadcrumb();
-      return;
-    }
 
     if (taskSegmentIndex !== -1 && taskSegmentIndex < segments.length - 1) {
       const taskIdOrSlug = segments[taskSegmentIndex + 1];

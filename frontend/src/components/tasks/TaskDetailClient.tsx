@@ -8,7 +8,7 @@ import TaskAttachments from "./TaskAttachment";
 import TaskLabels from "./TaskLabels";
 import { useTask } from "@/contexts/task-context";
 import { useProjectContext } from "@/contexts/project-context";
-import { useSprint } from "@/contexts/sprint-context";
+
 import { useAuth } from "@/contexts/auth-context";
 import { TokenManager } from "@/lib/api";
 import ActionButton from "@/components/common/ActionButton";
@@ -45,6 +45,7 @@ import RecurrenceSelector from "@/components/common/RecurrenceSelector";
 import { HiShare } from "react-icons/hi";
 import { cn } from "@/lib/utils";
 import { taskApi } from "@/utils/api/taskApi";
+import api from "@/lib/api";
 
 // Helper function to validate internal paths and prevent open redirect vulnerabilities
 function isValidInternalPath(path: string): boolean {
@@ -101,7 +102,12 @@ export default function TaskDetailClient({
   } = useTask();
 
   const { getProjectMembers, getTaskStatusByProject } = useProjectContext();
-  const { getSprintsByProject } = useSprint();
+
+  // Fetch sprints for a project by slug via the /sprints/slug endpoint
+  const getSprintsByProject = async (projectSlug: string) => {
+    const response = await api.get(`/sprints/slug`, { params: { slug: projectSlug } });
+    return response.data;
+  };
   const { getCurrentUser, isAuthenticated } = useAuth();
   const currentUser = getCurrentUser();
   const isAuth = isAuthenticated();
@@ -218,7 +224,8 @@ export default function TaskDetailClient({
   const [statuses, setStatuses] = useState<any[]>([]);
   const [loadingStatuses, setLoadingStatuses] = useState(true);
   const [sprints, setSprints] = useState<any[]>([]);
-  const [loadingSprints, setLoadingSprints] = useState(true);
+  const [loadingSprints, setLoadingSprints] = useState(false);
+
   const [currentStatus, setCurrentStatus] = useState(task?.status);
   const currentOrganization = TokenManager.getCurrentOrgId();
   const { getUserAccess } = useAuth();
@@ -386,25 +393,7 @@ export default function TaskDetailClient({
     fetchProjectMembers();
   }, [task?.projectId, task?.project?.id]);
 
-  useEffect(() => {
-    const slug = projectSlug || task?.project?.slug;
-    if (!slug || !isAuth) return;
 
-    const fetchSprints = async () => {
-      setLoadingSprints(true);
-      try {
-        const projectSprints = await getSprintsByProject(slug);
-        setSprints(projectSprints || []);
-      } catch (error) {
-        // If getting sprints by slug fails, we might try by ID if API supported it, but for now just log
-        console.error("Failed to fetch sprints:", error);
-      } finally {
-        setLoadingSprints(false);
-      }
-    };
-
-    fetchSprints();
-  }, [projectSlug, task?.project?.slug, isAuth]);
 
   const handleDueDateChange = (newDueDate: string) => {
     // Validate that due date is not before start date
@@ -1400,8 +1389,58 @@ export default function TaskDetailClient({
                   </div>
                 </div>
 
-                {/* Sprint */}
+                {/* Progress */}
                 <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <Label className="text-sm">Tiến độ hoàn thành</Label>
+                    <span className="text-xs font-semibold text-[var(--primary)]">
+                      {task?.progressPercent ?? 0}%
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 mt-2">
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      step={5}
+                      defaultValue={task?.progressPercent ?? 0}
+                      disabled={!hasAccess}
+                      onMouseUp={async (e) => {
+                        const val = Number((e.target as HTMLInputElement).value);
+                        try {
+                          await updateTask(taskId, { progressPercent: val } as any);
+                          task.progressPercent = val;
+                          if (!isAIActive()) { onTaskRefetch && onTaskRefetch(); }
+                          toast.success("Đã cập nhật tiến độ");
+                        } catch {
+                          toast.error("Không cập nhật được tiến độ");
+                        }
+                      }}
+                      onTouchEnd={async (e) => {
+                        const val = Number((e.target as HTMLInputElement).value);
+                        try {
+                          await updateTask(taskId, { progressPercent: val } as any);
+                          task.progressPercent = val;
+                          if (!isAIActive()) { onTaskRefetch && onTaskRefetch(); }
+                          toast.success("Đã cập nhật tiến độ");
+                        } catch {
+                          toast.error("Không cập nhật được tiến độ");
+                        }
+                      }}
+                      className="w-full accent-[var(--primary)] cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                      style={{ height: "6px" }}
+                    />
+                  </div>
+                  <div className="mt-1.5 h-2 w-full rounded-full bg-[var(--muted)] overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-[var(--primary)] transition-all duration-300"
+                      style={{ width: `${Math.min(Math.max(task?.progressPercent ?? 0, 0), 100)}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* Sprint - Hidden per request */}
+                {false && <div>
                   <div className="flex items-center justify-between mb-2">
                     <Label className="text-sm">{t("detail.sprint")}</Label>
                     {canEditGeneral && (
@@ -1550,7 +1589,7 @@ export default function TaskDetailClient({
                       </div>
                     )}
                   </div>
-                </div>
+                </div>}
 
                 {/* Priority */}
                 <div>

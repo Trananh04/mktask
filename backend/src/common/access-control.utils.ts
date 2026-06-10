@@ -155,11 +155,53 @@ export class AccessControlService {
     const workspace = await this.prisma.workspace.findUnique({
       where: { id: workspaceId },
       include: {
-        organization: { select: { ownerId: true } },
+        organization: { select: { id: true, ownerId: true, archive: true } },
       },
     });
 
     if (!workspace) throw new NotFoundException('Workspace not found');
+
+    const org = workspace.organization;
+
+    // Organization owner bypass — not if archived
+    if (org.ownerId === userId && !org.archive) {
+      return {
+        isElevated: true,
+        role: Role.OWNER,
+        canChange: true,
+        userId,
+        scopeId: workspaceId,
+        scopeType: 'WORKSPACE',
+        isSuperAdmin: false,
+      };
+    }
+
+    // Check organization membership (MANAGER/OWNER bypass) — not if archived
+    const orgMember = await this.prisma.organizationMember.findUnique({
+      where: {
+        userId_organizationId: {
+          userId,
+          organizationId: org.id,
+        },
+      },
+      select: { role: true },
+    });
+
+    if (
+      orgMember &&
+      (orgMember.role === Role.MANAGER || orgMember.role === Role.OWNER) &&
+      !org.archive
+    ) {
+      return {
+        isElevated: true,
+        role: orgMember.role,
+        canChange: true,
+        userId,
+        scopeId: workspaceId,
+        scopeType: 'WORKSPACE',
+        isSuperAdmin: false,
+      };
+    }
 
     const wsMember = await this.prisma.workspaceMember.findUnique({
       where: { userId_workspaceId: { userId, workspaceId } },
@@ -169,11 +211,6 @@ export class AccessControlService {
     if (!wsMember) {
       throw new ForbiddenException('Not a member of this workspace');
     }
-
-    const org = await this.prisma.organization.findUnique({
-      where: { id: workspace.organizationId },
-      select: { id: true, archive: true },
-    });
 
     const effectiveRole = wsMember?.role || Role.VIEWER;
     const isElevated = effectiveRole === Role.MANAGER || effectiveRole === Role.OWNER;

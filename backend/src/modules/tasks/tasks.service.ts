@@ -3354,7 +3354,20 @@ export class TasksService {
       where: whereClause,
       include: {
         labels: { include: { label: true } },
-        project: { select: { id: true, name: true, slug: true } },
+        project: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            workspace: {
+              select: {
+                id: true,
+                name: true,
+                slug: true,
+              },
+            },
+          },
+        },
         assignees: {
           select: {
             user: {

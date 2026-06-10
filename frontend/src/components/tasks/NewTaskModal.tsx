@@ -44,7 +44,7 @@ import ActionButton from "@/components/common/ActionButton";
 import { Button } from "../ui/button";
 import { useProject } from "@/contexts/project-context";
 import { useTask } from "@/contexts/task-context";
-import { useSprint } from "@/contexts/sprint-context";
+
 import { useAuth } from "@/contexts/auth-context";
 import { toast } from "sonner";
 import { formatDateForApi, getTodayDate } from "@/utils/handleDateChange";
@@ -62,7 +62,6 @@ interface FormData {
   priority: string;
   type: string;
   storyPoints: string;
-  sprintId?: string;
   parentTaskId?: string;
   assigneeIds: string[];
 }
@@ -92,7 +91,6 @@ export function NewTaskModal({
   } = useProject();
   const { createTask } = useTask();
   const { fetchAnalyticsData } = useProject();
-  const { getSprintsByProject, getActiveSprint } = useSprint();
   const { getCurrentUser } = useAuth();
 
   const [formData, setFormData] = useState<FormData>({
@@ -102,7 +100,6 @@ export function NewTaskModal({
     priority: "MEDIUM",
     type: "TASK",
     storyPoints: "",
-    sprintId: "",
     parentTaskId: "",
     assigneeIds: [],
   });
@@ -115,8 +112,7 @@ export function NewTaskModal({
   const [projectOpen, setProjectOpen] = useState(false);
   const [loadingProjects, setLoadingProjects] = useState(false);
 
-  const [sprints, setSprints] = useState<any[]>([]);
-  const [loadingSprints, setLoadingSprints] = useState(false);
+
 
   const [parentTasks, setParentTasks] = useState<any[]>([]);
   const [loadingParentTasks, setLoadingParentTasks] = useState(false);
@@ -141,8 +137,7 @@ export function NewTaskModal({
   const pathParts = (typeof window !== "undefined" ? window.location.pathname : "")
     .split("/")
     .filter(Boolean);
-  const sprintIndex = pathParts.findIndex((part) => part === "sprints");
-  const sprintIdFromPath = sprintIndex >= 0 ? pathParts[sprintIndex + 1] : undefined;
+
 
   const isGlobalContext = !projectSlug;
 
@@ -156,7 +151,6 @@ export function NewTaskModal({
 
     requestIdRef.current = "";
     setProjects([]);
-    setSprints([]);
     setParentTasks([]);
     setTaskStatuses([]);
     setError(null);
@@ -218,7 +212,6 @@ export function NewTaskModal({
   useEffect(() => {
     if (formData.project?.id) {
       loadTaskStatuses();
-      loadSprints();
       loadOrganizationMembers();
       if (formData.type === "SUBTASK") {
         loadParentTasks();
@@ -313,36 +306,6 @@ export function NewTaskModal({
     }
   };
 
-  const loadSprints = async () => {
-    if (!formData.project?.id) return;
-
-    setLoadingSprints(true);
-    try {
-      const [projectSprints, activeSprint] = await Promise.all([
-        getSprintsByProject(formData.project.slug),
-        getActiveSprint(formData.project.id),
-      ]);
-      setSprints(projectSprints || []);
-
-      const targetSprint = projectSprints?.find((s: any) => s.id === sprintIdFromPath || s.slug === sprintIdFromPath);
-
-      if (targetSprint) {
-        setFormData(prev => ({ ...prev, sprintId: targetSprint.id }));
-      } else if (activeSprint) {
-        setFormData(prev => ({ ...prev, sprintId: activeSprint.id }));
-      } else if (projectSprints && projectSprints.length > 0) {
-        const defaultSprint = projectSprints.find((s: any) => s.isDefault);
-        if (defaultSprint) {
-          setFormData(prev => ({ ...prev, sprintId: defaultSprint.id }));
-        }
-      }
-    } catch (error) {
-      console.error("Failed to load sprints:", error);
-    } finally {
-      setLoadingSprints(false);
-    }
-  };
-
   const loadParentTasks = async () => {
     if (!formData.project?.id) return;
     setLoadingParentTasks(true);
@@ -431,7 +394,6 @@ export function NewTaskModal({
           statusId: defaultStatus?.id,
         };
 
-        if (formData.sprintId) taskData.sprintId = formData.sprintId;
         if (formData.type === "SUBTASK" && formData.parentTaskId) taskData.parentTaskId = formData.parentTaskId;
         if (formData.assigneeIds.length > 0) taskData.assigneeIds = formData.assigneeIds;
         await createTask(taskData);
@@ -475,7 +437,6 @@ export function NewTaskModal({
       priority: "MEDIUM",
       type: "TASK",
       storyPoints: "",
-      sprintId: "",
       parentTaskId: "",
       assigneeIds: [],
     });
@@ -956,47 +917,6 @@ export function NewTaskModal({
             </div>
           </div>
 
-          {!sprintIdFromPath && (
-            <div className="projects-form-field mt-4">
-              <Label className="projects-form-label">
-                <HiBolt
-                  className="projects-form-label-icon"
-                  style={{ color: "hsl(var(--primary))" }}
-                />
-                {t("modal.sprint")}
-              </Label>
-              <Select
-                value={formData.sprintId}
-                onValueChange={(value) => setFormData((prev) => ({ ...prev, sprintId: value }))}
-                disabled={isSubmitting || !formData.project || loadingSprints}
-              >
-                <SelectTrigger
-                  className="projects-workspace-button border-none"
-                  onFocus={(e) => {
-                    e.currentTarget.style.boxShadow = "none";
-                  }}
-                  onBlur={(e) => {
-                    e.currentTarget.style.boxShadow = "none";
-                  }}
-                >
-                  <SelectValue placeholder={!formData.project ? t("modal.selectProjectFirst") : t("modal.selectSprint")} />
-                </SelectTrigger>
-                <SelectContent className="border-none bg-[var(--card)]">
-                  {sprints.map((sprint) => (
-                    <SelectItem
-                      key={sprint.id}
-                      value={sprint.id}
-                      className="hover:bg-[var(--hover-bg)]"
-                    >
-                      <div className="flex items-center gap-2">
-                        {sprint.name} {sprint.isDefault === true && `(${t("modal.default")})`}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
 
           <div className="projects-form-actions flex gap-2 justify-end mt-6">
             <ActionButton type="button" secondary onClick={handleClose} disabled={isSubmitting}>

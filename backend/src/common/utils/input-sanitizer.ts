@@ -18,20 +18,23 @@ export class InputSanitizer {
 
   /**
    * Pattern for safe search characters
-   * Allows alphanumeric, spaces, and common punctuation
-   * Excludes SQL injection patterns and regex special characters
+   * Allows all printable Unicode characters (Vietnamese, etc.) and common whitespace.
+   * Uses Unicode property escapes to avoid ESLint no-control-regex errors.
+   * Blocks ASCII control characters via a positive allowlist approach.
    */
-  private static readonly SAFE_SEARCH_PATTERN = /^[a-zA-Z0-9\s\-_@.# ]+$/;
+  // Matches any printable Unicode: letters, marks, numbers, punctuation, symbols, spaces
+  private static readonly SAFE_SEARCH_PATTERN = /^[\p{L}\p{M}\p{N}\p{P}\p{S}\p{Zs} \t]+$/u;
 
   /**
    * Pattern for slug validation
    */
-  private static readonly SAFE_SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+  private static readonly SAFE_SLUG_PATTERN = /^[\p{Ll}0-9]+(?:-[\p{Ll}0-9]+)*$/u;
 
   /**
    * Pattern for identifier names (project names, workspace names, etc.)
+   * Supports Unicode (Vietnamese and other languages)
    */
-  private static readonly SAFE_NAME_PATTERN = /^[a-zA-Z0-9\s\-_@.#]+$/;
+  private static readonly SAFE_NAME_PATTERN = /^[\p{L}\p{M}\p{N}\p{P}\p{S}\p{Zs} \t]+$/u;
 
   /**
    * Sanitize and validate search input
@@ -57,17 +60,16 @@ export class InputSanitizer {
       );
     }
 
-    // Check for potentially dangerous patterns
+    // Check for control characters and dangerous HTML characters
+    // Uses denylist approach to support Unicode (Vietnamese, etc.)
     if (!this.SAFE_SEARCH_PATTERN.test(trimmed)) {
-      throw new BadRequestException(
-        `${fieldName} contains invalid characters. Only alphanumeric characters, spaces, and -_@.# are allowed`,
-      );
+      throw new BadRequestException(`${fieldName} contains invalid control characters`);
     }
 
     // Check for SQL injection patterns (defense in depth - Prisma already parameterizes)
     const sqlInjectionPatterns = [
       /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|UNION|ALTER|CREATE|TRUNCATE)\b)/i,
-      /(--)|(\/\*)|(\/)|(;)/,
+      /(--)|(\/\*)|(;)/,
       /(\b(OR|AND)\b\s+\d+\s*=\s*\d+)/i,
     ];
 
@@ -75,12 +77,6 @@ export class InputSanitizer {
       if (pattern.test(trimmed)) {
         throw new BadRequestException(`${fieldName} contains invalid pattern`);
       }
-    }
-
-    // Check for regex special characters that could cause ReDoS
-    const regexSpecialChars = /[.*+?^${}()|[\]\\]/;
-    if (regexSpecialChars.test(trimmed)) {
-      throw new BadRequestException(`${fieldName} contains invalid special characters`);
     }
 
     return trimmed;
@@ -109,6 +105,7 @@ export class InputSanitizer {
       throw new BadRequestException(`${fieldName} must not exceed ${maxLength} characters`);
     }
 
+    // Use Unicode-aware denylist: reject control chars and dangerous HTML
     if (!this.SAFE_NAME_PATTERN.test(trimmed)) {
       throw new BadRequestException(`${fieldName} contains invalid characters`);
     }

@@ -29,7 +29,7 @@ function sanitizeSlug(slug: string): string {
   if (slug.startsWith('[') && slug.endsWith(']')) {
     throw new Error(`Invalid slug: route parameter not resolved. Router may not be ready yet.`);
   }
-  if (!/^[a-zA-Z0-9._-]+$/.test(slug)) {
+  if (!/^[\p{L}0-9._-]+$/u.test(slug)) {
     throw new Error(`Invalid slug format: contains invalid characters. Received: "${slug}"`);
   }
   if (slug.includes('..') || slug.includes('//')) {

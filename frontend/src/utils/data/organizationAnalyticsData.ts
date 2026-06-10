@@ -124,7 +124,7 @@ export const organizationAnalyticsWidgets: Widget[] = [
     title: "workspace-home:widgets.workspace_projects",
     component: WorkspaceProjectChart,
     dataKey: "workspaceProjectCount",
-    visible: false,
+    visible: true,
     gridCols: "col-span-full",
     priority: 9,
   },

@@ -372,6 +372,7 @@ model Task {
   isBlocked         Boolean      @default(false) @map("is_blocked")
   blockedReason     String?      @map("blocked_reason")
   blockedAt         DateTime?    @map("blocked_at")
+  progressPercent   Int?         @map("progress_percent")
   projectId         String       @map("project_id") @db.Uuid
   statusId          String       @map("status_id") @db.Uuid
   sprintId          String?      @map("sprint_id") @db.Uuid

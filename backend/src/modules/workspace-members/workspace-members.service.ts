@@ -195,23 +195,8 @@ export class WorkspaceMembersService {
           },
         },
       });
-      if (role === Role.OWNER || role === Role.MANAGER) {
-        const wsProjects = await this.prisma.project.findMany({
-          where: { workspaceId },
-        });
-
-        if (wsProjects.length > 0) {
-          await this.prisma.projectMember.createMany({
-            data: wsProjects.map((project) => ({
-              userId,
-              projectId: project.id,
-              role,
-              createdBy: actorId,
-            })),
-            skipDuplicates: true,
-          });
-        }
-      }
+      // Project membership is NOT automatically granted when joining a workspace.
+      // A manager or super admin must explicitly assign the user to each project.
       return wsMember;
     } catch (error) {
       console.error(error);
@@ -545,39 +530,8 @@ export class WorkspaceMembersService {
       const workspaceId = updated.workspaceId;
       const role = updated.role;
 
-      // Get all projects in this workspace
-      const wsProjects = await tx.project.findMany({
-        where: { workspaceId },
-        select: { id: true },
-      });
-
-      if (wsProjects.length > 0) {
-        // Update or create project members for all projects in the workspace
-        const projectMemberOperations = wsProjects.map((project) =>
-          tx.projectMember.upsert({
-            where: {
-              userId_projectId: {
-                userId: userId,
-                projectId: project.id,
-              },
-            },
-            update: {
-              role: role, // Update existing member's role
-              updatedBy: actorId,
-            },
-            create: {
-              userId: userId,
-              projectId: project.id,
-              role: role, // Create new member with role
-              createdBy: actorId,
-            },
-          }),
-        );
-
-        // Execute all upsert operations
-        await Promise.all(projectMemberOperations);
-      }
-
+      // Project membership is NOT automatically updated when a workspace role changes.
+      // Project membership must be managed explicitly by a manager or super admin.
       return updated;
     });
 

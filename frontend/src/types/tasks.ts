@@ -148,6 +148,7 @@ export interface Task {
   };
   displayOrder?: number | null;
   listRank?: number | null;
+  progressPercent?: number | null;
 }
 export interface PaginationResponse<T> {
   data: T[];

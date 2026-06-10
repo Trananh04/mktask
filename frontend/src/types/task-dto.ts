@@ -44,6 +44,7 @@ export interface UpdateTaskRequest {
   sprintId?: string;
   displayOrder?: number | null;
   listRank?: number | null;
+  progressPercent?: number | null;
 }
 export interface TasksResponse {
   tasks: Task[];
