@@ -1083,6 +1083,136 @@ export default function TaskDetailClient({
                 </Link>
               </div>
             )}
+
+            {/* Header Date Range */}
+            <div className="flex items-center gap-4 mt-3">
+              {/* Start Date */}
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-[var(--foreground)]">
+                  {t("detail.startDate")}:
+                </span>
+                {isEditingTask.startDate ? (
+                  <div className="relative">
+                    <Input
+                      type="date"
+                      value={editTaskData.startDate}
+                      max={editTaskData.dueDate || undefined}
+                      onChange={(e) => {
+                        handleStartDateChange(e.target.value);
+                      }}
+                      onBlur={(e) => {
+                        if (
+                          e.target.value !==
+                          (task.startDate ? task.startDate.split("T")[0] : "")
+                        ) {
+                          saveStartDate(e.target.value);
+                        }
+                      }}
+                      className="h-8 text-xs bg-[var(--background)] border-[var(--border)] w-[140px] cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+                      placeholder={t("detail.placeholderSelectStartDate")}
+                    />
+                    {editTaskData.startDate && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleStartDateChange("");
+                          saveStartDate("");
+                        }}
+                        className="absolute right-2 top-1/2 transform -translate-y-1/2 text-[var(--muted-foreground)] hover:text-[var(--foreground)] text-xs z-10"
+                        title={t("detail.placeholderSelectStartDate")}
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <Badge
+                    data-testid="start-date-badge"
+                    onClick={() => {
+                      if (!canEditGeneral) return;
+                      setIsEditingTask((prev) => ({
+                        ...prev,
+                        startDate: true,
+                        dueDate: true,
+                      }));
+                    }}
+                    variant="outline"
+                    className={cn(
+                      "text-[13px] h-8 px-3 rounded bg-[var(--muted)] border-[var(--border)] flex-shrink-0",
+                      canEditGeneral ? "cursor-pointer hover:bg-[var(--accent)]" : "cursor-default"
+                    )}
+                  >
+                    {editTaskData.startDate
+                      ? formatDateForDisplay(editTaskData.startDate)
+                      : t("detail.noStartDate")}
+                  </Badge>
+                )}
+              </div>
+
+              {/* Due Date */}
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-[var(--foreground)]">
+                  {t("detail.dueDate")}:
+                </span>
+                {isEditingTask.dueDate ? (
+                  <div className="relative">
+                    <Input
+                      type="date"
+                      value={editTaskData.dueDate}
+                      min={editTaskData.startDate || undefined}
+                      onChange={(e) => {
+                        handleDueDateChange(e.target.value);
+                      }}
+                      onBlur={(e) => {
+                        if (
+                          e.target.value !== (task.dueDate ? task.dueDate.split("T")[0] : "")
+                        ) {
+                          saveDueDate(e.target.value);
+                        }
+                      }}
+                      className="h-8 text-xs bg-[var(--background)] border-[var(--border)] w-[140px] cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+                      placeholder={t("detail.placeholderSelectDueDate")}
+                    />
+                    {editTaskData.dueDate && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDueDateChange("");
+                          saveDueDate("");
+                        }}
+                        className="absolute right-2 top-1/2 transform -translate-y-1/2 text-[var(--muted-foreground)] hover:text-[var(--foreground)] text-xs z-10"
+                        title={t("detail.placeholderSelectDueDate")}
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <Badge
+                    data-testid="due-date-badge"
+                    onClick={() => {
+                      if (!canEditGeneral) return;
+                      setIsEditingTask((prev) => ({
+                        ...prev,
+                        startDate: true,
+                        dueDate: true,
+                      }));
+                    }}
+                    variant="outline"
+                    className={cn(
+                      "text-[13px] h-8 px-3 rounded bg-[var(--muted)] border-[var(--border)] flex-shrink-0",
+                      canEditGeneral ? "cursor-pointer hover:bg-[var(--accent)]" : "cursor-default"
+                    )}
+                  >
+                    {editTaskData.dueDate
+                      ? formatDateForDisplay(editTaskData.dueDate)
+                      : t("detail.noDueDate")}
+                  </Badge>
+                )}
+              </div>
+            </div>
           </div>
 
           {canEditGeneral && (
@@ -1701,111 +1831,7 @@ export default function TaskDetailClient({
                   </div>
                 </div>
 
-                {/* Status */}
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <Label className="text-sm">{t("detail.status")}</Label>
-                    {hasAccess && (
-                      <button
-                        type="button"
-                        data-testid="edit-status-btn"
-                        className="rounded transition flex items-center cursor-pointer text-[var(--muted-foreground)] hover:text-[var(--foreground)] text-xs p-1"
-                        onClick={() => {
-                          setIsEditingTask((prev) => ({
-                            ...prev,
-                            status: true,
-                          }));
-                          setAutoOpenDropdown((prev) => ({
-                            ...prev,
-                            status: true,
-                          }));
-                        }}
-                        tabIndex={0}
-                        aria-label={t("detail.edit")}
-                        style={{ lineHeight: 0 }}
-                      >
-                        {t("detail.edit")}
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Conditionally render badge or dropdown */}
-                  <div className="mt-2">
-                    {isEditingTask.status ? (
-                      <DropdownAction
-                        currentItem={currentStatus}
-                        availableItems={statuses}
-                        loading={loadingStatuses}
-                        forceOpen={autoOpenDropdown.status}
-                        onOpenStateChange={(isOpen) => {
-                          if (!isOpen) {
-                            setAutoOpenDropdown((prev) => ({
-                              ...prev,
-                              status: false,
-                            }));
-                            setIsEditingTask((prev) => ({
-                              ...prev,
-                              status: false,
-                            }));
-                          }
-                        }}
-                        onItemSelect={async (item) => {
-                          await handleStatusChange(item);
-                          setIsEditingTask((prev) => ({
-                            ...prev,
-                            status: false,
-                          }));
-                          setAutoOpenDropdown((prev) => ({
-                            ...prev,
-                            status: false,
-                          }));
-                        }}
-                        placeholder={t("detail.placeholderSelectStatus")}
-                        showUnassign={false}
-                        hideAvatar={true}
-                        hideSubtext={true}
-                        itemType="status"
-                        onDropdownOpen={async () => {
-                          if (statuses.length === 0) {
-                            const projectId = task.projectId || task.project?.id;
-                            if (projectId) {
-                              try {
-                                const allStatuses = await getTaskStatusByProject(projectId);
-                                setStatuses(allStatuses || []);
-                              } catch (error) {
-                                toast.error(t("detail.fetchStatusesError"));
-                              }
-                            }
-                          }
-                        }}
-                      />
-                    ) : (
-                      <StatusBadge data-testid="status-badge" onClick={() => {
-                        setIsEditingTask((prev) => ({
-                          ...prev,
-                          status: true,
-                        }));
-                        setAutoOpenDropdown((prev) => ({
-                          ...prev,
-                          status: true,
-                        }));
-                      }} status={currentStatus} className="text-[13px] min-w-[120px] min-h-[29.33px] flex items-center justify-center" />
-                    )}
-                    {isMember && hasAccess && (
-                      <div className="mt-3 space-y-2">
-                        <Input
-                          value={statusRequestNote}
-                          onChange={(event) => setStatusRequestNote(event.target.value)}
-                          placeholder="Ghi chú gửi manager khi đổi trạng thái"
-                          className="h-9 text-xs"
-                        />
-                        <p className="text-xs text-[var(--muted-foreground)]">
-                          Member chọn trạng thái sẽ tạo yêu cầu chờ manager duyệt.
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </div>
+                {/* Status section removed per request */}
 
                 {hasAccess && (
                   <div className="border-t border-[var(--border)] pt-4">
@@ -1892,155 +1918,6 @@ export default function TaskDetailClient({
                     </button>
                   </div>
                 )}
-
-                {/* Date Range Section */}
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <Label className="text-sm">{t("detail.dateRange")}</Label>
-                    {canEditGeneral && (
-                      <button
-                        type="button"
-                        data-testid="edit-dates-btn"
-                        className="rounded transition flex items-center cursor-pointer p-1 text-[var(--muted-foreground)] hover:text-[var(--foreground)] text-xs"
-                        onClick={() =>
-                          setIsEditingTask((prev) => ({
-                            ...prev,
-                            startDate: !prev.startDate,
-                            dueDate: !prev.dueDate,
-                          }))
-                        }
-                        tabIndex={0}
-                        aria-label={t("detail.edit")}
-                        style={{ lineHeight: 0 }}
-                      >
-                        {isEditingTask.startDate ? t("detail.done") : t("detail.edit")}
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Start Date */}
-                  <div className="mb-3">
-                    <Label className="text-xs text-[var(--muted-foreground)] mb-1.5 block">
-                      {t("detail.startDate")}
-                    </Label>
-                    {isEditingTask.startDate ? (
-                      <div className="relative">
-                        <Input
-                          type="date"
-                          value={editTaskData.startDate}
-                          max={editTaskData.dueDate || undefined}
-                          onChange={(e) => {
-                            handleStartDateChange(e.target.value);
-                          }}
-                          onBlur={(e) => {
-                            if (
-                              e.target.value !==
-                              (task.startDate ? task.startDate.split("T")[0] : "")
-                            ) {
-                              saveStartDate(e.target.value);
-                            }
-                          }}
-                          className="text-xs bg-[var(--background)] border-[var(--border)] w-full cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:cursor-pointer"
-                          placeholder={t("detail.placeholderSelectStartDate")}
-                        />
-                        {editTaskData.startDate && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleStartDateChange("");
-                              saveStartDate("");
-                            }}
-                            className="absolute right-2 top-1/2 transform -translate-y-1/2 text-[var(--muted-foreground)] hover:text-[var(--foreground)] text-xs z-10"
-                            title={t("detail.placeholderSelectStartDate")}
-                          >
-                            ✕
-                          </button>
-                        )}
-                      </div>
-                    ) : (
-                      <Badge
-                        data-testid="start-date-badge"
-                        onClick={() =>
-                          setIsEditingTask((prev) => ({
-                            ...prev,
-                            startDate: !prev.startDate,
-                            dueDate: !prev.dueDate,
-                          }))
-                        }
-                        variant="outline"
-                        className="text-[13px] min-w-[120px] min-h-[29.33px] rounded-2xl  px-1.5 py-0.5 bg-[var(--muted)] border-[var(--border)] flex-shrink-0 cursor-pointer"
-                      >
-                        {editTaskData.startDate
-                          ? formatDateForDisplay(editTaskData.startDate)
-                          : t("detail.noStartDate")}
-                      </Badge>
-                    )}
-                  </div>
-
-                  {/* Due Date */}
-                  <div>
-                    <Label className="text-xs text-[var(--muted-foreground)] mb-1.5 block">
-                      {t("detail.dueDate")}
-                    </Label>
-                    {isEditingTask.dueDate ? (
-                      <div className="relative">
-                        <Input
-                          type="date"
-                          value={editTaskData.dueDate}
-                          min={editTaskData.startDate || undefined}
-                          onChange={(e) => {
-                            handleDueDateChange(e.target.value);
-                          }}
-                          onBlur={(e) => {
-                            if (
-                              e.target.value !== (task.dueDate ? task.dueDate.split("T")[0] : "")
-                            ) {
-                              saveDueDate(e.target.value);
-                            }
-                          }}
-                          className="text-xs bg-[var(--background)] border-[var(--border)] w-full cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:cursor-pointer"
-                          placeholder={t("detail.placeholderSelectDueDate")}
-                        />
-                        {editTaskData.dueDate && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDueDateChange("");
-                              saveDueDate("");
-                            }}
-                            className="absolute right-2 top-1/2 transform -translate-y-1/2 text-[var(--muted-foreground)] hover:text-[var(--foreground)] text-xs z-10"
-                            title={t("detail.placeholderSelectDueDate")}
-                          >
-                            ✕
-                          </button>
-                        )}
-                      </div>
-                    ) : (
-                      <Badge
-                        data-testid="due-date-badge"
-                        onClick={() => {
-                          if (!canEditGeneral) return;
-                          setIsEditingTask((prev) => ({
-                            ...prev,
-                            startDate: !prev.startDate,
-                            dueDate: !prev.dueDate,
-                          }))
-                        }}
-                        variant="outline"
-                        className={cn(
-                          "min-w-[120px] min-h-[29.33px] text-[13px] rounded-2xl px-1.5 py-0.5 bg-[var(--muted)] border-[var(--border)] flex-shrink-0",
-                          canEditGeneral ? "cursor-pointer" : "cursor-default"
-                        )}
-                      >
-                        {editTaskData.dueDate
-                          ? formatDateForDisplay(editTaskData.dueDate)
-                          : t("detail.noDueDate")}
-                      </Badge>
-                    )}
-                  </div>
-                </div>
               </div>
             </div>
 
