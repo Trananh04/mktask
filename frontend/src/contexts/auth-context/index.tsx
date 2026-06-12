@@ -221,7 +221,7 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
         // Optionally update logged-in user state if result contains user
         if (updateUserState && typeof result === "object" && result && "user" in result) {
           const authResponse = result as any;
-          if (authResponse.user) {
+          if (authResponse.user && authResponse.access_token) {
             setAuthState((prev) => ({ ...prev, user: authResponse.user }));
 
             // Setup organization for newly logged in user - runs only here, not after updateUser
@@ -301,7 +301,7 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
       // Auth methods
       register: async (userData: UserData) => {
         const result = await handleApiOperation(() => authApi.register(userData), true);
-        if (result) {
+        if (result && result.access_token) {
           // Load AI settings after successful registration
           await loadUserAISettings();
 

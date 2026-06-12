@@ -8,7 +8,7 @@ import {
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { User, Role } from '@prisma/client';
+import { User, Role, UserStatus } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { ChangePasswordDto } from '../auth/dto/change-password.dto';
 import { StorageService } from '../storage/storage.service';
@@ -65,6 +65,7 @@ export class UsersService {
         timezone: createUserDto.timezone,
         language: createUserDto.language,
         role: createUserDto.role || Role.MEMBER,
+        status: createUserDto.status || UserStatus.ACTIVE,
       },
     });
 

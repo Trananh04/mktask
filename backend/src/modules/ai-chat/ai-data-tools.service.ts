@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma, Role, StatusCategory, TaskPriority, TaskStatus, User } from '@prisma/client';
+import { Prisma, Role } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ChatRequestDto } from './dto/chat.dto';
 import { QueryPlan } from './query-planner.service';
@@ -20,38 +20,32 @@ export interface ToolDefinition {
   params: Record<string, any>;
 }
 
-const QUERY_DATA_PATTERNS = [
-  /\bbao nhi[eê]u\b/i, /\bli[eệ]t k[eê]\b/i, /\bti[eế]n [đd][oộ]\b/i,
-  /\bxong ch[uư]a\b/i, /\bt[iì]nh h[iì]nh\b/i, /\br[uủ]i ro\b/i,
-  /\bqu[aá] h[aạ]n\b/i, /\boverdue\b/i, /\bworkload\b/i,
-  /\bqu[aá] t[aả]i\b/i, /\b[đd]ang r[aả]nh\b/i, /\bavailable assignee/i,
-  /\bdaily report\b/i, /\bb[aá]o c[aá]o\b/i, /\bho[aà]n th[aà]nh\b/i,
-  /\bl[aà]m xong\b/i, /\bcompleted\b/i, /\bdeadline\b/i,
-  /\btime tracking\b/i, /\bgi[oờ] l[aà]m\b/i, /\bt[aạ]i sao\b/i,
-  /\bwhy\b/i, /\bt[oó]m t[aắ]t\b/i, /\bsummar/i, /\bai (?:đang|l[aà])\b/i,
-  /\bbao l[aâ]u\b/i, /\bl[aà]m t[oố]t nh[aấ]t\b/i,
-];
-
-const GUIDANCE_PATTERNS = [
-  /\bl[aà]m sao\b/i, /\bh[uư][oớ]ng d[aẫ]n\b/i, /\bc[aá]ch (?:n[aà]o|[đd][eể])\b/i, /\bg[oợ]i [yý]\b/i
-];
-
+/**
+ * All non-automation messages go through QUERY_DATA so the QueryPlanner LLM
+ * decides context (data query vs guidance) — no brittle regex pre-classification.
+ */
 export function classifyChatIntent(message: string, automationEnvelope = false): AiChatIntent {
   if (automationEnvelope) return 'AUTOMATION';
-  if (GUIDANCE_PATTERNS.some((pattern) => pattern.test(message))) return 'GUIDANCE';
-  
-  // Default to QUERY_DATA so the powerful Query Planner LLM can analyze complex questions
   return 'QUERY_DATA';
+}
+
+// ─── Helper: check if role is manager-level or above ─────────────────────────
+function isManagerOrAbove(role: UserScope['role']): boolean {
+  return role === 'MANAGER' || role === 'OWNER' || role === 'SUPER_ADMIN';
+}
+function isAdminOrOwner(role: UserScope['role']): boolean {
+  return role === 'OWNER' || role === 'SUPER_ADMIN';
 }
 
 @Injectable()
 export class AiDataToolsService {
   constructor(private readonly prisma: PrismaService) {}
 
+  // ─── Resolve User Scope ───────────────────────────────────────────────────
   async resolveUserScope(userId: string, organizationId?: string): Promise<UserScope> {
     const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
     const orgScope = organizationId ? { workspace: { organizationId } } : {};
-    
+
     if (user?.role === Role.SUPER_ADMIN) {
       const projects = await this.prisma.project.findMany({ where: { archive: false, ...orgScope }, select: { id: true } });
       const ids = projects.map(p => p.id);
@@ -75,20 +69,17 @@ export class AiDataToolsService {
       return { role: 'OWNER', accessibleProjectIds: ids, managedProjectIds: ids, userId, organizationId };
     }
 
-    // Manager / Member logic
+    // Only look at explicit ProjectMember records — mirrors the new RolesGuard behavior.
+    // Org-level or workspace-level MANAGER is NOT automatically a project manager.
     const projects = await this.prisma.project.findMany({
       where: {
         archive: false,
         ...orgScope,
-        OR: [
-          { members: { some: { userId } } },
-          { workspace: { members: { some: { userId } } } }
-        ]
+        members: { some: { userId } },   // must be explicitly added to the project
       },
-      select: { 
-        id: true, 
+      select: {
+        id: true,
         members: { where: { userId }, select: { role: true } },
-        workspace: { select: { members: { where: { userId }, select: { role: true } } } }
       }
     });
 
@@ -98,89 +89,198 @@ export class AiDataToolsService {
 
     for (const p of projects) {
       accessibleProjectIds.push(p.id);
-      const isProjManager = p.members[0]?.role === Role.MANAGER || p.members[0]?.role === Role.OWNER;
-      const isWsManager = p.workspace.members[0]?.role === Role.MANAGER || p.workspace.members[0]?.role === Role.OWNER;
-      
-      if (isProjManager || isWsManager) {
+      const memberRole = p.members[0]?.role;
+      if (memberRole === Role.MANAGER || memberRole === Role.OWNER) {
         managedProjectIds.push(p.id);
         hasManagerRole = true;
       }
     }
 
-    return {
-      role: hasManagerRole ? 'MANAGER' : 'MEMBER',
-      accessibleProjectIds,
-      managedProjectIds,
-      userId,
-      organizationId
-    };
+    return { role: hasManagerRole ? 'MANAGER' : 'MEMBER', accessibleProjectIds, managedProjectIds, userId, organizationId };
   }
 
+  // ─── Build Tool Catalog based on role ────────────────────────────────────
   buildToolCatalog(userScope: UserScope): ToolDefinition[] {
+    // ── MEMBER tools (available to all roles) ──
     const tools: ToolDefinition[] = [
       {
-        name: 'get_tasks',
-        description: 'Get a list of tasks matching specific filters.',
+        name: 'get_my_tasks',
+        description: 'Get tasks assigned to the current logged-in user. Supports filtering by status, priority, project, overdue, sprint.',
         params: {
-          projectSlug: 'string (optional) - Filter by project slug',
-          sprintName: 'string (optional) - Filter by sprint name',
-          statusCategory: 'string (optional) - TODO, IN_PROGRESS, DONE',
-          isOverdue: 'boolean (optional) - Only overdue tasks',
-          isUnassigned: 'boolean (optional) - Only unassigned tasks',
-          priority: 'string (optional) - LOWEST, LOW, MEDIUM, HIGH, HIGHEST',
+          projectSlug: 'string (optional)',
+          statusCategory: 'string (optional) - TODO | IN_PROGRESS | DONE',
+          priority: 'string (optional) - LOWEST | LOW | MEDIUM | HIGH | HIGHEST',
+          isOverdue: 'boolean (optional)',
+          sprintName: 'string (optional)',
         }
+      },
+      {
+        name: 'get_my_projects',
+        description: 'Get the list of projects the current user belongs to.',
+        params: {}
       },
       {
         name: 'get_project_health',
-        description: 'Get project overall health, task counts, completion rate.',
-        params: {
-          projectSlug: 'string (optional) - The project slug. If omitted, gets overall health.'
-        }
-      },
-      {
-        name: 'get_workload',
-        description: 'Get task workload for specific users or find available assignees.',
-        params: {
-          projectSlug: 'string (optional)',
-          userName: 'string (optional) - Filter by specific user name'
-        }
+        description: 'Get overall health, task counts, and completion rate for one or all accessible projects.',
+        params: { projectSlug: 'string (optional)' }
       },
       {
         name: 'get_sprint_tasks',
-        description: 'Get tasks for a specific sprint.',
+        description: 'Get tasks in a sprint. If sprintName omitted, returns active sprint tasks.',
         params: {
           projectSlug: 'string (optional)',
-          sprintName: 'string (optional) - If omitted, gets active sprint'
+          sprintName: 'string (optional)',
         }
-      }
+      },
+      {
+        name: 'get_my_daily_reports',
+        description: 'Get daily báo cáo (reports) submitted by the current user.',
+        params: {
+          reportDate: 'string (optional) - YYYY-MM-DD',
+          status: 'string (optional) - SUBMITTED | REVIEWED',
+        }
+      },
+      {
+        name: 'get_my_time_entries',
+        description: 'Get time tracking entries logged by the current user.',
+        params: {
+          projectSlug: 'string (optional)',
+          fromDate: 'string (optional) - YYYY-MM-DD',
+          toDate: 'string (optional) - YYYY-MM-DD',
+        }
+      },
     ];
 
-    if (userScope.role !== 'MEMBER') {
-      tools.push({
-        name: 'get_project_team',
-        description: 'Get the list of members in a project.',
-        params: { projectSlug: 'string (optional)' }
-      });
-      tools.push({
-        name: 'get_user_projects',
-        description: 'Get the list of projects a specific user is participating in.',
-        params: { userName: 'string (required) - The name or email of the user' }
-      });
-      tools.push({
-        name: 'get_overdue_summary',
-        description: 'Get summary of overdue tasks grouped by assignee.',
-        params: { projectSlug: 'string (optional)' }
-      });
-      tools.push({
-        name: 'get_time_tracking',
-        description: 'Get time tracking stats.',
-        params: { projectSlug: 'string (optional)' }
-      });
+    // ── MANAGER tools (manager, owner, super_admin) ──
+    if (isManagerOrAbove(userScope.role)) {
+      tools.push(
+        {
+          name: 'get_tasks',
+          description: 'Get all tasks across accessible projects with rich filtering. Use for questions about any task in the team.',
+          params: {
+            projectSlug: 'string (optional)',
+            sprintName: 'string (optional)',
+            statusCategory: 'string (optional) - TODO | IN_PROGRESS | DONE',
+            isOverdue: 'boolean (optional)',
+            isUnassigned: 'boolean (optional)',
+            priority: 'string (optional) - LOWEST | LOW | MEDIUM | HIGH | HIGHEST',
+            assigneeName: 'string (optional)',
+          }
+        },
+        {
+          name: 'get_workload',
+          description: 'Get task workload per team member. Useful for questions about who is overloaded or available.',
+          params: {
+            projectSlug: 'string (optional)',
+            userName: 'string (optional)',
+          }
+        },
+        {
+          name: 'get_project_team',
+          description: 'Get the list of members in one or all projects.',
+          params: { projectSlug: 'string (optional)' }
+        },
+        {
+          name: 'get_user_projects',
+          description: 'Get the list of projects a specific user is participating in.',
+          params: { userName: 'string (required)' }
+        },
+        {
+          name: 'get_overdue_summary',
+          description: 'Get overdue tasks grouped by assignee across managed projects.',
+          params: { projectSlug: 'string (optional)' }
+        },
+        {
+          name: 'get_daily_reports',
+          description: 'Get daily báo cáo (reports) from all team members. Filter by date, member, project, or status.',
+          params: {
+            reportDate: 'string (optional) - YYYY-MM-DD',
+            reporterName: 'string (optional)',
+            projectSlug: 'string (optional)',
+            status: 'string (optional) - SUBMITTED | REVIEWED',
+          }
+        },
+        {
+          name: 'get_time_tracking',
+          description: 'Get time tracking summary for the team. Shows total hours logged per user or per project.',
+          params: {
+            projectSlug: 'string (optional)',
+            userName: 'string (optional)',
+            fromDate: 'string (optional) - YYYY-MM-DD',
+            toDate: 'string (optional) - YYYY-MM-DD',
+          }
+        },
+        {
+          name: 'get_pending_status_requests',
+          description: 'Get pending task status change requests waiting for manager review.',
+          params: { projectSlug: 'string (optional)' }
+        },
+        {
+          name: 'get_project_risks',
+          description: 'Get risks registered for one or all managed projects.',
+          params: {
+            projectSlug: 'string (optional)',
+            severity: 'string (optional) - LOW | MEDIUM | HIGH | CRITICAL',
+            status: 'string (optional) - OPEN | MITIGATED | RESOLVED',
+          }
+        },
+        {
+          name: 'get_milestones',
+          description: 'Get project milestones and their due dates/status.',
+          params: {
+            projectSlug: 'string (optional)',
+            status: 'string (optional) - PLANNED | IN_PROGRESS | COMPLETED | MISSED',
+          }
+        },
+        {
+          name: 'get_sprint_summary',
+          description: 'Get a summary of all sprints for a project including task counts and progress.',
+          params: { projectSlug: 'string (optional)' }
+        },
+      );
+    }
+
+    // ── ADMIN/OWNER tools ──
+    if (isAdminOrOwner(userScope.role)) {
+      tools.push(
+        {
+          name: 'get_org_members',
+          description: 'Get all members of the organization with their roles.',
+          params: {
+            role: 'string (optional) - MEMBER | MANAGER | OWNER',
+            search: 'string (optional) - name or email search',
+          }
+        },
+        {
+          name: 'get_all_projects',
+          description: 'Get all projects in the organization with health overview.',
+          params: { includeArchived: 'boolean (optional)' }
+        },
+        {
+          name: 'get_activity_log',
+          description: 'Get recent activity logs across the organization.',
+          params: {
+            projectSlug: 'string (optional)',
+            userName: 'string (optional)',
+            fromDate: 'string (optional) - YYYY-MM-DD',
+            limit: 'number (optional) - max 100',
+          }
+        },
+        {
+          name: 'get_project_status_updates',
+          description: 'Get latest project status updates (health reports written by managers).',
+          params: {
+            projectSlug: 'string (optional)',
+            health: 'string (optional) - ON_TRACK | AT_RISK | OFF_TRACK',
+          }
+        },
+      );
     }
 
     return tools;
   }
 
+  // ─── Context for QueryPlanner ─────────────────────────────────────────────
   async getAccessibleProjectsContext(userScope: UserScope): Promise<string> {
     const projects = await this.prisma.project.findMany({
       where: { id: { in: userScope.accessibleProjectIds } },
@@ -189,21 +289,23 @@ export class AiDataToolsService {
     return JSON.stringify(projects);
   }
 
-  // --- Fallback grounded context if LLM #1 fails ---
+  // ─── Fallback grounded context if QueryPlanner fails ─────────────────────
   async buildGroundedContext(message: string, userId: string, request: ChatRequestDto): Promise<string> {
-    // Keep a simple fallback if QueryPlanner fails completely
     const userScope = await this.resolveUserScope(userId, request.currentOrganizationId);
     if (userScope.accessibleProjectIds.length === 0) {
       return 'DATA TOOL RESULT: User has no accessible projects.';
     }
-    const results = await this.executeTools({ tools: [{ name: 'get_project_health', params: {} }], reasoning: 'Fallback' }, userScope);
+    const results = await this.executeTools(
+      { tools: [{ name: 'get_my_projects', params: {} }, { name: 'get_project_health', params: {} }], reasoning: 'Fallback' },
+      userScope
+    );
     return `DATA TOOL RESULTS:\n${JSON.stringify(results, null, 2)}`;
   }
 
-  // --- Tool Execution Pipeline ---
+  // ─── Tool Execution Pipeline ──────────────────────────────────────────────
   async executeTools(plan: QueryPlan, userScope: UserScope): Promise<Record<string, any>> {
     const results: Record<string, any> = { _scope: userScope.role };
-    
+
     if (userScope.accessibleProjectIds.length === 0) {
       return { error: 'No accessible projects in this organization.' };
     }
@@ -212,34 +314,105 @@ export class AiDataToolsService {
       try {
         let res: any = null;
         switch (tool.name) {
-          case 'get_tasks':
-            res = await this.toolGetTasks(tool.params, userScope);
+          // ── MEMBER tools ──
+          case 'get_my_tasks':
+            res = await this.toolGetMyTasks(tool.params, userScope);
+            break;
+          case 'get_my_projects':
+            res = await this.toolGetMyProjects(userScope);
             break;
           case 'get_project_health':
             res = await this.toolGetProjectHealth(tool.params, userScope);
             break;
-          case 'get_workload':
-            res = await this.toolGetWorkload(tool.params, userScope);
-            break;
           case 'get_sprint_tasks':
             res = await this.toolGetSprintTasks(tool.params, userScope);
             break;
+          case 'get_my_daily_reports':
+            res = await this.toolGetMyDailyReports(tool.params, userScope);
+            break;
+          case 'get_my_time_entries':
+            res = await this.toolGetMyTimeEntries(tool.params, userScope);
+            break;
+
+          // ── MANAGER tools ──
+          case 'get_tasks':
+            res = isManagerOrAbove(userScope.role)
+              ? await this.toolGetTasks(tool.params, userScope)
+              : { error: 'Permission denied' };
+            break;
+          case 'get_workload':
+            res = isManagerOrAbove(userScope.role)
+              ? await this.toolGetWorkload(tool.params, userScope)
+              : { error: 'Permission denied' };
+            break;
           case 'get_project_team':
-            if (userScope.role !== 'MEMBER') res = await this.toolGetProjectTeam(tool.params, userScope);
-            else res = { error: 'Permission denied for tool get_project_team' };
+            res = isManagerOrAbove(userScope.role)
+              ? await this.toolGetProjectTeam(tool.params, userScope)
+              : { error: 'Permission denied' };
             break;
           case 'get_user_projects':
-            if (userScope.role !== 'MEMBER') res = await this.toolGetUserProjects(tool.params, userScope);
-            else res = { error: 'Permission denied' };
+            res = isManagerOrAbove(userScope.role)
+              ? await this.toolGetUserProjects(tool.params, userScope)
+              : { error: 'Permission denied' };
             break;
           case 'get_overdue_summary':
-            if (userScope.role !== 'MEMBER') res = await this.toolGetOverdueSummary(tool.params, userScope);
-            else res = { error: 'Permission denied' };
+            res = isManagerOrAbove(userScope.role)
+              ? await this.toolGetOverdueSummary(tool.params, userScope)
+              : { error: 'Permission denied' };
+            break;
+          case 'get_daily_reports':
+            res = isManagerOrAbove(userScope.role)
+              ? await this.toolGetDailyReports(tool.params, userScope)
+              : { error: 'Permission denied. Use get_my_daily_reports instead.' };
             break;
           case 'get_time_tracking':
-             if (userScope.role !== 'MEMBER') res = await this.toolGetTimeTracking(tool.params, userScope);
-             else res = { error: 'Permission denied' };
-             break;
+            res = isManagerOrAbove(userScope.role)
+              ? await this.toolGetTimeTracking(tool.params, userScope)
+              : { error: 'Permission denied' };
+            break;
+          case 'get_pending_status_requests':
+            res = isManagerOrAbove(userScope.role)
+              ? await this.toolGetPendingStatusRequests(tool.params, userScope)
+              : { error: 'Permission denied' };
+            break;
+          case 'get_project_risks':
+            res = isManagerOrAbove(userScope.role)
+              ? await this.toolGetProjectRisks(tool.params, userScope)
+              : { error: 'Permission denied' };
+            break;
+          case 'get_milestones':
+            res = isManagerOrAbove(userScope.role)
+              ? await this.toolGetMilestones(tool.params, userScope)
+              : { error: 'Permission denied' };
+            break;
+          case 'get_sprint_summary':
+            res = isManagerOrAbove(userScope.role)
+              ? await this.toolGetSprintSummary(tool.params, userScope)
+              : { error: 'Permission denied' };
+            break;
+
+          // ── ADMIN/OWNER tools ──
+          case 'get_org_members':
+            res = isAdminOrOwner(userScope.role)
+              ? await this.toolGetOrgMembers(tool.params, userScope)
+              : { error: 'Permission denied' };
+            break;
+          case 'get_all_projects':
+            res = isAdminOrOwner(userScope.role)
+              ? await this.toolGetAllProjects(tool.params, userScope)
+              : { error: 'Permission denied' };
+            break;
+          case 'get_activity_log':
+            res = isAdminOrOwner(userScope.role)
+              ? await this.toolGetActivityLog(tool.params, userScope)
+              : { error: 'Permission denied' };
+            break;
+          case 'get_project_status_updates':
+            res = isAdminOrOwner(userScope.role)
+              ? await this.toolGetProjectStatusUpdates(tool.params, userScope)
+              : { error: 'Permission denied' };
+            break;
+
           default:
             res = { error: `Unknown tool: ${tool.name}` };
         }
@@ -253,7 +426,7 @@ export class AiDataToolsService {
     return results;
   }
 
-  // --- Helper to apply role constraints ---
+  // ─── Helpers ──────────────────────────────────────────────────────────────
   private applyRoleConstraints(where: Prisma.TaskWhereInput, userScope: UserScope, projectId?: string) {
     if (userScope.role === 'MEMBER') {
       where.assignees = { some: { userId: userScope.userId } };
@@ -267,115 +440,162 @@ export class AiDataToolsService {
 
   private async resolveProjectId(projectSlug: string | undefined, userScope: UserScope): Promise<string | undefined> {
     if (!projectSlug) return undefined;
-    // Try exact slug match first
     let project = await this.prisma.project.findFirst({
       where: { slug: projectSlug, id: { in: userScope.accessibleProjectIds } },
       select: { id: true }
     });
     if (project) return project.id;
-    // Fallback: search by name (case-insensitive) - useful when LLM passes a display name
     const nameQuery = projectSlug.trim().toLowerCase();
     const candidates = await this.prisma.project.findMany({
       where: { id: { in: userScope.accessibleProjectIds } },
       select: { id: true, name: true, slug: true }
     });
     const match = candidates.find(
-      (p) => p.name.toLowerCase().includes(nameQuery) || p.slug.toLowerCase().includes(nameQuery) || nameQuery.includes(p.name.toLowerCase())
+      c => c.name.toLowerCase().includes(nameQuery) || c.slug.toLowerCase().includes(nameQuery)
     );
     return match?.id;
   }
 
-  // --- Tool Implementations ---
-  
-  private async toolGetTasks(params: any, userScope: UserScope) {
+  private parseDateParam(dateStr: string | undefined): Date | undefined {
+    if (!dateStr) return undefined;
+    const d = new Date(dateStr);
+    return isNaN(d.getTime()) ? undefined : d;
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // MEMBER TOOLS
+  // ─────────────────────────────────────────────────────────────────────────
+
+  private async toolGetMyTasks(params: any, userScope: UserScope) {
     const projectId = await this.resolveProjectId(params.projectSlug, userScope);
-    if (params.projectSlug && !projectId) return { error: `Project ${params.projectSlug} not found or inaccessible` };
-
-    const where: Prisma.TaskWhereInput = { isArchived: false };
-    this.applyRoleConstraints(where, userScope, projectId);
-
-    if (params.isOverdue) {
-      where.dueDate = { lt: new Date() };
-      where.completedAt = null;
-    }
-    if (params.isUnassigned) where.assignees = { none: {} };
-    if (params.priority) where.priority = params.priority as TaskPriority;
-    if (params.statusCategory) {
-      where.status = { category: params.statusCategory as StatusCategory };
-    }
+    const where: Prisma.TaskWhereInput = {
+      isArchived: false,
+      assignees: { some: { userId: userScope.userId } },
+      projectId: { in: projectId ? [projectId] : userScope.accessibleProjectIds },
+    };
+    if (params.statusCategory) where.status = { category: params.statusCategory };
+    if (params.priority) where.priority = params.priority;
+    if (params.isOverdue === true) { where.dueDate = { lt: new Date() }; where.completedAt = null; }
 
     const tasks = await this.prisma.task.findMany({
       where,
       select: {
-        title: true, priority: true, dueDate: true, completedAt: true,
+        title: true, priority: true, dueDate: true, progressPercent: true,
         status: { select: { name: true, category: true } },
-        project: { select: { name: true, slug: true } },
-        assignees: { select: { user: { select: { firstName: true, lastName: true } } } }
+        project: { select: { name: true } },
+        sprint: { select: { name: true } },
       },
       orderBy: { dueDate: 'asc' },
-      take: 30
+      take: 50,
     });
-    return { count: tasks.length, tasks };
+    return { total: tasks.length, tasks };
+  }
+
+  private async toolGetMyProjects(userScope: UserScope) {
+    const projects = await this.prisma.project.findMany({
+      where: { id: { in: userScope.accessibleProjectIds } },
+      select: { name: true, slug: true, description: true }
+    });
+    return { projects };
+  }
+
+  private async toolGetMyDailyReports(params: any, userScope: UserScope) {
+    const where: any = {
+      reporterId: userScope.userId,
+      task: { projectId: { in: userScope.accessibleProjectIds } },
+    };
+    if (params.reportDate) {
+      const date = this.parseDateParam(params.reportDate);
+      if (date) { const next = new Date(date); next.setDate(next.getDate() + 1); where.reportDate = { gte: date, lt: next }; }
+    }
+    if (params.status) where.status = params.status.toUpperCase();
+    const reports = await this.prisma.taskDailyReport.findMany({
+      where,
+      select: {
+        reportDate: true, type: true, content: true, blockers: true,
+        progressPercent: true, status: true,
+        task: { select: { title: true, project: { select: { name: true } } } },
+      },
+      orderBy: { reportDate: 'desc' },
+      take: 50,
+    });
+    return { total: reports.length, reports };
+  }
+
+  private async toolGetMyTimeEntries(params: any, userScope: UserScope) {
+    const projectId = await this.resolveProjectId(params.projectSlug, userScope);
+    const where: any = {
+      userId: userScope.userId,
+      task: { projectId: { in: projectId ? [projectId] : userScope.accessibleProjectIds } },
+    };
+    if (params.fromDate) where.date = { ...where.date, gte: this.parseDateParam(params.fromDate) };
+    if (params.toDate) where.date = { ...where.date, lte: this.parseDateParam(params.toDate) };
+    const entries = await this.prisma.timeEntry.findMany({
+      where,
+      select: {
+        date: true, timeSpent: true, description: true,
+        task: { select: { title: true, project: { select: { name: true } } } },
+      },
+      orderBy: { date: 'desc' },
+      take: 100,
+    });
+    const totalMinutes = entries.reduce((s, e) => s + e.timeSpent, 0);
+    return { totalMinutes, totalHours: +(totalMinutes / 60).toFixed(1), entries };
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // MANAGER TOOLS
+  // ─────────────────────────────────────────────────────────────────────────
+
+  private async toolGetTasks(params: any, userScope: UserScope) {
+    const projectId = await this.resolveProjectId(params.projectSlug, userScope);
+    const where: Prisma.TaskWhereInput = { isArchived: false };
+    this.applyRoleConstraints(where, userScope, projectId);
+    if (params.statusCategory) where.status = { category: params.statusCategory };
+    if (params.priority) where.priority = params.priority;
+    if (params.isOverdue === true) { where.dueDate = { lt: new Date() }; where.completedAt = null; }
+    if (params.isUnassigned === true) where.assignees = { none: {} };
+    if (params.assigneeName) {
+      const q = params.assigneeName.toLowerCase();
+      where.assignees = { some: { user: { OR: [
+        { firstName: { contains: q, mode: 'insensitive' } },
+        { lastName: { contains: q, mode: 'insensitive' } },
+        { email: { contains: q, mode: 'insensitive' } },
+      ] } } };
+    }
+    const tasks = await this.prisma.task.findMany({
+      where,
+      select: {
+        title: true, priority: true, dueDate: true, progressPercent: true,
+        status: { select: { name: true, category: true } },
+        project: { select: { name: true } },
+        assignees: { select: { user: { select: { firstName: true, lastName: true } } } },
+        sprint: { select: { name: true } },
+      },
+      orderBy: { dueDate: 'asc' },
+      take: 80,
+    });
+    return { total: tasks.length, tasks };
   }
 
   private async toolGetProjectHealth(params: any, userScope: UserScope) {
     const projectId = await this.resolveProjectId(params.projectSlug, userScope);
-    const ids = projectId ? [projectId] : (userScope.role === 'MANAGER' ? userScope.managedProjectIds : userScope.accessibleProjectIds);
-    
-    if (ids.length === 0) return { error: 'No projects found' };
-
-    const whereBase: any = { projectId: { in: ids }, isArchived: false };
-    if (userScope.role === 'MEMBER') whereBase['assignees'] = { some: { userId: userScope.userId } };
-
-    const now = new Date();
-    const [total, completed, overdue, blocked] = await Promise.all([
-      this.prisma.task.count({ where: whereBase }),
-      this.prisma.task.count({ where: { ...whereBase, completedAt: { not: null } } }),
-      this.prisma.task.count({ where: { ...whereBase, completedAt: null, dueDate: { lt: now } } }),
-      this.prisma.task.count({ where: { ...whereBase, completedAt: null, isBlocked: true } })
-    ]);
-
-    return {
-      totalTasks: total,
-      completedTasks: completed,
-      openTasks: total - completed,
-      overdueTasks: overdue,
-      blockedTasks: blocked,
-      completionPercent: total === 0 ? 0 : Math.round((completed / total) * 100),
-    };
-  }
-
-  private async toolGetWorkload(params: any, userScope: UserScope) {
-    const projectId = await this.resolveProjectId(params.projectSlug, userScope);
     const ids = projectId ? [projectId] : userScope.accessibleProjectIds;
-    
-    const whereBase: any = { task: { projectId: { in: ids }, isArchived: false, completedAt: null } };
-    
-    if (userScope.role === 'MEMBER') {
-       whereBase.userId = userScope.userId;
-    } else if (params.userName) {
-       whereBase.user = { 
-         OR: [
-           { firstName: { contains: params.userName, mode: 'insensitive' } },
-           { lastName: { contains: params.userName, mode: 'insensitive' } }
-         ]
-       };
-    }
-
-    const counts = await this.prisma.taskAssignee.groupBy({
-      by: ['userId'],
-      where: whereBase,
-      _count: true
+    const projects = await this.prisma.project.findMany({
+      where: { id: { in: ids } },
+      select: {
+        name: true, slug: true,
+        tasks: {
+          where: { isArchived: false },
+          select: { status: { select: { category: true } }, dueDate: true, completedAt: true }
+        }
+      }
     });
-
-    const users = await this.prisma.user.findMany({
-      where: { id: { in: counts.map(c => c.userId) } },
-      select: { id: true, firstName: true, lastName: true }
-    });
-
-    return counts.map(c => {
-      const u = users.find(x => x.id === c.userId);
-      return { user: `${u?.firstName} ${u?.lastName}`, openTasks: c._count };
+    return projects.map(p => {
+      const total = p.tasks.length;
+      const done = p.tasks.filter(t => t.status.category === 'DONE').length;
+      const overdue = p.tasks.filter(t => t.dueDate && t.dueDate < new Date() && !t.completedAt).length;
+      return { project: p.name, slug: p.slug, totalTasks: total, doneTasks: done, completionRate: total > 0 ? Math.round(done / total * 100) : 0, overdueTasks: overdue };
     });
   }
 
@@ -384,31 +604,49 @@ export class AiDataToolsService {
     const sprintWhere: Prisma.SprintWhereInput = {};
     if (projectId) sprintWhere.projectId = projectId;
     else sprintWhere.projectId = { in: userScope.accessibleProjectIds };
-
-    if (params.sprintName) {
-      sprintWhere.name = { contains: params.sprintName, mode: 'insensitive' };
-    } else {
-      sprintWhere.status = 'ACTIVE';
-    }
-
+    if (params.sprintName) sprintWhere.name = { contains: params.sprintName, mode: 'insensitive' };
+    else sprintWhere.status = 'ACTIVE';
     const sprint = await this.prisma.sprint.findFirst({ where: sprintWhere });
     if (!sprint) return { error: 'Sprint not found' };
-
     const where: Prisma.TaskWhereInput = { sprintId: sprint.id, isArchived: false };
     this.applyRoleConstraints(where, userScope, sprint.projectId);
-
     const tasks = await this.prisma.task.findMany({
       where,
-      select: { title: true, status: { select: { category: true, name: true } }, assignees: { select: { user: { select: { firstName: true } } } } }
+      select: {
+        title: true,
+        status: { select: { category: true, name: true } },
+        assignees: { select: { user: { select: { firstName: true, lastName: true } } } },
+        priority: true, dueDate: true,
+      }
     });
+    return { sprintName: sprint.name, status: sprint.status, startDate: sprint.startDate, endDate: sprint.endDate, totalTasks: tasks.length, tasks };
+  }
 
-    return { sprintName: sprint.name, status: sprint.status, totalTasks: tasks.length, tasks };
+  private async toolGetWorkload(params: any, userScope: UserScope) {
+    const projectId = await this.resolveProjectId(params.projectSlug, userScope);
+    const ids = projectId ? [projectId] : userScope.managedProjectIds;
+    const assignees = await this.prisma.taskAssignee.findMany({
+      where: { task: { projectId: { in: ids }, isArchived: false, status: { category: { not: 'DONE' } } } },
+      select: { user: { select: { firstName: true, lastName: true, email: true } }, task: { select: { priority: true, dueDate: true } } }
+    });
+    const map = new Map<string, any>();
+    for (const a of assignees) {
+      const key = a.user.email;
+      if (!map.has(key)) map.set(key, { name: `${a.user.firstName || ''} ${a.user.lastName || ''}`.trim() || a.user.email, email: a.user.email, taskCount: 0, overdueTasks: 0 });
+      const u = map.get(key);
+      u.taskCount++;
+      if (a.task.dueDate && a.task.dueDate < new Date()) u.overdueTasks++;
+    }
+    if (params.userName) {
+      const q = params.userName.toLowerCase();
+      return Array.from(map.values()).filter(u => u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q));
+    }
+    return Array.from(map.values()).sort((a, b) => b.taskCount - a.taskCount);
   }
 
   private async toolGetProjectTeam(params: any, userScope: UserScope) {
     const projectId = await this.resolveProjectId(params.projectSlug, userScope);
     const ids = projectId ? [projectId] : userScope.accessibleProjectIds;
-
     const members = await this.prisma.projectMember.findMany({
       where: { projectId: { in: ids } },
       select: {
@@ -417,23 +655,15 @@ export class AiDataToolsService {
         user: { select: { firstName: true, lastName: true, email: true } }
       }
     });
-
     if (params.userName) {
       const q = params.userName.toLowerCase();
-      const filtered = members.filter(m => 
-        (m.user.firstName && m.user.firstName.toLowerCase().includes(q)) ||
-        (m.user.lastName && m.user.lastName.toLowerCase().includes(q)) ||
-        m.user.email.toLowerCase().includes(q)
-      );
-      return filtered;
+      return members.filter(m => (m.user.firstName && m.user.firstName.toLowerCase().includes(q)) || (m.user.lastName && m.user.lastName.toLowerCase().includes(q)) || m.user.email.toLowerCase().includes(q));
     }
-
     return members;
   }
 
   private async toolGetUserProjects(params: any, userScope: UserScope) {
     if (!params.userName) return { error: 'userName parameter is required' };
-    
     const q = params.userName.toLowerCase();
     const members = await this.prisma.projectMember.findMany({
       where: { projectId: { in: userScope.accessibleProjectIds } },
@@ -443,41 +673,249 @@ export class AiDataToolsService {
         user: { select: { firstName: true, lastName: true, email: true } }
       }
     });
-
-    const filtered = members.filter(m => 
+    const filtered = members.filter(m =>
       (m.user.firstName && m.user.firstName.toLowerCase().includes(q)) ||
       (m.user.lastName && m.user.lastName.toLowerCase().includes(q)) ||
       m.user.email.toLowerCase().includes(q)
     );
-
-    // Group by user
-    const userMap = new Map();
+    const userMap = new Map<string, any>();
     for (const m of filtered) {
       const key = m.user.email;
-      if (!userMap.has(key)) {
-        userMap.set(key, { 
-          name: `${m.user.firstName || ''} ${m.user.lastName || ''}`.trim() || m.user.email,
-          email: m.user.email,
-          projects: [] 
-        });
-      }
+      if (!userMap.has(key)) userMap.set(key, { name: `${m.user.firstName || ''} ${m.user.lastName || ''}`.trim() || m.user.email, email: m.user.email, projects: [] });
       userMap.get(key).projects.push({ name: m.project.name, slug: m.project.slug, role: m.role });
     }
-
     return Array.from(userMap.values());
   }
 
   private async toolGetOverdueSummary(params: any, userScope: UserScope) {
-     const projectId = await this.resolveProjectId(params.projectSlug, userScope);
-     const ids = projectId ? [projectId] : userScope.managedProjectIds;
-     const tasks = await this.prisma.task.findMany({
-       where: { projectId: { in: ids }, isArchived: false, completedAt: null, dueDate: { lt: new Date() } },
-       select: { title: true, dueDate: true, project: { select: { name: true } }, assignees: { select: { user: { select: { firstName: true, lastName: true } } } } }
-     });
-     return tasks;
+    const projectId = await this.resolveProjectId(params.projectSlug, userScope);
+    const ids = projectId ? [projectId] : userScope.managedProjectIds;
+    const tasks = await this.prisma.task.findMany({
+      where: { projectId: { in: ids }, isArchived: false, completedAt: null, dueDate: { lt: new Date() } },
+      select: {
+        title: true, dueDate: true, priority: true,
+        project: { select: { name: true } },
+        assignees: { select: { user: { select: { firstName: true, lastName: true, email: true } } } }
+      },
+      orderBy: { dueDate: 'asc' },
+    });
+    return { total: tasks.length, tasks };
+  }
+
+  private async toolGetDailyReports(params: any, userScope: UserScope) {
+    const projectId = await this.resolveProjectId(params.projectSlug, userScope);
+    const ids = projectId ? [projectId] : userScope.managedProjectIds;
+    const where: any = { task: { projectId: { in: ids } } };
+    if (params.reportDate) {
+      const date = this.parseDateParam(params.reportDate);
+      if (date) { const next = new Date(date); next.setDate(next.getDate() + 1); where.reportDate = { gte: date, lt: next }; }
+    }
+    if (params.status) where.status = params.status.toUpperCase();
+    const reports = await this.prisma.taskDailyReport.findMany({
+      where,
+      select: {
+        reportDate: true, type: true, content: true, blockers: true,
+        progressPercent: true, status: true,
+        reporter: { select: { firstName: true, lastName: true, email: true } },
+        task: { select: { title: true, project: { select: { name: true } } } },
+      },
+      orderBy: { reportDate: 'desc' },
+      take: 100,
+    });
+    const filtered = params.reporterName
+      ? reports.filter(r => {
+          const q = params.reporterName.toLowerCase();
+          return (r.reporter.firstName && r.reporter.firstName.toLowerCase().includes(q)) ||
+            (r.reporter.lastName && r.reporter.lastName.toLowerCase().includes(q)) ||
+            r.reporter.email.toLowerCase().includes(q);
+        })
+      : reports;
+    return { total: filtered.length, reports: filtered };
   }
 
   private async toolGetTimeTracking(params: any, userScope: UserScope) {
-     return { message: "Time tracking summary not fully implemented yet." };
+    const projectId = await this.resolveProjectId(params.projectSlug, userScope);
+    const ids = projectId ? [projectId] : userScope.managedProjectIds;
+    const where: any = { task: { projectId: { in: ids } } };
+    if (params.fromDate) where.date = { ...where.date, gte: this.parseDateParam(params.fromDate) };
+    if (params.toDate) where.date = { ...where.date, lte: this.parseDateParam(params.toDate) };
+    const entries = await this.prisma.timeEntry.findMany({
+      where,
+      select: {
+        date: true, timeSpent: true,
+        user: { select: { firstName: true, lastName: true, email: true } },
+        task: { select: { title: true, project: { select: { name: true } } } },
+      },
+      orderBy: { date: 'desc' },
+      take: 200,
+    });
+    const userMap = new Map<string, any>();
+    for (const e of entries) {
+      if (params.userName) {
+        const q = params.userName.toLowerCase();
+        const match = (e.user.firstName && e.user.firstName.toLowerCase().includes(q)) ||
+          (e.user.lastName && e.user.lastName.toLowerCase().includes(q)) ||
+          e.user.email.toLowerCase().includes(q);
+        if (!match) continue;
+      }
+      const key = e.user.email;
+      if (!userMap.has(key)) userMap.set(key, { name: `${e.user.firstName || ''} ${e.user.lastName || ''}`.trim() || e.user.email, email: e.user.email, totalMinutes: 0 });
+      userMap.get(key).totalMinutes += e.timeSpent;
+    }
+    return Array.from(userMap.values()).map(u => ({ ...u, totalHours: +(u.totalMinutes / 60).toFixed(1) }));
+  }
+
+  private async toolGetPendingStatusRequests(params: any, userScope: UserScope) {
+    const projectId = await this.resolveProjectId(params.projectSlug, userScope);
+    const ids = projectId ? [projectId] : userScope.managedProjectIds;
+    const requests = await this.prisma.taskStatusChangeRequest.findMany({
+      where: { status: 'PENDING', task: { projectId: { in: ids } } },
+      select: {
+        createdAt: true, requesterNote: true,
+        task: { select: { title: true, project: { select: { name: true } } } },
+        requestedBy: { select: { firstName: true, lastName: true, email: true } },
+        requestedStatus: { select: { name: true } },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+    return { total: requests.length, requests };
+  }
+
+  private async toolGetProjectRisks(params: any, userScope: UserScope) {
+    const projectId = await this.resolveProjectId(params.projectSlug, userScope);
+    const ids = projectId ? [projectId] : userScope.managedProjectIds;
+    const where: any = { projectId: { in: ids } };
+    if (params.severity) where.severity = params.severity.toUpperCase();
+    if (params.status) where.status = params.status.toUpperCase();
+    const risks = await this.prisma.projectRisk.findMany({
+      where,
+      select: { title: true, description: true, severity: true, status: true, mitigation: true, project: { select: { name: true } } },
+      orderBy: [{ severity: 'desc' }, { status: 'asc' }],
+    });
+    return { total: risks.length, risks };
+  }
+
+  private async toolGetMilestones(params: any, userScope: UserScope) {
+    const projectId = await this.resolveProjectId(params.projectSlug, userScope);
+    const ids = projectId ? [projectId] : userScope.managedProjectIds;
+    const where: any = { projectId: { in: ids } };
+    if (params.status) where.status = params.status.toUpperCase();
+    const milestones = await this.prisma.projectMilestone.findMany({
+      where,
+      select: { name: true, description: true, dueDate: true, status: true, project: { select: { name: true } } },
+      orderBy: { dueDate: 'asc' },
+    });
+    return { total: milestones.length, milestones };
+  }
+
+  private async toolGetSprintSummary(params: any, userScope: UserScope) {
+    const projectId = await this.resolveProjectId(params.projectSlug, userScope);
+    const ids = projectId ? [projectId] : userScope.managedProjectIds;
+    const sprints = await this.prisma.sprint.findMany({
+      where: { projectId: { in: ids }, archive: false },
+      select: {
+        name: true, status: true, startDate: true, endDate: true,
+        project: { select: { name: true } },
+        tasks: { where: { isArchived: false }, select: { status: { select: { category: true } } } }
+      },
+      orderBy: { startDate: 'desc' },
+    });
+    return sprints.map(s => {
+      const total = s.tasks.length;
+      const done = s.tasks.filter(t => t.status.category === 'DONE').length;
+      return { project: s.project.name, sprint: s.name, status: s.status, startDate: s.startDate, endDate: s.endDate, totalTasks: total, doneTasks: done, completionRate: total > 0 ? Math.round(done / total * 100) : 0 };
+    });
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // ADMIN / OWNER TOOLS
+  // ─────────────────────────────────────────────────────────────────────────
+
+  private async toolGetOrgMembers(params: any, userScope: UserScope) {
+    if (!userScope.organizationId) return { error: 'No organization context' };
+    const where: any = { organizationId: userScope.organizationId };
+    if (params.role) where.role = params.role.toUpperCase();
+    const members = await this.prisma.organizationMember.findMany({
+      where,
+      select: {
+        role: true, joinedAt: true,
+        user: { select: { firstName: true, lastName: true, email: true, status: true } }
+      },
+      orderBy: { user: { firstName: 'asc' } },
+    });
+    const filtered = params.search
+      ? members.filter(m => {
+          const q = params.search.toLowerCase();
+          return (m.user.firstName && m.user.firstName.toLowerCase().includes(q)) ||
+            (m.user.lastName && m.user.lastName.toLowerCase().includes(q)) ||
+            m.user.email.toLowerCase().includes(q);
+        })
+      : members;
+    return { total: filtered.length, members: filtered };
+  }
+
+  private async toolGetAllProjects(params: any, userScope: UserScope) {
+    const where: Prisma.ProjectWhereInput = {};
+    if (!params.includeArchived) where.archive = false;
+    if (userScope.organizationId) where.workspace = { organizationId: userScope.organizationId };
+    const projects = await this.prisma.project.findMany({
+      where,
+      select: {
+        name: true, slug: true, description: true, archive: true,
+        tasks: { where: { isArchived: false }, select: { status: { select: { category: true } }, dueDate: true, completedAt: true } },
+        members: { select: { user: { select: { firstName: true, lastName: true } } } },
+        workspace: { select: { name: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+    return projects.map(p => {
+      const total = p.tasks.length;
+      const done = p.tasks.filter(t => t.status.category === 'DONE').length;
+      const overdue = p.tasks.filter(t => t.dueDate && t.dueDate < new Date() && !t.completedAt).length;
+      return { name: p.name, slug: p.slug, workspace: p.workspace.name, archived: p.archive, memberCount: p.members.length, totalTasks: total, doneTasks: done, completionRate: total > 0 ? Math.round(done / total * 100) : 0, overdueTasks: overdue };
+    });
+  }
+
+  private async toolGetActivityLog(params: any, userScope: UserScope) {
+    const where: any = {};
+    if (userScope.organizationId) where.organizationId = userScope.organizationId;
+    if (params.fromDate) where.createdAt = { ...where.createdAt, gte: this.parseDateParam(params.fromDate) };
+    if (params.userName) {
+      const q = params.userName.toLowerCase();
+      where.user = { OR: [
+        { firstName: { contains: q, mode: 'insensitive' } },
+        { lastName: { contains: q, mode: 'insensitive' } },
+        { email: { contains: q, mode: 'insensitive' } },
+      ] };
+    }
+    const limit = Math.min(params.limit || 50, 100);
+    const logs = await this.prisma.activityLog.findMany({
+      where,
+      select: {
+        type: true, description: true, entityType: true, createdAt: true,
+        user: { select: { firstName: true, lastName: true, email: true } }
+      },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+    });
+    return { total: logs.length, logs };
+  }
+
+  private async toolGetProjectStatusUpdates(params: any, userScope: UserScope) {
+    const projectId = await this.resolveProjectId(params.projectSlug, userScope);
+    const ids = projectId ? [projectId] : userScope.accessibleProjectIds;
+    const where: any = { projectId: { in: ids } };
+    if (params.health) where.health = params.health.toUpperCase();
+    const updates = await this.prisma.projectStatusUpdate.findMany({
+      where,
+      select: {
+        health: true, summary: true, nextSteps: true, createdAt: true,
+        project: { select: { name: true } },
+        author: { select: { firstName: true, lastName: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 30,
+    });
+    return { total: updates.length, updates };
   }
 }

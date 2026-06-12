@@ -100,6 +100,8 @@ export function LoginForm() {
         setError("Không thể kết nối máy chủ. Vui lòng kiểm tra mạng hoặc thử lại sau.");
       } else if (status === 401) {
         setError("Email hoặc mật khẩu không đúng. Vui lòng thử lại.");
+      } else if (status === 403 && err?.response?.data?.message) {
+        setError(err.response.data.message);
       } else {
         setError("Đăng nhập thất bại. Vui lòng thử lại.");
       }

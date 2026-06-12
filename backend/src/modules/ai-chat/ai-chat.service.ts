@@ -247,16 +247,14 @@ ADMIN PANEL RULES (SUPER_ADMIN ONLY):
       // Build messages array with system prompt and conversation history
       const messages: ChatMessageDto[] = [];
 
-      // Generate system prompt
-      const systemPrompt = useAutomationPrompt
-        ? this.generateSystemPrompt()
-        : intent === 'QUERY_DATA'
-          ? buildQueryAnswerSystemPrompt()
-          : buildAssistantSystemPrompt();
-      messages.push({
-        role: 'system',
-        content: systemPrompt,
-      });
+      // System prompt will be set after QueryPlanner runs (for QUERY_DATA)
+      // For automation, set it immediately
+      if (useAutomationPrompt) {
+        messages.push({
+          role: 'system',
+          content: this.generateSystemPrompt(),
+        });
+      }
 
       // Add conversation history if provided
       if (chatRequest.history && Array.isArray(chatRequest.history)) {
@@ -288,25 +286,27 @@ ADMIN PANEL RULES (SUPER_ADMIN ONLY):
         console.log('--- QUERY PLANNER OUTPUT ---');
         console.log(JSON.stringify(queryPlan, null, 2));
 
+        let systemPrompt: string;
         let groundedContext = '';
+
         if (queryPlan && queryPlan.tools.length > 0) {
+          // Has data tools — use data answer system prompt
           const results = await this.aiDataTools.executeTools(queryPlan, userScope);
           groundedContext = `DATA TOOL RESULTS:\n${JSON.stringify(results, null, 2)}`;
+          systemPrompt = buildQueryAnswerSystemPrompt();
+          console.log('--- GROUNDED CONTEXT ---');
+          console.log(groundedContext);
+          userMessage = buildQueryAnswerUserContext(userMessage, groundedContext);
         } else {
-          // Fallback if planner failed or returned no tools
-          groundedContext = await this.aiDataTools.buildGroundedContext(
-            userMessage,
-            userId,
-            chatRequest,
-          );
+          // No data tools needed — pure guidance/conversational question
+          systemPrompt = buildAssistantSystemPrompt();
+          userMessage = buildAssistantUserContext(userMessage);
         }
-        
-        console.log('--- GROUNDED CONTEXT ---');
-        console.log(groundedContext);
 
-        userMessage = buildQueryAnswerUserContext(userMessage, groundedContext);
-      } else {
-        userMessage = buildAssistantUserContext(userMessage);
+        messages.push({
+          role: 'system',
+          content: systemPrompt,
+        });
       }
 
       messages.push({

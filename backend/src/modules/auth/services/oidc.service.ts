@@ -243,7 +243,9 @@ export class OidcService {
 
     if (user) {
       // Update last login
-      if (user.status !== 'ACTIVE') {
+      if (user.status === 'PENDING') {
+        throw new BadRequestException('Tài khoản của bạn đang chờ phê duyệt. Vui lòng chờ admin kích hoạt.');
+      } else if (user.status !== 'ACTIVE') {
         throw new BadRequestException('Your account is inactive. Contact your administrator.');
       }
       return user;
@@ -255,7 +257,9 @@ export class OidcService {
     });
 
     if (user) {
-      if (user.status !== 'ACTIVE') {
+      if (user.status === 'PENDING') {
+        throw new BadRequestException('Tài khoản của bạn đang chờ phê duyệt. Vui lòng chờ admin kích hoạt.');
+      } else if (user.status !== 'ACTIVE') {
         throw new BadRequestException('Your account is inactive. Contact your administrator.');
       }
       // Link existing account with SSO
@@ -297,7 +301,7 @@ export class OidcService {
         lastName,
         username: finalUsername,
         emailVerified,
-        status: UserStatus.ACTIVE,
+        status: UserStatus.PENDING,
         source: UserSource.SSO,
         externalId,
         externalProvider: provider,

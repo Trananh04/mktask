@@ -164,29 +164,13 @@ export class RolesGuard implements CanActivate {
         });
         if (!project) return null;
 
-        // Organization owner bypass
+        // Organization owner bypass — org owner is always treated as OWNER
         if (project.workspace.organization.ownerId === userId) {
           return PrismaRole.OWNER;
         }
 
-        // Check organization membership for elevated role
-        const orgMember = await this.prisma.organizationMember.findUnique({
-          where: {
-            userId_organizationId: {
-              userId,
-              organizationId: project.workspace.organizationId,
-            },
-          },
-          select: { role: true },
-        });
-
-        if (
-          orgMember &&
-          (orgMember.role === PrismaRole.MANAGER || orgMember.role === PrismaRole.OWNER)
-        ) {
-          return orgMember.role;
-        }
-
+        // Access is granted ONLY by an explicit ProjectMember record.
+        // Org-level MANAGER is NOT automatically a project member — Admin must add them.
         const m = await this.prisma.projectMember.findUnique({
           where: { userId_projectId: { userId, projectId: scopeId } },
           select: { role: true },

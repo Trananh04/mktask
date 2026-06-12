@@ -2,6 +2,7 @@ import {
   Injectable,
   UnauthorizedException,
   ConflictException,
+  ForbiddenException,
   BadRequestException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -16,7 +17,7 @@ import * as crypto from 'crypto';
 import { JwtPayload } from './strategies/jwt.strategy';
 import { SYSTEM_USER_ID } from '../../common/constants';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { Role } from '@prisma/client';
+import { Role, UserStatus } from '@prisma/client';
 import { SettingsService } from '../settings/settings.service';
 
 @Injectable()
@@ -38,12 +39,17 @@ export class AuthService {
       throw new UnauthorizedException('System user cannot be used for authentication');
     }
 
-    if (
-      user &&
-      user.password &&
-      user.status === 'ACTIVE' && // Only active users can login
-      (await bcrypt.compare(password, user.password))
-    ) {
+    if (user && user.password && (await bcrypt.compare(password, user.password))) {
+      if (user.status === 'PENDING') {
+        throw new ForbiddenException('Tài khoản của bạn đang chờ phê duyệt từ Super Admin. Vui lòng chờ.');
+      }
+      if (user.status === 'SUSPENDED') {
+        throw new ForbiddenException('Tài khoản của bạn đã bị khóa. Vui lòng liên hệ admin.');
+      }
+      if (user.status === 'INACTIVE') {
+        throw new ForbiddenException('Tài khoản của bạn đã bị vô hiệu hóa.');
+      }
+
       const result: Omit<typeof user, 'password'> = Object.assign({}, user);
       delete (result as any).password;
       return result;
@@ -94,9 +100,10 @@ export class AuthService {
     const registrationEnabledValue = await this.settingsService.get('registration_enabled');
     const registrationEnabled = registrationEnabledValue !== 'false';
 
+    let hasValidInvitation = false;
+    
     if (!registrationEnabled) {
       // Allow registration if a valid pending invitation token is provided
-      let hasValidInvitation = false;
       if (registerDto.invitationToken) {
         const invitation = await this.prisma.invitation.findUnique({
           where: { token: registerDto.invitationToken },
@@ -130,13 +137,36 @@ export class AuthService {
       counter++;
     }
     registerDto.username = finalUsername;
+    let statusToSet: UserStatus = UserStatus.PENDING;
+    if (hasValidInvitation) {
+      statusToSet = UserStatus.ACTIVE;
+    }
+
     const user = await this.usersService.create({
       ...registerDto,
       role: Role.MEMBER,
+      status: statusToSet,
     });
 
     // Auto-join default organization if configured
     await this.addUserToDefaultOrganization(user.id);
+
+    if (statusToSet === UserStatus.PENDING) {
+      return {
+        access_token: '',
+        refresh_token: '',
+        user: {
+          id: user.id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          role: user.role,
+          avatar: user.avatar || undefined,
+          bio: user.bio || undefined,
+          mobileNumber: user.mobileNumber || undefined,
+        },
+      };
+    }
 
     // Generate tokens
     const payload: JwtPayload = {

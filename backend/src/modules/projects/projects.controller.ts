@@ -61,13 +61,13 @@ export class ProjectsController {
     private readonly projectChartsService: ProjectChartsService,
   ) {}
 
-  // Create project - requires MANAGER/OWNER at workspace level
+  // Create project - only SUPER_ADMIN
   @Post()
   @ApiOperation({ summary: 'Create a new project' })
   @ApiBody({ type: CreateProjectDto })
   @ApiResponse({ status: 201, description: 'Project created successfully' })
   @ApiResponse({ status: 400, description: 'Invalid project data' })
-  @Roles(Role.MANAGER, Role.OWNER)
+  @Roles(Role.SUPER_ADMIN)
   @LogActivity({
     type: 'PROJECT_CREATED',
     entityType: 'Project',
