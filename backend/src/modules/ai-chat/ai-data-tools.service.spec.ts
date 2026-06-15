@@ -20,7 +20,7 @@ describe('AI chat intent classification', () => {
     expect(classifyChatIntent('anything', true)).toBe('AUTOMATION');
   });
 
-  it('keeps usage questions in guidance mode', () => {
-    expect(classifyChatIntent('Hướng dẫn tôi mời thành viên')).toBe('GUIDANCE');
+  it('keeps usage questions in QUERY_DATA for planner to decide', () => {
+    expect(classifyChatIntent('Hướng dẫn tôi mời thành viên')).toBe('QUERY_DATA');
   });
 });

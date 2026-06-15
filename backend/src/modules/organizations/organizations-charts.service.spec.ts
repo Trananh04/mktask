@@ -46,6 +46,9 @@ describe('OrganizationChartsService management summary', () => {
       project: {
         findMany: jest.fn().mockResolvedValue([]),
       },
+      workspace: {
+        findMany: jest.fn().mockResolvedValue([{ id: 'workspace-engineering', name: 'Engineering', slug: 'engineering' }]),
+      },
     };
     const accessControl: any = {
       getOrgAccess: jest.fn().mockResolvedValue({ isElevated }),

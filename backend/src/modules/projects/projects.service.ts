@@ -53,7 +53,7 @@ export class ProjectsService {
     private accessControl: AccessControlService,
     private readonly activityLog: ActivityLogService,
     private settingsService: SettingsService,
-  ) { }
+  ) {}
 
   private async isSuperAdmin(userId: string): Promise<boolean> {
     const user = await this.prisma.user.findUnique({
@@ -65,9 +65,9 @@ export class ProjectsService {
 
   private buildAccessibleProjectWhere(userId: string): Prisma.ProjectWhereInput[] {
     return [
-      // Access granted ONLY by explicit ProjectMember record.
-      // Org-level MANAGER is NOT automatically a project member.
       { members: { some: { userId } } },
+      { visibility: 'INTERNAL', workspace: { members: { some: { userId } } } },
+      { visibility: 'PUBLIC', workspace: { organization: { members: { some: { userId } } } } },
     ];
   }
 
@@ -212,7 +212,9 @@ export class ProjectsService {
     } else {
       // Default: only org owner and SUPER_ADMIN can create projects
       if (!isOrgOwner && !superAdmin) {
-        throw new ForbiddenException('Insufficient permissions to create projects. Only admins can create projects.');
+        throw new ForbiddenException(
+          'Insufficient permissions to create projects. Only admins can create projects.',
+        );
       }
     }
 
@@ -947,31 +949,31 @@ export class ProjectsService {
         // Show tasks based on access level
         tasks: isElevated
           ? {
-            select: {
-              id: true,
-              title: true,
-              type: true,
-              priority: true,
-              status: true,
-            },
-            take: 10,
-          }
+              select: {
+                id: true,
+                title: true,
+                type: true,
+                priority: true,
+                status: true,
+              },
+              take: 10,
+            }
           : {
-            select: {
-              id: true,
-              title: true,
-              type: true,
-              priority: true,
-              status: true,
+              select: {
+                id: true,
+                title: true,
+                type: true,
+                priority: true,
+                status: true,
+              },
+              where: {
+                OR: [
+                  { assignees: { some: { userId: userId } } },
+                  { reporters: { some: { userId: userId } } },
+                ],
+              },
+              take: 10,
             },
-            where: {
-              OR: [
-                { assignees: { some: { userId: userId } } },
-                { reporters: { some: { userId: userId } } },
-              ],
-            },
-            take: 10,
-          },
       },
     });
 

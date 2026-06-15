@@ -24,14 +24,22 @@ export class QueryPlannerService {
       const parsedUrl = new URL(apiUrl);
       const hostname = parsedUrl.hostname;
 
-      if (['localhost', '127.0.0.1', '::1'].includes(hostname.toLowerCase()) || this.isPrivateNetwork(hostname)) {
+      if (
+        ['localhost', '127.0.0.1', '::1'].includes(hostname.toLowerCase()) ||
+        this.isPrivateNetwork(hostname)
+      ) {
         return 'ollama';
       }
 
       if (hostname === 'openrouter.ai' || hostname.endsWith('.openrouter.ai')) return 'openrouter';
       if (hostname === 'api.openai.com' || hostname.endsWith('.api.openai.com')) return 'openai';
-      if (hostname === 'api.anthropic.com' || hostname.endsWith('.api.anthropic.com')) return 'anthropic';
-      if (hostname === 'generativelanguage.googleapis.com' || hostname.endsWith('.generativelanguage.googleapis.com')) return 'google';
+      if (hostname === 'api.anthropic.com' || hostname.endsWith('.api.anthropic.com'))
+        return 'anthropic';
+      if (
+        hostname === 'generativelanguage.googleapis.com' ||
+        hostname.endsWith('.generativelanguage.googleapis.com')
+      )
+        return 'google';
     } catch (e) {
       console.log(e);
     }
@@ -39,7 +47,8 @@ export class QueryPlannerService {
   }
 
   private isPrivateNetwork(hostname: string): boolean {
-    const privateIPv4Pattern = /^(10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2[0-9]|3[01])\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3})$/;
+    const privateIPv4Pattern =
+      /^(10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2[0-9]|3[01])\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3})$/;
     return privateIPv4Pattern.test(hostname);
   }
 
@@ -51,16 +60,26 @@ export class QueryPlannerService {
       throw new BadRequestException('Invalid URL format');
     }
 
-    const allowHttp = ['localhost', '127.0.0.1', '::1'].includes(url.hostname.toLowerCase()) || this.isPrivateNetwork(url.hostname);
+    const allowHttp =
+      ['localhost', '127.0.0.1', '::1'].includes(url.hostname.toLowerCase()) ||
+      this.isPrivateNetwork(url.hostname);
 
     if (url.protocol !== 'https:' && !allowHttp) {
-      throw new BadRequestException('Only HTTPS URLs allowed (HTTP is permitted for localhost and private network addresses)');
+      throw new BadRequestException(
+        'Only HTTPS URLs allowed (HTTP is permitted for localhost and private network addresses)',
+      );
     }
 
     return url.toString().replace(/\/$/, '');
   }
 
-  async planQuery(message: string, userScope: UserScope, userId: string, organizationId?: string): Promise<QueryPlan | null> {
+  async planQuery(
+    message: string,
+    userScope: UserScope,
+    userId: string,
+    organizationId?: string,
+    history: any[] = [],
+  ): Promise<QueryPlan | null> {
     try {
       const [apiKey, model, rawApiUrl] = await Promise.all([
         this.settingsService.get('ai_api_key', userId),
@@ -77,12 +96,14 @@ export class QueryPlannerService {
 
       const toolCatalog = this.aiDataToolsService.buildToolCatalog(userScope);
       const systemPrompt = buildQueryPlannerPrompt(userScope, toolCatalog);
-      
-      const accessibleProjectContext = await this.aiDataToolsService.getAccessibleProjectsContext(userScope);
+
+      const accessibleProjectContext =
+        await this.aiDataToolsService.getAccessibleProjectsContext(userScope);
       const userMessage = buildQueryPlannerUserContext(message, accessibleProjectContext);
 
-      const messages: ChatMessageDto[] = [
+      const messages: any[] = [
         { role: 'system', content: systemPrompt },
+        ...history.filter((m) => m.role !== 'system'),
         { role: 'user', content: userMessage },
       ];
 
@@ -93,14 +114,14 @@ export class QueryPlannerService {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${apiKey}`,
       };
-      
+
       let requestBody: any = {
         model,
         messages,
         temperature: 0.1, // Low temp for more deterministic JSON
         max_tokens: 800,
         stream: false,
-        response_format: { type: 'json_object' } // Request JSON format if supported
+        response_format: { type: 'json_object' }, // Request JSON format if supported
       };
 
       // Adjust for providers
@@ -120,7 +141,9 @@ export class QueryPlannerService {
           break;
         case 'ollama':
           if (apiUrl.includes('/v1')) {
-            requestUrl = apiUrl.endsWith('/chat/completions') ? apiUrl : `${apiUrl}/chat/completions`;
+            requestUrl = apiUrl.endsWith('/chat/completions')
+              ? apiUrl
+              : `${apiUrl}/chat/completions`;
           } else if (apiUrl.includes('/api')) {
             requestUrl = apiUrl.endsWith('/chat') ? apiUrl : `${apiUrl}/chat`;
           } else {
@@ -154,7 +177,7 @@ export class QueryPlannerService {
             generationConfig: {
               temperature: 0.1,
               maxOutputTokens: 800,
-              responseMimeType: "application/json",
+              responseMimeType: 'application/json',
             },
           };
           break;
@@ -190,11 +213,13 @@ export class QueryPlannerService {
       }
 
       // Clean markdown formatting if present
-      if (aiMessage.startsWith('\`\`\`json')) {
-        aiMessage = aiMessage.replace(/^\`\`\`json\s*/, '').replace(/\s*\`\`\`$/, '');
-      } else if (aiMessage.startsWith('\`\`\`')) {
-        aiMessage = aiMessage.replace(/^\`\`\`\s*/, '').replace(/\s*\`\`\`$/, '');
+      if (aiMessage.startsWith('```json')) {
+        aiMessage = aiMessage.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+      } else if (aiMessage.startsWith('```')) {
+        aiMessage = aiMessage.replace(/^```\s*/, '').replace(/\s*```$/, '');
       }
+
+      console.log('RAW QUERY PLANNER MESSAGE:', aiMessage);
 
       try {
         const parsedPlan = JSON.parse(aiMessage);
@@ -203,7 +228,6 @@ export class QueryPlannerService {
         console.error('Failed to parse Query Planner JSON output:', aiMessage, e);
         return null; // Fallback will happen in caller
       }
-
     } catch (error) {
       console.error('Query Planner execution failed:', error);
       return null;
@@ -212,17 +236,17 @@ export class QueryPlannerService {
 
   private validatePlan(plan: any, userScope: UserScope): QueryPlan | null {
     if (!plan || !Array.isArray(plan.tools)) return null;
-    
+
     // Basic validation
-    const validTools = plan.tools.filter((tool: any) => 
-      tool && typeof tool.name === 'string' && typeof tool.params === 'object'
+    const validTools = plan.tools.filter(
+      (tool: any) => tool && typeof tool.name === 'string' && typeof tool.params === 'object',
     );
 
     if (validTools.length === 0) return null;
 
     return {
       tools: validTools,
-      reasoning: typeof plan.reasoning === 'string' ? plan.reasoning : 'No reasoning provided'
+      reasoning: typeof plan.reasoning === 'string' ? plan.reasoning : 'No reasoning provided',
     };
   }
 }

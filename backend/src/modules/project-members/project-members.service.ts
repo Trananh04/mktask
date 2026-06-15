@@ -117,15 +117,22 @@ export class ProjectMembersService {
     const isWorkspaceAdmin =
       requesterWorkspaceMember?.role === WorkspaceRole.OWNER ||
       requesterWorkspaceMember?.role === WorkspaceRole.MANAGER;
-    const isProjectManager =
-      requesterProjectMember?.role === ProjectRole.MANAGER;
-    const isProjectOwner =
-      requesterProjectMember?.role === ProjectRole.OWNER;
+    const isProjectManager = requesterProjectMember?.role === ProjectRole.MANAGER;
+    const isProjectOwner = requesterProjectMember?.role === ProjectRole.OWNER;
 
     // Only SUPER_ADMIN or org owner can add members at all
     // Project Managers can ONLY add MEMBERs (not other Managers/Owners)
-    if (!isSuperAdmin && !isOrgOwner && !isOrgAdmin && !isWorkspaceAdmin && !isProjectManager && !isProjectOwner) {
-      throw new ForbiddenException('Only admins or project managers can add members to this project');
+    if (
+      !isSuperAdmin &&
+      !isOrgOwner &&
+      !isOrgAdmin &&
+      !isWorkspaceAdmin &&
+      !isProjectManager &&
+      !isProjectOwner
+    ) {
+      throw new ForbiddenException(
+        'Only admins or project managers can add members to this project',
+      );
     }
 
     // Role escalation check: only SUPER_ADMIN/org owner can assign MANAGER or OWNER role

@@ -1782,6 +1782,7 @@ export default function ReportsPage() {
                               <div className="divide-y divide-[var(--border)]">
                                 {reports.map((report) => {
                                   const taskHref = getTaskHref(report.task);
+                                  const displayProgress = report.progressPercent ?? (report.task as any)?.progressPercent;
                                   return (
                                     <article key={report.id} className="p-5 lg:p-6">
                                       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_14rem]">
@@ -1833,17 +1834,17 @@ export default function ReportsPage() {
                                             <p className="text-xs font-bold uppercase text-[var(--muted-foreground)]">
                                               Tiến độ
                                             </p>
-                                            {typeof report.progressPercent === "number" ? (
+                                            {typeof displayProgress === "number" ? (
                                               <div className="mt-2">
                                                 <div className="mb-1 flex justify-between text-sm font-semibold">
                                                   <span>Công việc</span>
-                                                  <span>{report.progressPercent}%</span>
+                                                  <span>{displayProgress}%</span>
                                                 </div>
                                                 <div className="h-2 rounded-full bg-[var(--muted)]">
                                                   <div
                                                     className="h-2 rounded-full bg-slate-900"
                                                     style={{
-                                                      width: `${Math.min(Math.max(report.progressPercent, 0), 100)}%`,
+                                                      width: `${Math.min(Math.max(displayProgress, 0), 100)}%`,
                                                     }}
                                                   />
                                                 </div>

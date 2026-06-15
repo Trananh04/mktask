@@ -20,7 +20,7 @@ export class OrganizationMembersService {
   constructor(
     private prisma: PrismaService,
     private workspaceMembersService: WorkspaceMembersService,
-  ) { }
+  ) {}
 
   async create(
     createOrganizationMemberDto: CreateOrganizationMemberDto,
@@ -278,13 +278,13 @@ export class OrganizationMembersService {
     // Build search conditions
     const searchCondition = search
       ? {
-        OR: [
-          { user: { firstName: { contains: search, mode: 'insensitive' } } },
-          { user: { lastName: { contains: search, mode: 'insensitive' } } },
-          { user: { email: { contains: search, mode: 'insensitive' } } },
-          { user: { username: { contains: search, mode: 'insensitive' } } },
-        ],
-      }
+          OR: [
+            { user: { firstName: { contains: search, mode: 'insensitive' } } },
+            { user: { lastName: { contains: search, mode: 'insensitive' } } },
+            { user: { email: { contains: search, mode: 'insensitive' } } },
+            { user: { username: { contains: search, mode: 'insensitive' } } },
+          ],
+        }
       : {};
 
     // Combine base where clause with search

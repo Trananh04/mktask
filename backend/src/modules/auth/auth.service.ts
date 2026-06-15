@@ -41,7 +41,9 @@ export class AuthService {
 
     if (user && user.password && (await bcrypt.compare(password, user.password))) {
       if (user.status === 'PENDING') {
-        throw new ForbiddenException('Tài khoản của bạn đang chờ phê duyệt từ Super Admin. Vui lòng chờ.');
+        throw new ForbiddenException(
+          'Tài khoản của bạn đang chờ phê duyệt từ Super Admin. Vui lòng chờ.',
+        );
       }
       if (user.status === 'SUSPENDED') {
         throw new ForbiddenException('Tài khoản của bạn đã bị khóa. Vui lòng liên hệ admin.');
@@ -101,7 +103,7 @@ export class AuthService {
     const registrationEnabled = registrationEnabledValue !== 'false';
 
     let hasValidInvitation = false;
-    
+
     if (!registrationEnabled) {
       // Allow registration if a valid pending invitation token is provided
       if (registerDto.invitationToken) {

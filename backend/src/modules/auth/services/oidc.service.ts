@@ -244,7 +244,9 @@ export class OidcService {
     if (user) {
       // Update last login
       if (user.status === 'PENDING') {
-        throw new BadRequestException('Tài khoản của bạn đang chờ phê duyệt. Vui lòng chờ admin kích hoạt.');
+        throw new BadRequestException(
+          'Tài khoản của bạn đang chờ phê duyệt. Vui lòng chờ admin kích hoạt.',
+        );
       } else if (user.status !== 'ACTIVE') {
         throw new BadRequestException('Your account is inactive. Contact your administrator.');
       }
@@ -258,7 +260,9 @@ export class OidcService {
 
     if (user) {
       if (user.status === 'PENDING') {
-        throw new BadRequestException('Tài khoản của bạn đang chờ phê duyệt. Vui lòng chờ admin kích hoạt.');
+        throw new BadRequestException(
+          'Tài khoản của bạn đang chờ phê duyệt. Vui lòng chờ admin kích hoạt.',
+        );
       } else if (user.status !== 'ACTIVE') {
         throw new BadRequestException('Your account is inactive. Contact your administrator.');
       }

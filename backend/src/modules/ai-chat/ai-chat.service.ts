@@ -20,6 +20,9 @@ import {
 } from './assistant-prompts';
 import { AiDataToolsService, classifyChatIntent } from './ai-data-tools.service';
 import { QueryPlannerService } from './query-planner.service';
+import { PrismaService } from '../../prisma/prisma.service';
+
+const MAX_HISTORY_PAIRS = 5; // Keep last 5 user+assistant pairs = 10 messages
 
 @Injectable()
 export class AiChatService {
@@ -27,6 +30,7 @@ export class AiChatService {
     private settingsService: SettingsService,
     private readonly aiDataTools: AiDataToolsService,
     private readonly queryPlannerService: QueryPlannerService,
+    private readonly prisma: PrismaService,
   ) {}
 
   private detectProvider(apiUrl: string): string {
@@ -206,6 +210,10 @@ SUB-WORKSPACE RULES:
 - Drag to the "Drop here to make top-level" drop zone to un-nest a sub-workspace
 - DO NOT confuse sub-workspaces with projects. Projects go inside workspaces; sub-workspaces are nested workspaces.
 
+DATA TOOL RESULTS:
+- If "DATA TOOL RESULTS" are provided in the user message, treat them as the absolute truth.
+- Use them to accurately answer the user's question, overriding any missing information from the screen (e.g., if names are hidden on screen but present in the data, use the data).
+
 ADMIN PANEL RULES (SUPER_ADMIN ONLY):
 - Admin pages are at /admin, /admin/users, /admin/organizations, /admin/config
 - Only users with SUPER_ADMIN role can access admin pages
@@ -256,15 +264,29 @@ ADMIN PANEL RULES (SUPER_ADMIN ONLY):
         });
       }
 
-      // Add conversation history if provided
-      if (chatRequest.history && Array.isArray(chatRequest.history)) {
-        chatRequest.history.forEach((msg: ChatMessageDto) => {
-          messages.push({
-            role: msg.role,
-            content: msg.content,
-          });
+      // ── Load session history from DB (overrides frontend-provided history) ──
+      let dbHistory: ChatMessageDto[] = [];
+      if (chatRequest.sessionId && !useAutomationPrompt) {
+        const session = await this.prisma.aiChatSession.findUnique({
+          where: { sessionId: chatRequest.sessionId },
         });
+        if (session && Array.isArray(session.messages)) {
+          dbHistory = (session.messages as any[]).map((m) => ({
+            role: m.role as 'user' | 'assistant',
+            content: m.content as string,
+          }));
+        }
       }
+
+      // Use DB history if available, otherwise fall back to frontend-provided history
+      const historyToUse = dbHistory.length > 0 ? dbHistory : chatRequest.history || [];
+
+      // Add conversation history
+      historyToUse.forEach((msg: ChatMessageDto) => {
+        if (msg.role !== 'system') {
+          messages.push({ role: msg.role, content: msg.content });
+        }
+      });
 
       let userMessage = chatRequest.message;
 
@@ -276,13 +298,40 @@ ADMIN PANEL RULES (SUPER_ADMIN ONLY):
         const url = urlMatch[1].trim();
         const appContext = enhancePromptWithContext(task, url);
         const automationPrompt = getAutomationPrompt(task);
-        userMessage = userMessage + `\n\n${appContext}`;
+
+        // Also run QueryPlanner on the task to inject data if relevant
+        const userScope = await this.aiDataTools.resolveUserScope(
+          userId,
+          chatRequest.currentOrganizationId,
+        );
+        const queryPlan = await this.queryPlannerService.planQuery(
+          task,
+          userScope,
+          userId,
+          chatRequest.currentOrganizationId,
+          historyToUse,
+        );
+        let groundedContext = '';
+        if (queryPlan && queryPlan.tools.length > 0) {
+          const results = await this.aiDataTools.executeTools(queryPlan, userScope);
+          groundedContext = `\n\nDATA TOOL RESULTS:\n${JSON.stringify(results, null, 2)}\nUse the above authoritative data to help answer the user if applicable.`;
+        }
+
+        userMessage = userMessage + `\n\n${appContext}` + groundedContext;
         if (automationPrompt) {
           userMessage = userMessage + `\n\n${automationPrompt}`;
         }
       } else if (intent === 'QUERY_DATA') {
-        const userScope = await this.aiDataTools.resolveUserScope(userId, chatRequest.currentOrganizationId);
-        const queryPlan = await this.queryPlannerService.planQuery(userMessage, userScope, userId, chatRequest.currentOrganizationId);
+        const userScope = await this.aiDataTools.resolveUserScope(
+          userId,
+          chatRequest.currentOrganizationId,
+        );
+        const queryPlan = await this.queryPlannerService.planQuery(
+          userMessage,
+          userScope,
+          userId,
+          chatRequest.currentOrganizationId,
+        );
         console.log('--- QUERY PLANNER OUTPUT ---');
         console.log(JSON.stringify(queryPlan, null, 2));
 
@@ -293,7 +342,7 @@ ADMIN PANEL RULES (SUPER_ADMIN ONLY):
           // Has data tools — use data answer system prompt
           const results = await this.aiDataTools.executeTools(queryPlan, userScope);
           groundedContext = `DATA TOOL RESULTS:\n${JSON.stringify(results, null, 2)}`;
-          systemPrompt = buildQueryAnswerSystemPrompt();
+          systemPrompt = buildQueryAnswerSystemPrompt(userScope.role);
           console.log('--- GROUNDED CONTEXT ---');
           console.log(groundedContext);
           userMessage = buildQueryAnswerUserContext(userMessage, groundedContext);
@@ -455,9 +504,29 @@ ADMIN PANEL RULES (SUPER_ADMIN ONLY):
           aiMessage = data.choices?.[0]?.message?.content || '';
           break;
       }
-      
+
       console.log('--- LLM OUTPUT ---');
       console.log(aiMessage);
+
+      // ── Persist session to DB ──
+      if (chatRequest.sessionId && aiMessage && !useAutomationPrompt) {
+        const newMessages = [
+          ...historyToUse,
+          {
+            role: 'user' as const,
+            content: chatRequest.message,
+            timestamp: new Date().toISOString(),
+          },
+          { role: 'assistant' as const, content: aiMessage, timestamp: new Date().toISOString() },
+        ];
+        // Keep only last MAX_HISTORY_PAIRS pairs (MAX_HISTORY_PAIRS * 2 messages)
+        const trimmed = newMessages.slice(-(MAX_HISTORY_PAIRS * 2));
+        await this.prisma.aiChatSession.upsert({
+          where: { sessionId: chatRequest.sessionId },
+          create: { sessionId: chatRequest.sessionId, userId, messages: trimmed as any },
+          update: { messages: trimmed as any },
+        });
+      }
 
       return {
         message: aiMessage,

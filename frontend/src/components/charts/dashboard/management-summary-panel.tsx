@@ -83,16 +83,16 @@ const workloadLabel: Record<ManagementWorkloadLevel, string> = {
 };
 
 const riskClass: Record<ManagementRiskLevel, string> = {
-  LOW: "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-400 font-bold",
-  MEDIUM: "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-400 font-bold",
-  HIGH: "border-orange-200 bg-orange-50 text-orange-800 dark:border-orange-800 dark:bg-orange-950/40 dark:text-orange-400 font-bold",
-  CRITICAL: "border-red-200 bg-red-50 text-red-800 dark:border-red-800 dark:bg-red-950/40 dark:text-red-400 font-bold",
+  LOW: "border-emerald-200 bg-transparent text-emerald-800 dark:border-emerald-800 dark:bg-transparent dark:text-emerald-400 font-bold",
+  MEDIUM: "border-amber-200 bg-transparent text-amber-800 dark:border-amber-800 dark:bg-transparent dark:text-amber-400 font-bold",
+  HIGH: "border-orange-200 bg-transparent text-orange-800 dark:border-orange-800 dark:bg-transparent dark:text-orange-400 font-bold",
+  CRITICAL: "border-red-200 bg-transparent text-red-800 dark:border-red-800 dark:bg-transparent dark:text-red-400 font-bold",
 };
 
 const workloadClass: Record<ManagementWorkloadLevel, string> = {
-  LOW: "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-400 font-bold",
-  MEDIUM: "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-400 font-bold",
-  HIGH: "border-red-200 bg-red-50 text-red-800 dark:border-red-800 dark:bg-red-950/40 dark:text-red-400 font-bold",
+  LOW: "border-emerald-200 bg-transparent text-emerald-800 dark:border-emerald-800 dark:bg-transparent dark:text-emerald-400 font-bold",
+  MEDIUM: "border-amber-200 bg-transparent text-amber-800 dark:border-amber-800 dark:bg-transparent dark:text-amber-400 font-bold",
+  HIGH: "border-red-200 bg-transparent text-red-800 dark:border-red-800 dark:bg-transparent dark:text-red-400 font-bold",
 };
 
 function formatPercent(value: number): string {
@@ -131,10 +131,10 @@ function CollapsibleSection({
   const [open, setOpen] = useState(defaultOpen);
 
   const badgeColors = {
-    default: "bg-[var(--muted)] text-[var(--muted-foreground)] font-bold",
-    warning: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-400 font-bold",
-    danger: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-400 font-bold",
-    success: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-400 font-bold",
+    default: "bg-transparent text-[var(--muted-foreground)] font-bold",
+    warning: "bg-transparent text-amber-800 dark:bg-transparent dark:text-amber-400 font-bold",
+    danger: "bg-transparent text-red-800 dark:bg-transparent dark:text-red-400 font-bold",
+    success: "bg-transparent text-emerald-800 dark:bg-transparent dark:text-emerald-400 font-bold",
   };
 
   return (

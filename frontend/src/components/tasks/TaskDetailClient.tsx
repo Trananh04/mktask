@@ -304,9 +304,7 @@ export default function TaskDetailClient({
         reportDate: dailyReport.reportDate,
         content: dailyReport.content.trim(),
         blockers: dailyReport.blockers.trim() || undefined,
-        progressPercent: dailyReport.progressPercent
-          ? Number(dailyReport.progressPercent)
-          : undefined,
+        progressPercent: task?.progressPercent ?? undefined,
       });
       setDailyReport((prev) => ({
         ...prev,
@@ -1884,27 +1882,13 @@ export default function TaskDetailClient({
                       placeholder="Nội dung đã làm / sẽ làm"
                       className="min-h-[88px] w-full resize-y rounded border border-[var(--border)] bg-transparent p-2 text-sm outline-none focus:ring-1 focus:ring-[var(--primary)]"
                     />
-                    <div className="mt-2 grid grid-cols-[1fr_96px] gap-2">
+                    <div className="mt-2">
                       <Input
                         value={dailyReport.blockers}
                         onChange={(event) =>
                           setDailyReport((prev) => ({ ...prev, blockers: event.target.value }))
                         }
                         placeholder="Vướng mắc"
-                        className="h-9 text-xs"
-                      />
-                      <Input
-                        type="number"
-                        min={0}
-                        max={100}
-                        value={dailyReport.progressPercent}
-                        onChange={(event) =>
-                          setDailyReport((prev) => ({
-                            ...prev,
-                            progressPercent: event.target.value,
-                          }))
-                        }
-                        placeholder="%"
                         className="h-9 text-xs"
                       />
                     </div>
