@@ -283,24 +283,41 @@ export class WorkspacesService {
   }
   async findAll(userId: string, organizationId?: string, search?: string): Promise<Workspace[]> {
     let isSuperAdmin = false;
-    let isElevated = false;
+    let orgRole: Role | undefined;
     if (organizationId) {
       const access = await this.accessControl.getOrgAccess(organizationId, userId);
       isSuperAdmin = access.isSuperAdmin;
-      isElevated = access.isElevated;
+      orgRole = access.role;
     }
 
     const whereClause: any = { archive: false, organizationId };
-    if (userId && !isSuperAdmin && !isElevated) {
-      whereClause.members = { some: { userId } };
-    }
 
-    if (search && search.trim()) {
-      whereClause.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
-        { slug: { contains: search, mode: 'insensitive' } },
-      ];
+    const searchCondition =
+      search && search.trim()
+        ? {
+            OR: [
+              { name: { contains: search, mode: 'insensitive' } },
+              { description: { contains: search, mode: 'insensitive' } },
+              { slug: { contains: search, mode: 'insensitive' } },
+            ],
+          }
+        : null;
+
+    if (userId && !isSuperAdmin && orgRole !== Role.OWNER) {
+      const visibilityCondition = {
+        OR: [
+          { members: { some: { userId } } },
+          { projects: { some: { members: { some: { userId } } } } },
+        ],
+      };
+
+      if (searchCondition) {
+        whereClause.AND = [visibilityCondition, searchCondition];
+      } else {
+        whereClause.AND = [visibilityCondition];
+      }
+    } else if (searchCondition) {
+      whereClause.OR = searchCondition.OR;
     }
     return this.prisma.workspace.findMany({
       where: whereClause,
@@ -321,24 +338,23 @@ export class WorkspacesService {
           select: {
             members: true,
             childWorkspaces: true,
-            projects: userId
-              ? {
-                  where: {
-                    archive: false,
-                    OR: [
-                      { visibility: 'PUBLIC' },
-                      { visibility: 'INTERNAL' },
-                      { members: { some: { userId } } },
-                      {
-                        workspace: {
-                          members: { some: { userId, role: { in: [Role.OWNER, Role.MANAGER] } } },
+            projects: isSuperAdmin
+              ? { where: { archive: false } }
+              : userId
+                ? {
+                    where: {
+                      archive: false,
+                      OR: [
+                        { members: { some: { userId } } },
+                        { visibility: 'INTERNAL', workspace: { members: { some: { userId } } } },
+                        {
+                          visibility: 'PUBLIC',
+                          workspace: { organization: { members: { some: { userId } } } },
                         },
-                      },
-                      { workspace: { organization: { ownerId: userId } } },
-                    ],
-                  },
-                }
-              : true,
+                      ],
+                    },
+                  }
+                : true,
           },
         },
       },
@@ -363,24 +379,41 @@ export class WorkspacesService {
     };
   }> {
     let isSuperAdmin = false;
-    let isElevated = false;
+    let orgRole: Role | undefined;
     if (organizationId) {
       const access = await this.accessControl.getOrgAccess(organizationId, userId);
       isSuperAdmin = access.isSuperAdmin;
-      isElevated = access.isElevated;
+      orgRole = access.role;
     }
 
     const whereClause: any = { archive: false, organizationId };
-    if (userId && !isSuperAdmin && !isElevated) {
-      whereClause.members = { some: { userId } };
-    }
 
-    if (search && search.trim()) {
-      whereClause.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
-        { slug: { contains: search, mode: 'insensitive' } },
-      ];
+    const searchCondition =
+      search && search.trim()
+        ? {
+            OR: [
+              { name: { contains: search, mode: 'insensitive' } },
+              { description: { contains: search, mode: 'insensitive' } },
+              { slug: { contains: search, mode: 'insensitive' } },
+            ],
+          }
+        : null;
+
+    if (userId && !isSuperAdmin && orgRole !== Role.OWNER) {
+      const visibilityCondition = {
+        OR: [
+          { members: { some: { userId } } },
+          { projects: { some: { members: { some: { userId } } } } },
+        ],
+      };
+
+      if (searchCondition) {
+        whereClause.AND = [visibilityCondition, searchCondition];
+      } else {
+        whereClause.AND = [visibilityCondition];
+      }
+    } else if (searchCondition) {
+      whereClause.OR = searchCondition.OR;
     }
 
     const totalCount = await this.prisma.workspace.count({
@@ -404,24 +437,23 @@ export class WorkspacesService {
         _count: {
           select: {
             members: true,
-            projects: userId
-              ? {
-                  where: {
-                    archive: false,
-                    OR: [
-                      { visibility: 'PUBLIC' },
-                      { visibility: 'INTERNAL' },
-                      { members: { some: { userId } } },
-                      {
-                        workspace: {
-                          members: { some: { userId, role: { in: [Role.OWNER, Role.MANAGER] } } },
+            projects: isSuperAdmin
+              ? { where: { archive: false } }
+              : userId
+                ? {
+                    where: {
+                      archive: false,
+                      OR: [
+                        { members: { some: { userId } } },
+                        { visibility: 'INTERNAL', workspace: { members: { some: { userId } } } },
+                        {
+                          visibility: 'PUBLIC',
+                          workspace: { organization: { members: { some: { userId } } } },
                         },
-                      },
-                      { workspace: { organization: { ownerId: userId } } },
-                    ],
-                  },
-                }
-              : true,
+                      ],
+                    },
+                  }
+                : true,
           },
         },
       },

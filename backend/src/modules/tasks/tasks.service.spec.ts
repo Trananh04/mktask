@@ -43,14 +43,7 @@ describe('TasksService task listing visibility', () => {
     };
 
     return {
-      service: new TasksService(
-        prisma,
-        accessControl,
-        {} as any,
-        {} as any,
-        {} as any,
-        {} as any,
-      ),
+      service: new TasksService(prisma, accessControl, {} as any, {} as any, {} as any, {} as any),
       prisma,
     };
   };
@@ -165,14 +158,7 @@ describe('TasksService task assignment validation', () => {
     };
 
     return {
-      service: new TasksService(
-        prisma,
-        accessControl,
-        {} as any,
-        {} as any,
-        {} as any,
-        {} as any,
-      ),
+      service: new TasksService(prisma, accessControl, {} as any, {} as any, {} as any, {} as any),
       prisma,
     };
   };

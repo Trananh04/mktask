@@ -3,6 +3,7 @@ import { Prisma, Role } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ChatRequestDto } from './dto/chat.dto';
 import { QueryPlan } from './query-planner.service';
+import { AiTool } from './ai-tool.decorator';
 
 export type AiChatIntent = 'AUTOMATION' | 'QUERY_DATA' | 'GUIDANCE';
 
@@ -151,217 +152,24 @@ export class AiDataToolsService {
   }
 
   // ─── Build Tool Catalog based on role ────────────────────────────────────
+  // ─── Build Tool Catalog dynamically using Reflect ───────────────────────
   buildToolCatalog(userScope: UserScope): ToolDefinition[] {
-    // ── MEMBER tools (available to all roles) ──
-    const tools: ToolDefinition[] = [
-      {
-        name: 'get_my_tasks',
-        description:
-          'Get tasks assigned to the current logged-in user. Supports filtering by status, priority, project, overdue, sprint.',
-        params: {
-          projectSlug: 'string (optional)',
-          statusCategory: 'string (optional) - TODO | IN_PROGRESS | DONE',
-          priority: 'string (optional) - LOWEST | LOW | MEDIUM | HIGH | HIGHEST',
-          isOverdue: 'boolean (optional)',
-          hasNoDueDate: 'boolean (optional)',
-          sprintName: 'string (optional)',
-        },
-      },
-      {
-        name: 'get_my_projects',
-        description: 'Get the list of projects the current user belongs to.',
-        params: {},
-      },
-      {
-        name: 'get_project_health',
-        description:
-          'Get overall health, task counts, and completion rate for one or all accessible projects.',
-        params: { projectSlug: 'string (optional)' },
-      },
-      {
-        name: 'get_sprint_tasks',
-        description: 'Get tasks in a sprint. If sprintName omitted, returns active sprint tasks.',
-        params: {
-          projectSlug: 'string (optional)',
-          sprintName: 'string (optional)',
-        },
-      },
-      {
-        name: 'get_my_daily_reports',
-        description: 'Get daily báo cáo (reports) submitted by the current user.',
-        params: {
-          reportDate: 'string (optional) - YYYY-MM-DD',
-          status: 'string (optional) - SUBMITTED | REVIEWED',
-        },
-      },
-      {
-        name: 'get_my_time_entries',
-        description: 'Get time tracking entries logged by the current user.',
-        params: {
-          projectSlug: 'string (optional)',
-          fromDate: 'string (optional) - YYYY-MM-DD',
-          toDate: 'string (optional) - YYYY-MM-DD',
-        },
-      },
-      {
-        name: 'get_my_notifications',
-        description:
-          'Get recent notifications for the current user. Includes task assignments, comments, mentions, and status changes.',
-        params: {
-          unreadOnly: 'boolean (optional) - if true, only return unread notifications',
-          limit: 'number (optional) - max 20',
-        },
-      },
-    ];
+    const tools: ToolDefinition[] = [];
+    const methodNames = Object.getOwnPropertyNames(AiDataToolsService.prototype);
 
-    // ── MANAGER tools (manager, owner, super_admin) ──
-    if (isManagerOrAbove(userScope.role)) {
-      tools.push(
-        {
-          name: 'get_tasks',
-          description:
-            'Get all tasks across accessible projects with rich filtering. Use for questions about any task in the team.',
-          params: {
-            projectSlug: 'string (optional)',
-            sprintName: 'string (optional)',
-            statusCategory: 'string (optional) - TODO | IN_PROGRESS | DONE',
-            isOverdue: 'boolean (optional)',
-            hasNoDueDate: 'boolean (optional)',
-            isUnassigned: 'boolean (optional)',
-            priority: 'string (optional) - LOWEST | LOW | MEDIUM | HIGH | HIGHEST',
-            assigneeName: 'string (optional)',
-          },
-        },
-        {
-          name: 'get_workload',
-          description:
-            'Get task workload per team member. Useful for questions about who is overloaded or available.',
-          params: {
-            projectSlug: 'string (optional)',
-            userName: 'string (optional)',
-          },
-        },
-        {
-          name: 'get_project_team',
-          description: 'Get the list of members in one or all projects.',
-          params: { projectSlug: 'string (optional)' },
-        },
-        {
-          name: 'get_user_projects',
-          description: 'Get the list of projects a specific user is participating in.',
-          params: { userName: 'string (required)' },
-        },
-        {
-          name: 'get_overdue_summary',
-          description: 'Get overdue tasks grouped by assignee across managed projects.',
-          params: { projectSlug: 'string (optional)' },
-        },
-        {
-          name: 'get_daily_reports',
-          description:
-            'Get daily báo cáo (reports) from all team members. Filter by date, member, project, or status.',
-          params: {
-            reportDate: 'string (optional) - YYYY-MM-DD',
-            reporterName: 'string (optional)',
-            projectSlug: 'string (optional)',
-            status: 'string (optional) - SUBMITTED | REVIEWED',
-          },
-        },
-        {
-          name: 'get_time_tracking',
-          description:
-            'Get time tracking summary for the team. Shows total hours logged per user or per project.',
-          params: {
-            projectSlug: 'string (optional)',
-            userName: 'string (optional)',
-            fromDate: 'string (optional) - YYYY-MM-DD',
-            toDate: 'string (optional) - YYYY-MM-DD',
-          },
-        },
-        {
-          name: 'get_pending_status_requests',
-          description: 'Get pending task status change requests waiting for manager review.',
-          params: { projectSlug: 'string (optional)' },
-        },
-        {
-          name: 'get_project_risks',
-          description: 'Get risks registered for one or all managed projects.',
-          params: {
-            projectSlug: 'string (optional)',
-            severity: 'string (optional) - LOW | MEDIUM | HIGH | CRITICAL',
-            status: 'string (optional) - OPEN | MITIGATED | RESOLVED',
-          },
-        },
-        {
-          name: 'get_milestones',
-          description: 'Get project milestones and their due dates/status.',
-          params: {
-            projectSlug: 'string (optional)',
-            status: 'string (optional) - PLANNED | IN_PROGRESS | COMPLETED | MISSED',
-          },
-        },
-        {
-          name: 'get_sprint_summary',
-          description:
-            'Get a summary of all sprints for a project including task counts and progress.',
-          params: { projectSlug: 'string (optional)' },
-        },
-        {
-          name: 'get_blocked_tasks',
-          description:
-            'Get tasks that are currently blocked (isBlocked=true or have unresolved blocking dependencies) across managed projects.',
-          params: {
-            projectSlug: 'string (optional)',
-          },
-        },
-        {
-          name: 'find_member',
-          description:
-            'Search for a member by name or email in the organization or in accessible projects. Returns their basic info and project memberships.',
-          params: {
-            query: 'string (required) - name or email to search',
-          },
-        },
-        {
-          name: 'get_org_members',
-          description: 'Get all members of the organization with their roles. Use this to list or search for members by name or email.',
-          params: {
-            role: 'string (optional) - MEMBER | MANAGER | OWNER',
-            search: 'string (optional) - name or email search',
-          },
-        },
-      );
+    for (const methodName of methodNames) {
+      if (methodName === 'constructor') continue;
+      const metadata = Reflect.getMetadata('AI_TOOL_METADATA_KEY', this[methodName]);
+      if (metadata) {
+        if (metadata.allowedRoles.includes(userScope.role)) {
+          tools.push({
+            name: metadata.name,
+            description: metadata.description,
+            params: metadata.params,
+          });
+        }
+      }
     }
-
-    // ── ADMIN/OWNER tools ──
-    if (isAdminOrOwner(userScope.role)) {
-      tools.push(
-        {
-          name: 'get_all_projects',
-          description: 'Get all projects in the organization with health overview.',
-          params: { includeArchived: 'boolean (optional)' },
-        },
-        {
-          name: 'get_activity_log',
-          description: 'Get recent activity logs across the organization.',
-          params: {
-            projectSlug: 'string (optional)',
-            userName: 'string (optional)',
-            fromDate: 'string (optional) - YYYY-MM-DD',
-            limit: 'number (optional) - max 100',
-          },
-        },
-        {
-          name: 'get_project_status_updates',
-          description: 'Get latest project status updates (health reports written by managers).',
-          params: {
-            projectSlug: 'string (optional)',
-            health: 'string (optional) - ON_TRACK | AT_RISK | OFF_TRACK',
-          },
-        },
-      );
-    }
-
     return tools;
   }
 
@@ -398,6 +206,7 @@ export class AiDataToolsService {
   }
 
   // ─── Tool Execution Pipeline ──────────────────────────────────────────────
+  // ─── Tool Execution Pipeline dynamically using Reflect ──────────────────
   async executeTools(plan: QueryPlan, userScope: UserScope): Promise<Record<string, any>> {
     const results: Record<string, any> = { _scope: userScope.role };
 
@@ -405,134 +214,51 @@ export class AiDataToolsService {
       return { error: 'No accessible projects in this organization.' };
     }
 
-    for (const tool of plan.tools) {
-      try {
-        let res: any = null;
-        switch (tool.name) {
-          // ── MEMBER tools ──
-          case 'get_my_tasks':
-            res = await this.toolGetMyTasks(tool.params, userScope);
-            break;
-          case 'get_my_projects':
-            res = await this.toolGetMyProjects(userScope);
-            break;
-          case 'get_project_health':
-            res = await this.toolGetProjectHealth(tool.params, userScope);
-            break;
-          case 'get_sprint_tasks':
-            res = await this.toolGetSprintTasks(tool.params, userScope);
-            break;
-          case 'get_my_daily_reports':
-            res = await this.toolGetMyDailyReports(tool.params, userScope);
-            break;
-          case 'get_my_time_entries':
-            res = await this.toolGetMyTimeEntries(tool.params, userScope);
-            break;
-
-          // ── MANAGER tools ──
-          case 'get_tasks':
-            res = isManagerOrAbove(userScope.role)
-              ? await this.toolGetTasks(tool.params, userScope)
-              : { error: 'Permission denied' };
-            break;
-          case 'get_workload':
-            res = isManagerOrAbove(userScope.role)
-              ? await this.toolGetWorkload(tool.params, userScope)
-              : { error: 'Permission denied' };
-            break;
-          case 'get_project_team':
-            res = isManagerOrAbove(userScope.role)
-              ? await this.toolGetProjectTeam(tool.params, userScope)
-              : { error: 'Permission denied' };
-            break;
-          case 'get_user_projects':
-            res = isManagerOrAbove(userScope.role)
-              ? await this.toolGetUserProjects(tool.params, userScope)
-              : { error: 'Permission denied' };
-            break;
-          case 'get_overdue_summary':
-            res = isManagerOrAbove(userScope.role)
-              ? await this.toolGetOverdueSummary(tool.params, userScope)
-              : { error: 'Permission denied' };
-            break;
-          case 'get_daily_reports':
-            res = isManagerOrAbove(userScope.role)
-              ? await this.toolGetDailyReports(tool.params, userScope)
-              : { error: 'Permission denied. Use get_my_daily_reports instead.' };
-            break;
-          case 'get_time_tracking':
-            res = isManagerOrAbove(userScope.role)
-              ? await this.toolGetTimeTracking(tool.params, userScope)
-              : { error: 'Permission denied' };
-            break;
-          case 'get_pending_status_requests':
-            res = isManagerOrAbove(userScope.role)
-              ? await this.toolGetPendingStatusRequests(tool.params, userScope)
-              : { error: 'Permission denied' };
-            break;
-          case 'get_project_risks':
-            res = isManagerOrAbove(userScope.role)
-              ? await this.toolGetProjectRisks(tool.params, userScope)
-              : { error: 'Permission denied' };
-            break;
-          case 'get_milestones':
-            res = isManagerOrAbove(userScope.role)
-              ? await this.toolGetMilestones(tool.params, userScope)
-              : { error: 'Permission denied' };
-            break;
-          case 'get_sprint_summary':
-            res = isManagerOrAbove(userScope.role)
-              ? await this.toolGetSprintSummary(tool.params, userScope)
-              : { error: 'Permission denied' };
-            break;
-
-          case 'get_org_members':
-            res = (userScope.role === 'MANAGER' || isAdminOrOwner(userScope.role))
-              ? await this.toolGetOrgMembers(tool.params, userScope)
-              : { error: 'Permission denied' };
-            break;
-          case 'get_all_projects':
-            res = isAdminOrOwner(userScope.role)
-              ? await this.toolGetAllProjects(tool.params, userScope)
-              : { error: 'Permission denied' };
-            break;
-          case 'get_activity_log':
-            res = isAdminOrOwner(userScope.role)
-              ? await this.toolGetActivityLog(tool.params, userScope)
-              : { error: 'Permission denied' };
-            break;
-          case 'get_project_status_updates':
-            res = isAdminOrOwner(userScope.role)
-              ? await this.toolGetProjectStatusUpdates(tool.params, userScope)
-              : { error: 'Permission denied' };
-            break;
-
-          case 'get_blocked_tasks':
-            res = isManagerOrAbove(userScope.role)
-              ? await this.toolGetBlockedTasks(tool.params, userScope)
-              : { error: 'Permission denied' };
-            break;
-          case 'find_member':
-            res = isManagerOrAbove(userScope.role)
-              ? await this.toolFindMember(tool.params, userScope)
-              : { error: 'Permission denied' };
-            break;
-
-          // ── MEMBER tools ──
-          case 'get_my_notifications':
-            res = await this.toolGetMyNotifications(tool.params, userScope);
-            break;
-
-          default:
-            res = { error: `Unknown tool: ${tool.name}` };
-        }
-        results[tool.name] = res;
-      } catch (e: any) {
-        console.error(`Tool execution error [${tool.name}]:`, e);
-        results[tool.name] = { error: e.message || 'Execution failed' };
+    const methodNames = Object.getOwnPropertyNames(AiDataToolsService.prototype);
+    const toolMap = new Map<string, string>();
+    for (const methodName of methodNames) {
+      if (methodName === 'constructor') continue;
+      const metadata = Reflect.getMetadata('AI_TOOL_METADATA_KEY', this[methodName]);
+      if (metadata) {
+        toolMap.set(metadata.name, methodName);
       }
     }
 
+    for (const tool of plan.tools) {
+      try {
+        let res: any = null;
+        const methodName = toolMap.get(tool.name);
+
+        if (methodName) {
+          const metadata = Reflect.getMetadata('AI_TOOL_METADATA_KEY', this[methodName]);
+          if (metadata.allowedRoles.includes(userScope.role)) {
+            res = await this[methodName](tool.params, userScope);
+          } else {
+            res = { error: 'Permission denied' };
+          }
+        } else {
+          res = { error: 'Tool not recognized by server.' };
+        }
+
+        if (results[tool.name] !== undefined) {
+          if (!Array.isArray(results[tool.name])) {
+            results[tool.name] = [results[tool.name]];
+          }
+          results[tool.name].push(res);
+        } else {
+          results[tool.name] = res;
+        }
+      } catch (err: any) {
+        if (results[tool.name] !== undefined) {
+          if (!Array.isArray(results[tool.name])) {
+            results[tool.name] = [results[tool.name]];
+          }
+          results[tool.name].push({ error: err.message });
+        } else {
+          results[tool.name] = { error: err.message };
+        }
+      }
+    }
     return results;
   }
 
@@ -583,6 +309,20 @@ export class AiDataToolsService {
   // MEMBER TOOLS
   // ─────────────────────────────────────────────────────────────────────────
 
+  @AiTool({
+    name: 'get_my_tasks',
+    description:
+      'Get tasks assigned to the current logged-in user. Supports filtering by status, priority, project, overdue, sprint.',
+    params: {
+      projectSlug: 'string (optional)',
+      statusCategory: 'string (optional) - TODO | IN_PROGRESS | DONE',
+      priority: 'string (optional) - LOWEST | LOW | MEDIUM | HIGH | HIGHEST',
+      isOverdue: 'boolean (optional)',
+      hasNoDueDate: 'boolean (optional)',
+      sprintName: 'string (optional)',
+    },
+    allowedRoles: ['MEMBER', 'MANAGER', 'OWNER', 'SUPER_ADMIN'],
+  })
   private async toolGetMyTasks(params: any, userScope: UserScope) {
     const projectId = await this.resolveProjectId(params.projectSlug, userScope);
     const where: Prisma.TaskWhereInput = {
@@ -617,14 +357,29 @@ export class AiDataToolsService {
     return { total: tasks.length, tasks };
   }
 
+  @AiTool({
+    name: 'get_my_projects',
+    description: 'Get the list of projects the current user belongs to.',
+    params: {},
+    allowedRoles: ['MEMBER', 'MANAGER', 'OWNER', 'SUPER_ADMIN'],
+  })
   private async toolGetMyProjects(userScope: UserScope) {
     const projects = await this.prisma.project.findMany({
-      where: { id: { in: userScope.accessibleProjectIds } },
-      select: { name: true, slug: true, description: true },
+      where: { id: { in: userScope.accessibleProjectIds }, archive: false },
+      select: { name: true, slug: true, description: true, startDate: true, endDate: true },
     });
     return { projects };
   }
 
+  @AiTool({
+    name: 'get_my_daily_reports',
+    description: 'Get daily báo cáo (reports) submitted by the current user.',
+    params: {
+      reportDate: 'string (optional) - YYYY-MM-DD',
+      status: 'string (optional) - SUBMITTED | REVIEWED',
+    },
+    allowedRoles: ['MEMBER', 'MANAGER', 'OWNER', 'SUPER_ADMIN'],
+  })
   private async toolGetMyDailyReports(params: any, userScope: UserScope) {
     const where: any = {
       reporterId: userScope.userId,
@@ -656,6 +411,16 @@ export class AiDataToolsService {
     return { total: reports.length, reports };
   }
 
+  @AiTool({
+    name: 'get_my_time_entries',
+    description: 'Get time tracking entries logged by the current user.',
+    params: {
+      projectSlug: 'string (optional)',
+      fromDate: 'string (optional) - YYYY-MM-DD',
+      toDate: 'string (optional) - YYYY-MM-DD',
+    },
+    allowedRoles: ['MEMBER', 'MANAGER', 'OWNER', 'SUPER_ADMIN'],
+  })
   private async toolGetMyTimeEntries(params: any, userScope: UserScope) {
     const projectId = await this.resolveProjectId(params.projectSlug, userScope);
     const where: any = {
@@ -683,6 +448,22 @@ export class AiDataToolsService {
   // MANAGER TOOLS
   // ─────────────────────────────────────────────────────────────────────────
 
+  @AiTool({
+    name: 'get_tasks',
+    description:
+      'Get all tasks across accessible projects with rich filtering. Use for questions about any task in the team.',
+    params: {
+      projectSlug: 'string (optional)',
+      sprintName: 'string (optional)',
+      statusCategory: 'string (optional) - TODO | IN_PROGRESS | DONE',
+      isOverdue: 'boolean (optional)',
+      hasNoDueDate: 'boolean (optional)',
+      isUnassigned: 'boolean (optional)',
+      priority: 'string (optional) - LOWEST | LOW | MEDIUM | HIGH | HIGHEST',
+      assigneeName: 'string (optional)',
+    },
+    allowedRoles: ['MANAGER', 'OWNER', 'SUPER_ADMIN'],
+  })
   private async toolGetTasks(params: any, userScope: UserScope) {
     const projectId = await this.resolveProjectId(params.projectSlug, userScope);
     const where: Prisma.TaskWhereInput = { isArchived: false };
@@ -729,6 +510,13 @@ export class AiDataToolsService {
     return { total: tasks.length, tasks };
   }
 
+  @AiTool({
+    name: 'get_project_health',
+    description:
+      'Get overall health, task counts, and completion rate for one or all accessible projects.',
+    params: { projectSlug: 'string (optional)' },
+    allowedRoles: ['MEMBER', 'MANAGER', 'OWNER', 'SUPER_ADMIN'],
+  })
   private async toolGetProjectHealth(params: any, userScope: UserScope) {
     const projectId = await this.resolveProjectId(params.projectSlug, userScope);
     const ids = projectId ? [projectId] : userScope.accessibleProjectIds;
@@ -737,6 +525,8 @@ export class AiDataToolsService {
       select: {
         name: true,
         slug: true,
+        startDate: true,
+        endDate: true,
         tasks: {
           where: { isArchived: false },
           select: { status: { select: { category: true } }, dueDate: true, completedAt: true },
@@ -752,14 +542,26 @@ export class AiDataToolsService {
       return {
         project: p.name,
         slug: p.slug,
+        startDate: p.startDate,
+        endDate: p.endDate,
         totalTasks: total,
         doneTasks: done,
         completionRate: total > 0 ? Math.round((done / total) * 100) : 0,
         overdueTasks: overdue,
+        health: overdue > 5 ? 'At Risk' : overdue > 0 ? 'Needs Attention' : 'Healthy',
       };
     });
   }
 
+  @AiTool({
+    name: 'get_sprint_tasks',
+    description: 'Get tasks in a sprint. If sprintName omitted, returns active sprint tasks.',
+    params: {
+      projectSlug: 'string (optional)',
+      sprintName: 'string (optional)',
+    },
+    allowedRoles: ['MEMBER', 'MANAGER', 'OWNER', 'SUPER_ADMIN'],
+  })
   private async toolGetSprintTasks(params: any, userScope: UserScope) {
     const projectId = await this.resolveProjectId(params.projectSlug, userScope);
     const sprintWhere: Prisma.SprintWhereInput = {};
@@ -791,6 +593,16 @@ export class AiDataToolsService {
     };
   }
 
+  @AiTool({
+    name: 'get_workload',
+    description:
+      'Get task workload per team member. Useful for questions about who is overloaded or available.',
+    params: {
+      projectSlug: 'string (optional)',
+      userName: 'string (optional)',
+    },
+    allowedRoles: ['MANAGER', 'OWNER', 'SUPER_ADMIN'],
+  })
   private async toolGetWorkload(params: any, userScope: UserScope) {
     const projectId = await this.resolveProjectId(params.projectSlug, userScope);
     const ids = projectId ? [projectId] : userScope.managedProjectIds;
@@ -826,6 +638,12 @@ export class AiDataToolsService {
     return Array.from(map.values()).sort((a, b) => b.taskCount - a.taskCount);
   }
 
+  @AiTool({
+    name: 'get_project_team',
+    description: 'Get the list of members in one or all projects.',
+    params: { projectSlug: 'string (optional)' },
+    allowedRoles: ['MANAGER', 'OWNER', 'SUPER_ADMIN'],
+  })
   private async toolGetProjectTeam(params: any, userScope: UserScope) {
     const projectId = await this.resolveProjectId(params.projectSlug, userScope);
     const ids = projectId ? [projectId] : userScope.accessibleProjectIds;
@@ -849,6 +667,12 @@ export class AiDataToolsService {
     return members;
   }
 
+  @AiTool({
+    name: 'get_user_projects',
+    description: 'Get the list of projects a specific user is participating in.',
+    params: { userName: 'string (required)' },
+    allowedRoles: ['MANAGER', 'OWNER', 'SUPER_ADMIN'],
+  })
   private async toolGetUserProjects(params: any, userScope: UserScope) {
     if (!params.userName) return { error: 'userName parameter is required' };
     const q = params.userName.toLowerCase().trim();
@@ -922,6 +746,12 @@ export class AiDataToolsService {
     return Array.from(userMap.values());
   }
 
+  @AiTool({
+    name: 'get_overdue_summary',
+    description: 'Get overdue tasks grouped by assignee across managed projects.',
+    params: { projectSlug: 'string (optional)' },
+    allowedRoles: ['MANAGER', 'OWNER', 'SUPER_ADMIN'],
+  })
   private async toolGetOverdueSummary(params: any, userScope: UserScope) {
     const projectId = await this.resolveProjectId(params.projectSlug, userScope);
     const ids = projectId ? [projectId] : userScope.managedProjectIds;
@@ -946,6 +776,18 @@ export class AiDataToolsService {
     return { total: tasks.length, tasks };
   }
 
+  @AiTool({
+    name: 'get_daily_reports',
+    description:
+      'Get daily báo cáo (reports) from all team members. Filter by date, member, project, or status.',
+    params: {
+      reportDate: 'string (optional) - YYYY-MM-DD',
+      reporterName: 'string (optional)',
+      projectSlug: 'string (optional)',
+      status: 'string (optional) - SUBMITTED | REVIEWED',
+    },
+    allowedRoles: ['MANAGER', 'OWNER', 'SUPER_ADMIN'],
+  })
   private async toolGetDailyReports(params: any, userScope: UserScope) {
     const projectId = await this.resolveProjectId(params.projectSlug, userScope);
     const ids = projectId ? [projectId] : userScope.managedProjectIds;
@@ -987,6 +829,18 @@ export class AiDataToolsService {
     return { total: filtered.length, reports: filtered };
   }
 
+  @AiTool({
+    name: 'get_time_tracking',
+    description:
+      'Get time tracking summary for the team. Shows total hours logged per user or per project.',
+    params: {
+      projectSlug: 'string (optional)',
+      userName: 'string (optional)',
+      fromDate: 'string (optional) - YYYY-MM-DD',
+      toDate: 'string (optional) - YYYY-MM-DD',
+    },
+    allowedRoles: ['MANAGER', 'OWNER', 'SUPER_ADMIN'],
+  })
   private async toolGetTimeTracking(params: any, userScope: UserScope) {
     const projectId = await this.resolveProjectId(params.projectSlug, userScope);
     const ids = projectId ? [projectId] : userScope.managedProjectIds;
@@ -1029,7 +883,13 @@ export class AiDataToolsService {
     }));
   }
 
-  private async toolGetPendingStatusRequests(params: any, userScope: UserScope) {
+  @AiTool({
+    name: 'get_pending_task_status_requests',
+    description: 'Get pending task status change requests (NOT users). Only use this when asking about task status changes waiting for review.',
+    params: { projectSlug: 'string (optional)' },
+    allowedRoles: ['MANAGER', 'OWNER', 'SUPER_ADMIN'],
+  })
+  private async toolGetPendingTaskStatusRequests(params: any, userScope: UserScope) {
     const projectId = await this.resolveProjectId(params.projectSlug, userScope);
     const ids = projectId ? [projectId] : userScope.managedProjectIds;
     const requests = await this.prisma.taskStatusChangeRequest.findMany({
@@ -1046,6 +906,16 @@ export class AiDataToolsService {
     return { total: requests.length, requests };
   }
 
+  @AiTool({
+    name: 'get_project_risks',
+    description: 'Get risks registered for one or all managed projects.',
+    params: {
+      projectSlug: 'string (optional)',
+      severity: 'string (optional) - LOW | MEDIUM | HIGH | CRITICAL',
+      status: 'string (optional) - OPEN | MITIGATED | RESOLVED',
+    },
+    allowedRoles: ['MANAGER', 'OWNER', 'SUPER_ADMIN'],
+  })
   private async toolGetProjectRisks(params: any, userScope: UserScope) {
     const projectId = await this.resolveProjectId(params.projectSlug, userScope);
     const ids = projectId ? [projectId] : userScope.managedProjectIds;
@@ -1067,6 +937,15 @@ export class AiDataToolsService {
     return { total: risks.length, risks };
   }
 
+  @AiTool({
+    name: 'get_milestones',
+    description: 'Get project milestones and their due dates/status.',
+    params: {
+      projectSlug: 'string (optional)',
+      status: 'string (optional) - PLANNED | IN_PROGRESS | COMPLETED | MISSED',
+    },
+    allowedRoles: ['MANAGER', 'OWNER', 'SUPER_ADMIN'],
+  })
   private async toolGetMilestones(params: any, userScope: UserScope) {
     const projectId = await this.resolveProjectId(params.projectSlug, userScope);
     const ids = projectId ? [projectId] : userScope.managedProjectIds;
@@ -1086,6 +965,12 @@ export class AiDataToolsService {
     return { total: milestones.length, milestones };
   }
 
+  @AiTool({
+    name: 'get_sprint_summary',
+    description: 'Get a summary of all sprints for a project including task counts and progress.',
+    params: { projectSlug: 'string (optional)' },
+    allowedRoles: ['MANAGER', 'OWNER', 'SUPER_ADMIN'],
+  })
   private async toolGetSprintSummary(params: any, userScope: UserScope) {
     const projectId = await this.resolveProjectId(params.projectSlug, userScope);
     const ids = projectId ? [projectId] : userScope.managedProjectIds;
@@ -1121,10 +1006,22 @@ export class AiDataToolsService {
   // ADMIN / OWNER TOOLS
   // ─────────────────────────────────────────────────────────────────────────
 
+  @AiTool({
+    name: 'get_org_members',
+    description:
+      'Get all members of the organization with their roles. Use this to list or search for members by name or email. Filter by status to find pending users.',
+    params: {
+      role: 'string (optional) - MEMBER | MANAGER | OWNER',
+      status: 'string (optional) - ACTIVE | INACTIVE | SUSPENDED | PENDING',
+      search: 'string (optional) - name or email search',
+    },
+    allowedRoles: ['MANAGER', 'OWNER', 'SUPER_ADMIN'],
+  })
   private async toolGetOrgMembers(params: any, userScope: UserScope) {
     if (!userScope.organizationId) return { error: 'No organization context' };
     const where: any = { organizationId: userScope.organizationId };
     if (params.role) where.role = params.role.toUpperCase();
+    if (params.status) where.user = { status: params.status.toUpperCase() };
     const members = await this.prisma.organizationMember.findMany({
       where,
       select: {
@@ -1147,6 +1044,48 @@ export class AiDataToolsService {
     return { total: filtered.length, members: filtered };
   }
 
+  @AiTool({
+    name: 'get_all_users',
+    description: 'Get all users in the system. Use this to find all users, including pending users waiting for approval across the platform.',
+    params: {
+      status: 'string (optional) - ACTIVE | INACTIVE | SUSPENDED | PENDING',
+      search: 'string (optional) - name or email search',
+    },
+    allowedRoles: ['SUPER_ADMIN'],
+  })
+  private async toolGetAllUsers(params: any, userScope: UserScope) {
+    const where: any = {};
+    if (params.status) where.status = params.status.toUpperCase();
+    if (params.search) {
+      const q = params.search.toLowerCase();
+      where.OR = [
+        { firstName: { contains: q, mode: 'insensitive' } },
+        { lastName: { contains: q, mode: 'insensitive' } },
+        { email: { contains: q, mode: 'insensitive' } },
+      ];
+    }
+    const users = await this.prisma.user.findMany({
+      where,
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        status: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+    });
+    return { total: users.length, users };
+  }
+
+  @AiTool({
+    name: 'get_all_projects',
+    description: 'Get all projects in the organization with health overview.',
+    params: { includeArchived: 'boolean (optional)' },
+    allowedRoles: ['OWNER', 'SUPER_ADMIN'],
+  })
   private async toolGetAllProjects(params: any, userScope: UserScope) {
     const where: Prisma.ProjectWhereInput = {};
     if (!params.includeArchived) where.archive = false;
@@ -1158,6 +1097,8 @@ export class AiDataToolsService {
         slug: true,
         description: true,
         archive: true,
+        startDate: true,
+        endDate: true,
         tasks: {
           where: { isArchived: false },
           select: { status: { select: { category: true } }, dueDate: true, completedAt: true },
@@ -1176,6 +1117,8 @@ export class AiDataToolsService {
       return {
         name: p.name,
         slug: p.slug,
+        startDate: p.startDate,
+        endDate: p.endDate,
         workspace: p.workspace.name,
         archived: p.archive,
         memberCount: p.members.length,
@@ -1187,6 +1130,17 @@ export class AiDataToolsService {
     });
   }
 
+  @AiTool({
+    name: 'get_activity_log',
+    description: 'Get recent activity logs across the organization.',
+    params: {
+      projectSlug: 'string (optional)',
+      userName: 'string (optional)',
+      fromDate: 'string (optional) - YYYY-MM-DD',
+      limit: 'number (optional) - max 100',
+    },
+    allowedRoles: ['OWNER', 'SUPER_ADMIN'],
+  })
   private async toolGetActivityLog(params: any, userScope: UserScope) {
     const where: any = {};
     if (userScope.organizationId) where.organizationId = userScope.organizationId;
@@ -1218,6 +1172,15 @@ export class AiDataToolsService {
     return { total: logs.length, logs };
   }
 
+  @AiTool({
+    name: 'get_project_status_updates',
+    description: 'Get latest project status updates (health reports written by managers).',
+    params: {
+      projectSlug: 'string (optional)',
+      health: 'string (optional) - ON_TRACK | AT_RISK | OFF_TRACK',
+    },
+    allowedRoles: ['OWNER', 'SUPER_ADMIN'],
+  })
   private async toolGetProjectStatusUpdates(params: any, userScope: UserScope) {
     const projectId = await this.resolveProjectId(params.projectSlug, userScope);
     const ids = projectId ? [projectId] : userScope.accessibleProjectIds;
@@ -1243,6 +1206,16 @@ export class AiDataToolsService {
   // NEW TOOLS: get_my_notifications, get_blocked_tasks, find_member
   // ─────────────────────────────────────────────────────────────────────────
 
+  @AiTool({
+    name: 'get_my_notifications',
+    description:
+      'Get recent notifications for the current user. Includes task assignments, comments, mentions, and status changes.',
+    params: {
+      unreadOnly: 'boolean (optional) - if true, only return unread notifications',
+      limit: 'number (optional) - max 20',
+    },
+    allowedRoles: ['MEMBER', 'MANAGER', 'OWNER', 'SUPER_ADMIN'],
+  })
   private async toolGetMyNotifications(params: any, userScope: UserScope) {
     const limit = Math.min(params.limit || 15, 20);
     const where: any = { userId: userScope.userId };
@@ -1267,6 +1240,15 @@ export class AiDataToolsService {
     return { total: notifications.length, unreadCount, notifications };
   }
 
+  @AiTool({
+    name: 'get_blocked_tasks',
+    description:
+      'Get tasks that are currently blocked (isBlocked=true or have unresolved blocking dependencies) across managed projects.',
+    params: {
+      projectSlug: 'string (optional)',
+    },
+    allowedRoles: ['MANAGER', 'OWNER', 'SUPER_ADMIN'],
+  })
   private async toolGetBlockedTasks(params: any, userScope: UserScope) {
     const projectId = await this.resolveProjectId(params.projectSlug, userScope);
     const ids = projectId ? [projectId] : userScope.managedProjectIds;
@@ -1300,6 +1282,15 @@ export class AiDataToolsService {
     return { total: tasks.length, tasks };
   }
 
+  @AiTool({
+    name: 'find_member',
+    description:
+      'Search for a member by name or email in the organization or in accessible projects. Returns their basic info and project memberships.',
+    params: {
+      query: 'string (required) - name or email to search',
+    },
+    allowedRoles: ['MANAGER', 'OWNER', 'SUPER_ADMIN'],
+  })
   private async toolFindMember(params: any, userScope: UserScope) {
     if (!params.query) return { error: 'query parameter is required' };
     const q = params.query.toLowerCase().trim();

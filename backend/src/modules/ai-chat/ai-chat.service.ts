@@ -331,6 +331,7 @@ ADMIN PANEL RULES (SUPER_ADMIN ONLY):
           userScope,
           userId,
           chatRequest.currentOrganizationId,
+          historyToUse,
         );
         console.log('--- QUERY PLANNER OUTPUT ---');
         console.log(JSON.stringify(queryPlan, null, 2));

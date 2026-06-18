@@ -11,6 +11,7 @@ import {
   HiClock,
   HiTrash,
 } from "react-icons/hi2";
+import ReactMarkdown from "react-markdown";
 import { useChatContext } from "@/contexts/chat-context";
 import { mcpServer, extractContextFromPath } from "@/lib/mcp-server";
 import { usePathname, useRouter } from "next/navigation";
@@ -1529,15 +1530,30 @@ export default function ChatPanel() {
                       </div>
                     </div>
                   ) : (
-                    // Assistant Message - Left aligned like
-                    <div className="flex justify-start mb-4">
-                      <div className="flex items-start gap-3 max-w-[85%]">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-400 flex items-center justify-center flex-shrink-0">
+                    // Assistant Message - Full width, no bubble
+                    <div className="flex justify-start mb-4 w-full">
+                      <div className="flex items-start gap-4 w-full">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-400 flex items-center justify-center flex-shrink-0 mt-0.5">
                           <HiSparkles className="w-4 h-4 text-white" />
                         </div>
-                        <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl rounded-tl-sm px-4 py-2.5 shadow-sm">
-                          <div className="text-sm text-gray-900 dark:text-gray-100 whitespace-pre-wrap break-words">
-                            {message.content}
+                        <div className="flex-1 min-w-0">
+                          <div className="text-[15px] leading-relaxed font-semibold text-[var(--foreground)] break-words text-left whitespace-normal">
+                            <ReactMarkdown
+                              components={{
+                                p: ({node, ...props}) => <p className="mb-2 last:mb-0 text-left whitespace-normal" {...props} />,
+                                a: ({node, ...props}) => <a className="text-blue-500 hover:underline" {...props} />,
+                                ul: ({node, ...props}) => <ul className="pl-5 mb-2 space-y-1 list-disc" {...props} />,
+                                ol: ({node, ...props}) => <ol className="list-decimal pl-5 mb-2 space-y-1" {...props} />,
+                                li: ({node, ...props}) => <li className="text-left whitespace-normal" {...props} />,
+                                strong: ({node, ...props}) => <strong className="font-extrabold" {...props} />,
+                                h1: ({node, ...props}) => <h1 className="text-xl font-extrabold mt-4 mb-2 text-primary text-left" {...props} />,
+                                h2: ({node, ...props}) => <h2 className="text-lg font-bold mt-4 mb-2 text-primary text-left" {...props} />,
+                                h3: ({node, ...props}) => <h3 className="text-base font-bold mt-3 mb-1 text-primary text-left" {...props} />,
+                                h4: ({node, ...props}) => <h4 className="text-[15px] font-bold mt-3 mb-1 text-primary text-left" {...props} />
+                              }}
+                            >
+                              {message.content}
+                            </ReactMarkdown>
                             {message.isStreaming && (
                               <span className="inline-block w-2 h-4 ml-1 bg-blue-600 animate-pulse rounded" />
                             )}
