@@ -17,8 +17,8 @@ Nền tảng quản lý dự án mã nguồn mở có trợ lí AI để tạo v
 
 mktask là một hệ thống quản lý công việc cho nhóm sản phẩm, phần mềm, marketing hoặc vận hành nội bộ. Dự án được xây theo monorepo:
 
-- `frontend/`: ứng dụng Next.js, chạy ở `http://localhost:3001`
-- `backend/`: API NestJS, chạy ở `http://localhost:3000`
+- `frontend/`: ứng dụng Next.js, chạy ở `http://localhost:8081`
+- `backend/`: API NestJS, chạy ở `http://localhost:8080`
 - `backend/prisma/`: schema và migration PostgreSQL
 - `docker/`, `docker-compose*.yml`: môi trường chạy bằng Docker
 - `scripts/`: script hỗ trợ phát triển local
@@ -145,9 +145,9 @@ JWT_REFRESH_SECRET="thay-bang-chuoi-bi-mat-khac"
 ENCRYPTION_KEY="thay-bang-chuoi-32-byte"
 REDIS_HOST=localhost
 REDIS_PORT=6379
-FRONTEND_URL=http://localhost:3001
-CORS_ORIGIN="http://localhost:3001"
-NEXT_PUBLIC_API_BASE_URL=http://localhost:3000/api
+FRONTEND_URL=http://localhost:8081
+CORS_ORIGIN="http://localhost:8081"
+NEXT_PUBLIC_API_BASE_URL=http://localhost:8080/api
 ```
 
 ## Chạy dự án bằng local script
@@ -160,9 +160,9 @@ npm run dev:local
 
 Truy cập:
 
-- Frontend: `http://localhost:3001`
-- Backend API: `http://localhost:3000/api`
-- Swagger API Docs: `http://localhost:3000/api/docs`
+- Frontend: `http://localhost:8081`
+- Backend API: `http://localhost:8080/api`
+- Swagger API Docs: `http://localhost:8080/api/docs`
 
 Dừng môi trường local:
 
@@ -179,10 +179,10 @@ docker compose -f docker-compose.dev.yml up --build
 
 Docker dev compose mở:
 
-- PostgreSQL trong container, publish ra port `5435`
-- Redis ở port `6379`
-- Backend ở port `3000`
-- Frontend ở port `3001`
+- PostgreSQL trong container, publish ra port `1111`
+- Redis ở port `2222`
+- Backend ở port `8080`
+- Frontend ở port `8081`
 
 Dừng Docker:
 
@@ -276,7 +276,7 @@ mktask/
 
 - **Không kết nối được database**: kiểm tra PostgreSQL đang chạy và `DATABASE_URL` đúng.
 - **Redis lỗi**: kiểm tra `REDIS_HOST`, `REDIS_PORT` và container Redis.
-- **Port bị chiếm**: backend dùng `3000`, frontend dùng `3001`.
+- **Port bị chiếm**: backend dùng `8080`, frontend dùng `8081`.
 - **Prisma lỗi sau khi pull code**: chạy `npm run db:generate` và `npm run db:migrate`.
 - **AI không hoạt động**: bật AI trong Settings, nhập model/API URL/API key và bấm test connection.
 

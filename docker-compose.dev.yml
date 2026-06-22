@@ -16,7 +16,7 @@ services:
     networks:
       - mktask-network
     ports:
-      - "5435:5432"
+      - "1111:5432"
 
   # Redis for Bull Queue
   redis:
@@ -31,7 +31,7 @@ services:
     networks:
       - mktask-network
     ports:
-      - "${REDIS_PORT:-6379}:6379"
+      - "2222:6379"
 
   # Application (Backend + Frontend)
   app:
