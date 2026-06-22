@@ -9,6 +9,13 @@ import { TaskBar } from "@/components/gantt/TaskBar";
 import { TimelineHeader } from "@/components/gantt/TimelineHeader";
 import { GanttGrid } from "@/components/gantt/GanttGrid";
 import TaskTableSkeleton from "@/components/skeletons/TaskTableSkeleton";
+import { 
+  initGoogleCalendarAPI, 
+  connectGoogleCalendar, 
+  checkGoogleCalendarConnection, 
+  fetchCalendarEventsAsTasks, 
+  updateCalendarEventTime 
+} from "@/utils/googleCalendar";
 import {
   DndContext,
   closestCenter,
@@ -70,11 +77,29 @@ function formatGroupDate(date: string | Date | null | undefined): { key: string;
 }
 
 function groupTasks(tasks: Task[], field: GroupByField): GanttGroup[] {
-  if (field === "none") return [];
-
   const map = new Map<string, GanttGroup>();
 
-  tasks.forEach((task) => {
+  // Extract Google Calendar events to their own group if any exist
+  const gcalGroup: GanttGroup = { key: "gcal-group", label: "Lịch cá nhân", tasks: [] };
+  const projectTasks = tasks.filter(t => {
+    if ((t as any).isGCalEvent) {
+      gcalGroup.tasks.push(t);
+      return false;
+    }
+    return true;
+  });
+
+  if (field === "none") {
+    if (gcalGroup.tasks.length > 0) {
+      return [
+        { key: "project-tasks", label: "Công việc", tasks: projectTasks },
+        gcalGroup
+      ];
+    }
+    return [];
+  }
+
+  projectTasks.forEach((task) => {
     let key: string;
     let label: string;
 
@@ -137,6 +162,11 @@ function groupTasks(tasks: Task[], field: GroupByField): GanttGroup[] {
     });
   } else {
     groups.sort((a, b) => a.label.localeCompare(b.label));
+  }
+
+  // Always append GCal group at the top if it has tasks
+  if (gcalGroup.tasks.length > 0) {
+    groups.unshift(gcalGroup);
   }
 
   return groups;
@@ -248,6 +278,8 @@ export default function TaskGanttView({
   const router = useRouter();
 
   const [ganttTasks, setGanttTasks] = useState<Task[]>([]);
+  const [gcalTasks, setGcalTasks] = useState<Task[]>([]);
+  const [isGCalConnected, setIsGCalConnected] = useState(false);
   const [timeRange, setTimeRange] = useState<TimeRange>({ start: new Date(), end: new Date(), days: [] });
   const [hoveredTask, setHoveredTask] = useState<string | null>(null);
   const [focusedTask, setFocusedTask] = useState<string | null>(null);
@@ -287,6 +319,46 @@ export default function TaskGanttView({
     window.addEventListener("resize", handleScroll);
     return () => window.removeEventListener("resize", handleScroll);
   }, [handleScroll]);
+
+  // Check if GCal is already connected
+  useEffect(() => {
+    const initGCal = async () => {
+      try {
+        const connected = await checkGoogleCalendarConnection();
+        if (connected) {
+          setIsGCalConnected(true);
+        }
+      } catch (err) {
+        console.error("Failed to init GCal", err);
+      }
+    };
+    initGCal();
+  }, []);
+
+  // Fetch GCal events when connected and timeRange changes
+  useEffect(() => {
+    const fetchGCal = async () => {
+      if (!isGCalConnected) return;
+      if (!timeRange.start || !timeRange.end) return;
+      
+      try {
+        const events = await fetchCalendarEventsAsTasks(timeRange.start, timeRange.end);
+        setGcalTasks(events);
+      } catch (err) {
+        console.error("Failed to fetch GCal events", err);
+      }
+    };
+    fetchGCal();
+  }, [isGCalConnected, timeRange.start, timeRange.end]);
+
+  const handleConnectGCal = async () => {
+    try {
+      await connectGoogleCalendar();
+      setIsGCalConnected(true);
+    } catch (err) {
+      console.error("Failed to connect GCal", err);
+    }
+  };
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -369,11 +441,12 @@ export default function TaskGanttView({
   }, [safeTasks, viewMode, generateTimeScale]);
 
   // Computed groups (memoised)
-  const isGrouped = groupBy !== "none";
-  const ganttGroups = useMemo(() => groupTasks(ganttTasks, groupBy), [ganttTasks, groupBy]);
+  const combinedTasks = useMemo(() => [...ganttTasks, ...gcalTasks], [ganttTasks, gcalTasks]);
+  const isGrouped = groupBy !== "none" || gcalTasks.length > 0;
+  const ganttGroups = useMemo(() => groupTasks(combinedTasks, groupBy), [combinedTasks, groupBy]);
 
   // Flat task list for non-grouped DnD
-  const taskIds = useMemo(() => ganttTasks.map(t => t.id), [ganttTasks]);
+  const taskIds = useMemo(() => combinedTasks.map(t => t.id), [combinedTasks]);
 
   // Toggle a group open/closed
   const toggleGroup = useCallback((key: string) => {
@@ -428,6 +501,10 @@ export default function TaskGanttView({
     const reordered = arrayMove(ganttTasks, oldIndex, newIndex);
     setGanttTasks(reordered);
     try {
+      if ((active.data.current as any)?.task?.isGCalEvent) {
+        // Handle GCal Reorder/Update here if needed (not standard DnD ordering)
+        return;
+      }
       await persistRank(active.id as string, reordered, newIndex);
       if (onTaskRefetch) onTaskRefetch();
     } catch (err) {
@@ -455,6 +532,7 @@ export default function TaskGanttView({
     const reordered = arrayMove(ganttTasks, oldIndex, newIndex);
     setGanttTasks(reordered);
     try {
+      if ((active.data.current as any)?.task?.isGCalEvent) return;
       await persistRank(activeId, reordered, newIndex);
       if (onTaskRefetch) onTaskRefetch();
     } catch (err) {
@@ -503,7 +581,18 @@ export default function TaskGanttView({
       onHover={setHoveredTask}
       onFocus={setFocusedTask}
       onKeyDown={handleKeyDown}
-      onTaskUpdate={onTaskUpdate}
+      onTaskUpdate={async (taskId, updates) => {
+        if ((task as any).isGCalEvent) {
+          if (updates.startDate && updates.dueDate) {
+            const success = await updateCalendarEventTime((task as any).originalEventId, updates.startDate, updates.dueDate);
+            if (success) {
+              setGcalTasks(prev => prev.map(t => t.id === taskId ? { ...t, startDate: updates.startDate!, dueDate: updates.dueDate! } : t));
+            }
+          }
+        } else if (onTaskUpdate) {
+          await onTaskUpdate(taskId, updates);
+        }
+      }}
       taskRef={(el) => { if (el) taskRefs.current.set(task.id, el); else taskRefs.current.delete(task.id); }}
     />
   ), [isCompact, hoveredTask, focusedTask, safeWorkspaceSlug, safeProjectSlug, timeRange, viewMode, handleKeyDown, onTaskUpdate]);
@@ -532,6 +621,8 @@ export default function TaskGanttView({
             timeRange={timeRange} viewMode={viewMode}
             isCompact={isCompact} scrollToToday={scrollToToday}
             visibleRange={visibleRange}
+            isGCalConnected={isGCalConnected}
+            onConnectGCal={handleConnectGCal}
           />
 
           <DndContext

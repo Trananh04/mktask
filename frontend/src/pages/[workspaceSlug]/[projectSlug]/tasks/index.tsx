@@ -8,7 +8,7 @@ import { CsvImportModal } from "@/components/tasks/CsvImportModal";
 import { useProject } from "@/contexts/project-context";
 import { useTask } from "@/contexts/task-context";
 import { useAuth } from "@/contexts/auth-context";
-import { useSprint } from "@/contexts/sprint-context";
+
 import TaskListView from "@/components/tasks/views/TaskListView";
 import TaskGanttView from "@/components/tasks/views/TaskGanttView";
 import { KanbanBoard } from "@/components/tasks/KanbanBoard";
@@ -92,8 +92,8 @@ function ProjectTasksContent() {
     updateTask,
   } = useTask();
 
-  const { isAuthenticated, getUserAccess } = useAuth();
-  const { getSprintsByProject } = useSprint();
+  const { isAuthenticated, getUserAccess, getCurrentUser } = useAuth();
+  const currentUser = getCurrentUser();
   const currentOrganizationId = TokenManager.getCurrentOrgId();
   const isAuth = isAuthenticated();
 
@@ -112,17 +112,14 @@ function ProjectTasksContent() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [isNewTaskModalOpen, setNewTaskModalOpen] = useState(false);
-  const [isCsvImportOpen, setCsvImportOpen] = useState(false);
   const [hasAccess, setHasAccess] = useState(false);
   const [userAccess, setUserAccess] = useState(null);
 
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
   const [selectedPriorities, setSelectedPriorities] = useState<string[]>([]);
   const [selectedTaskTypes, setSelectedTaskTypes] = useState<string[]>([]);
-  const [selectedSprints, setSelectedSprints] = useState<string[]>([]);
   const [availableStatuses, setAvailableStatuses] = useState<any[]>([]);
   const [availablePriorities] = useState(TaskPriorities);
-  const [availableSprints, setAvailableSprints] = useState<any[]>([]);
   const [projectMembers, setProjectMembers] = useState<any[]>([]);
   const [kanban, setKanban] = useState<any[]>([]);
   const [ganttTasks, setGanttTasks] = useState<any[]>([]);
@@ -175,8 +172,7 @@ function ProjectTasksContent() {
   // Initialize filters from URL query params
   useEffect(() => {
     if (router.isReady) {
-      const { sprints, statuses, priorities, types, assignees, reporters } = router.query;
-      if (sprints) setSelectedSprints((Array.isArray(sprints) ? sprints : sprints.split(",")));
+      const { statuses, priorities, types, assignees, reporters } = router.query;
       if (statuses) setSelectedStatuses((Array.isArray(statuses) ? statuses : statuses.split(",")));
       if (priorities) setSelectedPriorities((Array.isArray(priorities) ? priorities : priorities.split(",")));
       if (types) setSelectedTaskTypes((Array.isArray(types) ? types : types.split(",")));
@@ -246,10 +242,9 @@ function ProjectTasksContent() {
     ...(selectedTaskTypes.length > 0  && { types:       selectedTaskTypes.join(",") }),
     ...(selectedAssignees.length > 0  && { assigneeIds: selectedAssignees.join(",") }),
     ...(selectedReporters.length > 0  && { reporterIds: selectedReporters.join(",") }),
-    ...(selectedSprints.length > 0    && { sprintId:    selectedSprints.join(",") }),
     ...(project?.id                   && { projectId:   project.id }),
     ...(workspace?.id                 && { workspaceId: workspace.id }),
-  }), [debouncedSearchQuery, selectedStatuses, selectedPriorities, selectedTaskTypes, selectedAssignees, selectedReporters, selectedSprints, project?.id, workspace?.id]);
+  }), [debouncedSearchQuery, selectedStatuses, selectedPriorities, selectedTaskTypes, selectedAssignees, selectedReporters, project?.id, workspace?.id]);
 
   const {
     groupMap,
@@ -303,26 +298,7 @@ function ProjectTasksContent() {
     }
   }, [project?.id, isAuth]);
 
-  const loadProjectSprints = useCallback(async () => {
-    if (!projectSlug || !isAuth) return;
-    try {
-      const sprints = await getSprintsByProject(
-        projectSlug as string,
-        isAuth,
-        effectiveWorkspaceSlug
-      );
-      setAvailableSprints(sprints || []);
-    } catch (error) {
-      console.error("Failed to fetch project sprints:", error);
-      setAvailableSprints([]);
-    }
-  }, [projectSlug, effectiveWorkspaceSlug, isAuth, getSprintsByProject]);
 
-  useEffect(() => {
-    if (projectSlug && isAuth) {
-      loadProjectSprints();
-    }
-  }, [projectSlug, isAuth]);
 
   const { handleSlugNotFound } = useSlugRedirect();
 
@@ -368,7 +344,6 @@ function ProjectTasksContent() {
         ...(selectedStatuses.length > 0 && { statuses: selectedStatuses.join(",") }),
         ...(selectedPriorities.length > 0 && { priorities: selectedPriorities.join(",") }),
         ...(selectedTaskTypes.length > 0 && { types: selectedTaskTypes.join(",") }),
-        ...(selectedSprints.length > 0 && { sprintId: selectedSprints.join(",") }),
         ...(debouncedSearchQuery.trim() && { search: debouncedSearchQuery.trim() }),
         ...(selectedAssignees.length > 0 && { assignees: selectedAssignees.join(",") }),
         ...(selectedReporters.length > 0 && { reporters: selectedReporters.join(",") }),
@@ -410,7 +385,6 @@ function ProjectTasksContent() {
     selectedStatuses,
     selectedPriorities,
     selectedTaskTypes,
-    selectedSprints,
     selectedAssignees,
     selectedReporters,
     effectiveWorkspaceSlug,
@@ -643,18 +617,6 @@ function ProjectTasksContent() {
     [selectedTaskTypes, tasks]
   );
 
-  const sprintFilters = useMemo(
-    () =>
-      availableSprints.map((sprint) => ({
-        id: sprint.id,
-        name: sprint.name,
-        value: sprint.id,
-        selected: selectedSprints.includes(sprint.id),
-        count: tasks.filter((task) => task.sprintId === sprint.id).length,
-        color: sprint.status === "ACTIVE" ? "#10b981" : "#6b7280",
-      })),
-    [availableSprints, selectedSprints, tasks]
-  );
 
   const assigneeFilters = useMemo(() => {
     return projectMembers.map((member) => ({
@@ -711,20 +673,6 @@ function ProjectTasksContent() {
     setCurrentPage(1);
   }, []);
 
-  const toggleSprint = useCallback((id: string) => {
-    setSelectedSprints((prev) => {
-      const newSelection = prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id];
-      const newQuery = { ...router.query };
-      if (newSelection.length > 0) {
-        newQuery.sprints = newSelection.join(",");
-      } else {
-        delete newQuery.sprints;
-      }
-      router.push({ pathname: router.pathname, query: newQuery }, undefined, { shallow: true });
-      return newSelection;
-    });
-    setCurrentPage(1);
-  }, [router]);
 
   const toggleAssignee = useCallback((id: string) => {
     setSelectedAssignees((prev) =>
@@ -775,27 +723,7 @@ function ProjectTasksContent() {
         onSelectAll: () => setSelectedTaskTypes(taskTypeFilters.map((t) => t.id)),
         onClearAll: () => setSelectedTaskTypes([]),
       }),
-      createSection({
-        id: "sprint",
-        title: t("filters.sprint"),
-        icon: Zap,
-        data: sprintFilters,
-        selectedIds: selectedSprints,
-        searchable: true,
-        onToggle: toggleSprint,
-        onSelectAll: () => {
-          const allValues = sprintFilters.map((s) => s.id);
-          setSelectedSprints(allValues);
-          const newQuery = { ...router.query, sprints: allValues.join(",") };
-          router.push({ pathname: router.pathname, query: newQuery }, undefined, { shallow: true });
-        },
-        onClearAll: () => {
-          setSelectedSprints([]);
-          const newQuery = { ...router.query };
-          delete newQuery.sprints;
-          router.push({ pathname: router.pathname, query: newQuery }, undefined, { shallow: true });
-        },
-      }),
+
       createSection({
         id: "assignee",
         title: t("filters.assignee"),
@@ -822,14 +750,12 @@ function ProjectTasksContent() {
     [
       priorityFilters,
       taskTypeFilters,
-      sprintFilters,
       statusFilters,
       assigneeFilters,
       reporterFilters,
       selectedStatuses,
       selectedPriorities,
       selectedTaskTypes,
-      selectedSprints,
       selectedAssignees,
       selectedReporters,
       toggleAssignee,
@@ -837,7 +763,6 @@ function ProjectTasksContent() {
       toggleStatus,
       togglePriority,
       toggleTaskType,
-      toggleSprint,
       createSection,
       t,
     ]
@@ -847,7 +772,6 @@ function ProjectTasksContent() {
     selectedStatuses.length +
     selectedPriorities.length +
     selectedTaskTypes.length +
-    selectedSprints.length +
     selectedAssignees.length +
     selectedReporters.length;
 
@@ -855,7 +779,6 @@ function ProjectTasksContent() {
     setSelectedStatuses([]);
     setSelectedPriorities([]);
     setSelectedTaskTypes([]);
-    setSelectedSprints([]);
     setSelectedAssignees([]);
     setSelectedReporters([]);
     setCurrentPage(1);
@@ -874,7 +797,6 @@ function ProjectTasksContent() {
       updatedBy: { label: t("columns.updatedBy"), type: "user" },
       createdAt: { label: t("columns.createdAt"), type: "date" },
       updatedAt: { label: t("columns.updatedAt"), type: "date" },
-      sprint: { label: t("columns.sprint"), type: "text" },
       parentTask: { label: t("columns.parentTask"), type: "text" },
       childTasksCount: { label: t("columns.childTasksCount"), type: "number" },
       commentsCount: { label: t("columns.commentsCount"), type: "number" },
@@ -1148,15 +1070,6 @@ function ProjectTasksContent() {
                   }}
                   projectSlug={projectSlug as string}
                 />
-                <CsvImportModal
-                  isOpen={isCsvImportOpen}
-                  onClose={() => setCsvImportOpen(false)}
-                  onImportComplete={loadTasks}
-                  workspaceId={workspace?.id}
-                  workspaceName={workspace?.name}
-                  projectId={project?.id}
-                  projectName={project?.name}
-                />
               </div>
             }
           />
@@ -1232,39 +1145,35 @@ function ProjectTasksContent() {
                       onRemoveColumn={handleRemoveColumn}
                     />
 
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <ActionButton
-                          leftIcon={<Download className="w-4 h-4" />}
-                          variant="outline"
-                        >
-                          {t("export")}
-                        </ActionButton>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="bg-[var(--popover)] border-[var(--border)]">
-                        <DropdownMenuItem onClick={() => handleExport("csv")}>
-                          Export as CSV
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleExport("xlsx")}>
-                          Export as Excel (.xlsx)
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleExport("json")}>
-                          Export as JSON
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleExport("pdf")}>
-                          Export as PDF
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-
-                    <ActionButton
-                      leftIcon={<Upload className="w-4 h-4" />}
-                      variant="outline"
-                      onClick={() => setCsvImportOpen(true)}
-                    >
-                      Import
-                    </ActionButton>
-                  </div>
+                    {(currentUser?.role === "SUPER_ADMIN" ||
+                      currentUser?.role === "MANAGER" ||
+                      userAccess?.role === "OWNER" ||
+                      userAccess?.role === "MANAGER") && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <ActionButton
+                            leftIcon={<Download className="w-4 h-4" />}
+                            variant="outline"
+                          >
+                            {t("export")}
+                          </ActionButton>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="bg-[var(--popover)] border-[var(--border)]">
+                          <DropdownMenuItem onClick={() => handleExport("csv")}>
+                            Export as CSV
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleExport("xlsx")}>
+                            Export as Excel (.xlsx)
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleExport("json")}>
+                            Export as JSON
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleExport("pdf")}>
+                            Export as PDF
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}                  </div>
                 )}
               </>
             }

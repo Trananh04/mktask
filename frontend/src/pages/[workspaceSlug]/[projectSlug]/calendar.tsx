@@ -15,6 +15,7 @@ import ErrorState from "@/components/common/ErrorState";
 import { useLayout } from "@/contexts/layout-context";
 import NotFound from "@/pages/404";
 import { useSlugRedirect, cacheSlugId } from "@/hooks/useSlugRedirect";
+import type { Project, Workspace } from "@/types";
 
 const LoadingSkeleton = () => (
   <div className="flex min-h-screen bg-[var(--background)]">
@@ -63,8 +64,8 @@ function ProjectTasksCalendarPageContent() {
   const taskContext = useTask();
   const { handleSlugNotFound } = useSlugRedirect();
 
-  const [workspaceData, setWorkspaceData] = useState<any>(null);
-  const [projectData, setProjectData] = useState<any>(null);
+  const [workspaceData, setWorkspaceData] = useState<Workspace | null>(null);
+  const [projectData, setProjectData] = useState<Project | null>(null);
   const [projectTasks, setProjectTasks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -77,9 +78,6 @@ function ProjectTasksCalendarPageContent() {
   const currentRouteRef = useRef<string>("");
   const isFirstRenderRef = useRef(true);
 
-  const findProjectBySlug = (projects: any[], slug: string) => {
-    return projects.find((project) => project.slug === slug);
-  };
   const organizationId =
     localStorage.getItem("currentOrganizationId") || localStorage.getItem("organizationId");
   const handleTaskCreated = async () => {
@@ -126,10 +124,9 @@ function ProjectTasksCalendarPageContent() {
       setWorkspaceData(workspace);
       cacheSlugId("workspace", workspaceSlug, workspace.id);
 
-      const projects = await projectContext.getProjectsByWorkspace(workspace.id);
-      const project = findProjectBySlug(projects || [], projectSlug);
+      const project = await projectContext.getProjectBySlug(projectSlug, true, workspaceSlug);
 
-      if (!project) {
+      if (!project || project.workspaceId !== workspace.id) {
         setError(t("errors.projectNotFound"));
         setLoading(false);
         return;

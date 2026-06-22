@@ -46,6 +46,13 @@ describe('OrganizationChartsService management summary', () => {
       project: {
         findMany: jest.fn().mockResolvedValue([]),
       },
+      workspace: {
+        findMany: jest
+          .fn()
+          .mockResolvedValue([
+            { id: 'workspace-engineering', name: 'Engineering', slug: 'engineering' },
+          ]),
+      },
     };
     const accessControl: any = {
       getOrgAccess: jest.fn().mockResolvedValue({ isElevated }),
@@ -235,12 +242,9 @@ describe('OrganizationChartsService management summary', () => {
   it('uses personal project and task scope when requested by an elevated user', async () => {
     const { service, prisma } = createService(true);
 
-    await service.getMultipleChartData(
-      organizationId,
-      managerId,
-      [ChartType.MANAGEMENT_SUMMARY],
-      { scope: ChartScope.PERSONAL },
-    );
+    await service.getMultipleChartData(organizationId, managerId, [ChartType.MANAGEMENT_SUMMARY], {
+      scope: ChartScope.PERSONAL,
+    });
 
     expect(prisma.project.findMany).toHaveBeenCalledWith(
       expect.objectContaining({

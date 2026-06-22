@@ -16,7 +16,6 @@ import { useProjectContext } from "@/contexts/project-context";
 import { getCurrentOrganizationId } from "@/utils/hierarchyContext";
 import { formatDateForApi } from "@/utils/handleDateChange";
 import { taskApi } from "@/utils/api/taskApi";
-import { sprintApi } from "@/utils/api/sprintApi";
 
 interface CsvImportModalProps {
     isOpen: boolean;
@@ -27,8 +26,6 @@ interface CsvImportModalProps {
     projectId?: string;
     projectName?: string;
     projectSlug?: string;
-    sprintId?: string;
-    sprintName?: string;
 }
 
 interface ParsedTask {
@@ -111,8 +108,6 @@ export function CsvImportModal({
     projectId: prefilledProjectId,
     projectName: prefilledProjectName,
     projectSlug: prefilledProjectSlug,
-    sprintId: prefilledSprintId,
-    sprintName: prefilledSprintName,
 }: CsvImportModalProps) {
     const { t } = useTranslation("tasks");
     const { getWorkspacesByOrganization } = useWorkspaceContext();
@@ -128,10 +123,7 @@ export function CsvImportModal({
     const [loadingWorkspaces, setLoadingWorkspaces] = useState(false);
     const [loadingProjects, setLoadingProjects] = useState(false);
 
-    // Sprint state
-    const [sprints, setSprints] = useState<any[]>([]);
-    const [selectedSprintId, setSelectedSprintId] = useState(prefilledSprintId || "");
-    const [loadingSprints, setLoadingSprints] = useState(false);
+
 
     // File state
     const [file, setFile] = useState<File | null>(null);
@@ -171,36 +163,7 @@ export function CsvImportModal({
             .finally(() => setLoadingProjects(false));
     }, [isOpen, selectedWorkspaceId, prefilledWorkspaceId, needsProject]);
 
-    // Load sprints when project is selected
-    useEffect(() => {
-        const projId = prefilledProjectId || selectedProjectId;
-        if (!isOpen || !projId) {
-            setSprints([]);
-            setSelectedSprintId("");
-            return;
-        }
 
-        const selectedProject = projects.find((p) => p.id === projId);
-        const projectSlug = selectedProject?.slug || prefilledProjectSlug;
-        if (!projectSlug) return;
-
-        setLoadingSprints(true);
-        sprintApi.getSprintsByProject(projectSlug, true)
-            .then((data) => {
-                setSprints(data || []);
-                const activeSprint = data?.find((s: any) => s.status === "ACTIVE");
-                const defaultSprint = data?.find((s: any) => s.isDefault);
-                if (prefilledSprintId && data?.some((s: any) => s.id === prefilledSprintId)) {
-                    setSelectedSprintId(prefilledSprintId);
-                } else if (activeSprint) {
-                    setSelectedSprintId(activeSprint.id);
-                } else if (defaultSprint) {
-                    setSelectedSprintId(defaultSprint.id);
-                }
-            })
-            .catch(() => setSprints([]))
-            .finally(() => setLoadingSprints(false));
-    }, [isOpen, selectedProjectId, prefilledProjectId, prefilledProjectSlug, projects]);
 
     // Reset on open
     useEffect(() => {
@@ -213,8 +176,6 @@ export function CsvImportModal({
             setImportProgress({ done: 0, total: 0, failed: 0 });
             if (!prefilledWorkspaceId) setSelectedWorkspaceId("");
             if (!prefilledProjectId) setSelectedProjectId("");
-            setSelectedSprintId(prefilledSprintId || "");
-            setSprints([]);
         }
     }, [isOpen]);
 
@@ -306,7 +267,6 @@ export function CsvImportModal({
             const result = await taskApi.bulkCreateTasks({
                 projectId,
                 statusId: defaultStatus.id,
-                sprintId: selectedSprintId || undefined,
                 tasks: bulkTasks,
             });
 
@@ -329,7 +289,7 @@ export function CsvImportModal({
         } finally {
             setIsImporting(false);
         }
-    }, [parsedTasks, selectedProjectId, prefilledProjectId, selectedSprintId, getTaskStatusByProject, onImportComplete]);
+    }, [parsedTasks, selectedProjectId, prefilledProjectId, getTaskStatusByProject, onImportComplete]);
 
     const activeProjectId = prefilledProjectId || selectedProjectId;
     const canImport = parsedTasks.length > 0 && activeProjectId && !isImporting && !importDone;
@@ -401,27 +361,7 @@ export function CsvImportModal({
                         </div>
                     )}
 
-                    {/* Sprint selector */}
-                    {(prefilledProjectId || selectedProjectId) && !prefilledSprintId && (
-                        <div className="projects-form-field">
-                            <Label className="projects-form-label text-sm font-medium">
-                                Sprint
-                            </Label>
-                            <select
-                                value={selectedSprintId}
-                                onChange={(e) => setSelectedSprintId(e.target.value)}
-                                disabled={loadingSprints || isImporting}
-                                className="w-full h-10 rounded-md border border-[var(--border)] bg-[var(--background)] px-3 text-sm"
-                            >
-                                <option value="">{loadingSprints ? "Đang tải..." : "Sprint mặc định"}</option>
-                                {sprints.map((s) => (
-                                    <option key={s.id} value={s.id}>
-                                        {s.name}{s.isDefault ? " (Mặc định)" : ""}{s.status === "ACTIVE" ? " (Đang hoạt động)" : ""}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                    )}
+
 
                     {/* Show pre-filled context */}
                     {prefilledWorkspaceName && (
@@ -434,11 +374,7 @@ export function CsvImportModal({
                             Dự án: <span className="font-medium text-[var(--foreground)]">{prefilledProjectName}</span>
                         </div>
                     )}
-                    {(prefilledSprintName || sprints.find(s => s.id === prefilledSprintId)?.name) && (
-                        <div className="text-sm text-[var(--muted-foreground)]">
-                            Sprint: <span className="font-medium text-[var(--foreground)]">{prefilledSprintName || sprints.find(s => s.id === prefilledSprintId)?.name}</span>
-                        </div>
-                    )}
+
 
                     {/* File upload */}
                     <div className="projects-form-field">

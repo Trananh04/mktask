@@ -5,6 +5,8 @@ import { useCallback, useMemo } from "react";
 
 interface ExtendedTimelineHeaderProps extends TimelineHeaderProps {
   visibleRange?: { startIndex: number; endIndex: number };
+  isGCalConnected?: boolean;
+  onConnectGCal?: () => void;
 }
 
 // Timeline Header Component
@@ -13,6 +15,8 @@ export const TimelineHeader: React.FC<ExtendedTimelineHeaderProps> = ({
   viewMode,
   isCompact,
   visibleRange,
+  isGCalConnected,
+  onConnectGCal,
 }) => {
   const formatDateForView = useCallback((date: Date, mode: ViewMode): string => {
     try {
@@ -62,10 +66,22 @@ export const TimelineHeader: React.FC<ExtendedTimelineHeaderProps> = ({
       <div
         className={`${
           isCompact ? "w-48" : "w-80"
-        } bg-[var(--muted)] border-r border-[var(--border)] flex items-center px-4 py-3 shrink-0 sticky left-0 z-20`}
+        } bg-[var(--muted)] border-r border-[var(--border)] flex items-center justify-between px-4 py-3 shrink-0 sticky left-0 z-20`}
         role="columnheader"
       >
         <span className="text-sm font-semibold text-[var(--foreground)]">Tasks</span>
+        {onConnectGCal && !isGCalConnected && (
+          <button
+            onClick={onConnectGCal}
+            className="text-[10px] font-medium bg-white dark:bg-[var(--card)] border border-[var(--border)] text-[var(--foreground)] hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 transition-colors px-2 py-1 rounded shadow-sm flex items-center gap-1"
+            title="Kết nối Lịch cá nhân"
+          >
+            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10z" />
+            </svg>
+            Google Cal
+          </button>
+        )}
       </div>
       <div className="flex flex-1" role="row">
         {spacerLeft > 0 && <div style={{ width: `${spacerLeft}px` }} className="shrink-0" />}

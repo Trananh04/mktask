@@ -33,10 +33,10 @@ describe('WorkspacesService permissions', () => {
       }),
     };
     const settingsService: any = {
-      get: jest.fn().mockResolvedValue('true'),
+      get: jest.fn().mockResolvedValue('false'),
     };
     const activityLog: any = {
-      log: jest.fn(),
+      logActivity: jest.fn(),
     };
 
     return {

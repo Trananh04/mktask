@@ -1,8 +1,10 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/auth-context";
+import { authApi } from "@/utils/api/authApi";
+import Script from "next/script";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -128,6 +130,41 @@ export function RegisterForm() {
       setIsLoading(false);
     }
   };
+
+  const handleGoogleLogin = async (response: any) => {
+    setIsLoading(true);
+    setError("");
+    try {
+      await authApi.loginWithGoogle(response.credential);
+      const redirectPath = await checkOrganizationAndRedirect();
+      window.location.href = redirectPath;
+    } catch (err: any) {
+      console.error("Google login error:", err);
+      setError("Đăng ký/Đăng nhập bằng Google thất bại. Vui lòng thử lại.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const initGoogleLogin = () => {
+    if (typeof window !== "undefined" && window.google?.accounts?.id && process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID) {
+      window.google.accounts.id.initialize({
+        client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
+        callback: handleGoogleLogin,
+      });
+      const btnContainer = document.getElementById("google-signup-btn");
+      if (btnContainer) {
+        window.google.accounts.id.renderButton(
+          btnContainer,
+          { theme: "outline", size: "large", type: "standard", shape: "rectangular", text: "signup_with", width: btnContainer.offsetWidth || 250 } 
+        );
+      }
+    }
+  };
+
+  useEffect(() => {
+    initGoogleLogin();
+  }, []);
 
   return (
     <motion.div
@@ -438,6 +475,39 @@ export function RegisterForm() {
           </Button>
         </motion.div>
       </form>
+
+      {/* Google Login Script */}
+      <Script 
+        src="https://accounts.google.com/gsi/client" 
+        strategy="afterInteractive" 
+        onLoad={initGoogleLogin}
+      />
+
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5, delay: 0.65 }}
+        className="signup-divider-container"
+      >
+        <div className="signup-divider-inner">
+          <div className="signup-divider-line">
+            <div className="signup-divider-border" />
+          </div>
+          <div className="signup-divider-text-container" style={{ position: 'absolute', background: 'var(--background)', padding: '0 8px' }}>
+            <span className="signup-divider-text text-muted-foreground text-sm">Hoặc đăng ký bằng</span>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Google Sign Up Button */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.68 }}
+        className="flex justify-center w-full mt-4 mb-4"
+      >
+        <div id="google-signup-btn" className="w-full flex justify-center"></div>
+      </motion.div>
 
       {/* Divider */}
       <motion.div

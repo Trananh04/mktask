@@ -46,9 +46,6 @@ export class WorkspacesService {
         id: true,
         ownerId: true,
         archive: true,
-        members: {
-          select: { userId: true, role: true },
-        },
       },
     });
 
@@ -140,33 +137,8 @@ export class WorkspacesService {
         membersToAdd.set(userId, Role.OWNER);
         membersToAdd.set(organization.ownerId, Role.OWNER);
 
-        const shouldInherit = createWorkspaceDto.inheritMembers !== false;
-
-        if (shouldInherit) {
-          if (createWorkspaceDto.parentWorkspaceId) {
-            // Inherit from parent workspace
-            const parentWorkspace = await tx.workspace.findUnique({
-              where: { id: createWorkspaceDto.parentWorkspaceId },
-              select: {
-                members: {
-                  select: { userId: true, role: true },
-                },
-              },
-            });
-            parentWorkspace?.members.forEach((member) => {
-              if (!membersToAdd.has(member.userId)) {
-                membersToAdd.set(member.userId, member.role);
-              }
-            });
-          } else {
-            // Inherit from organization (existing behavior)
-            organization.members.forEach((member) => {
-              if (!membersToAdd.has(member.userId)) {
-                membersToAdd.set(member.userId, member.role);
-              }
-            });
-          }
-        }
+        // Do NOT inherit members from org or parent workspace automatically.
+        // Additional members must be explicitly added by a manager or super admin.
 
         await Promise.all(
           Array.from(membersToAdd.entries()).map(([memberId, memberRole]) =>
@@ -311,22 +283,41 @@ export class WorkspacesService {
   }
   async findAll(userId: string, organizationId?: string, search?: string): Promise<Workspace[]> {
     let isSuperAdmin = false;
+    let orgRole: Role | undefined;
     if (organizationId) {
       const access = await this.accessControl.getOrgAccess(organizationId, userId);
       isSuperAdmin = access.isSuperAdmin;
+      orgRole = access.role;
     }
 
     const whereClause: any = { archive: false, organizationId };
-    if (userId && !isSuperAdmin) {
-      whereClause.members = { some: { userId } };
-    }
 
-    if (search && search.trim()) {
-      whereClause.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
-        { slug: { contains: search, mode: 'insensitive' } },
-      ];
+    const searchCondition =
+      search && search.trim()
+        ? {
+            OR: [
+              { name: { contains: search, mode: 'insensitive' } },
+              { description: { contains: search, mode: 'insensitive' } },
+              { slug: { contains: search, mode: 'insensitive' } },
+            ],
+          }
+        : null;
+
+    if (userId && !isSuperAdmin && orgRole !== Role.OWNER) {
+      const visibilityCondition = {
+        OR: [
+          { members: { some: { userId } } },
+          { projects: { some: { members: { some: { userId } } } } },
+        ],
+      };
+
+      if (searchCondition) {
+        whereClause.AND = [visibilityCondition, searchCondition];
+      } else {
+        whereClause.AND = [visibilityCondition];
+      }
+    } else if (searchCondition) {
+      whereClause.OR = searchCondition.OR;
     }
     return this.prisma.workspace.findMany({
       where: whereClause,
@@ -347,24 +338,23 @@ export class WorkspacesService {
           select: {
             members: true,
             childWorkspaces: true,
-            projects: userId
-              ? {
-                  where: {
-                    archive: false,
-                    OR: [
-                      { visibility: 'PUBLIC' },
-                      { visibility: 'INTERNAL' },
-                      { members: { some: { userId } } },
-                      {
-                        workspace: {
-                          members: { some: { userId, role: { in: [Role.OWNER, Role.MANAGER] } } },
+            projects: isSuperAdmin
+              ? { where: { archive: false } }
+              : userId
+                ? {
+                    where: {
+                      archive: false,
+                      OR: [
+                        { members: { some: { userId } } },
+                        { visibility: 'INTERNAL', workspace: { members: { some: { userId } } } },
+                        {
+                          visibility: 'PUBLIC',
+                          workspace: { organization: { members: { some: { userId } } } },
                         },
-                      },
-                      { workspace: { organization: { ownerId: userId } } },
-                    ],
-                  },
-                }
-              : true,
+                      ],
+                    },
+                  }
+                : true,
           },
         },
       },
@@ -389,22 +379,41 @@ export class WorkspacesService {
     };
   }> {
     let isSuperAdmin = false;
+    let orgRole: Role | undefined;
     if (organizationId) {
       const access = await this.accessControl.getOrgAccess(organizationId, userId);
       isSuperAdmin = access.isSuperAdmin;
+      orgRole = access.role;
     }
 
     const whereClause: any = { archive: false, organizationId };
-    if (userId && !isSuperAdmin) {
-      whereClause.members = { some: { userId } };
-    }
 
-    if (search && search.trim()) {
-      whereClause.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
-        { slug: { contains: search, mode: 'insensitive' } },
-      ];
+    const searchCondition =
+      search && search.trim()
+        ? {
+            OR: [
+              { name: { contains: search, mode: 'insensitive' } },
+              { description: { contains: search, mode: 'insensitive' } },
+              { slug: { contains: search, mode: 'insensitive' } },
+            ],
+          }
+        : null;
+
+    if (userId && !isSuperAdmin && orgRole !== Role.OWNER) {
+      const visibilityCondition = {
+        OR: [
+          { members: { some: { userId } } },
+          { projects: { some: { members: { some: { userId } } } } },
+        ],
+      };
+
+      if (searchCondition) {
+        whereClause.AND = [visibilityCondition, searchCondition];
+      } else {
+        whereClause.AND = [visibilityCondition];
+      }
+    } else if (searchCondition) {
+      whereClause.OR = searchCondition.OR;
     }
 
     const totalCount = await this.prisma.workspace.count({
@@ -428,24 +437,23 @@ export class WorkspacesService {
         _count: {
           select: {
             members: true,
-            projects: userId
-              ? {
-                  where: {
-                    archive: false,
-                    OR: [
-                      { visibility: 'PUBLIC' },
-                      { visibility: 'INTERNAL' },
-                      { members: { some: { userId } } },
-                      {
-                        workspace: {
-                          members: { some: { userId, role: { in: [Role.OWNER, Role.MANAGER] } } },
+            projects: isSuperAdmin
+              ? { where: { archive: false } }
+              : userId
+                ? {
+                    where: {
+                      archive: false,
+                      OR: [
+                        { members: { some: { userId } } },
+                        { visibility: 'INTERNAL', workspace: { members: { some: { userId } } } },
+                        {
+                          visibility: 'PUBLIC',
+                          workspace: { organization: { members: { some: { userId } } } },
                         },
-                      },
-                      { workspace: { organization: { ownerId: userId } } },
-                    ],
-                  },
-                }
-              : true,
+                      ],
+                    },
+                  }
+                : true,
           },
         },
       },
@@ -607,15 +615,7 @@ export class WorkspacesService {
       throw new NotFoundException('Workspace not found');
     }
 
-    const access = await this.accessControl.getWorkspaceAccess(workspace.id, userId);
-    if (!access.isSuperAdmin) {
-      const member = await this.prisma.workspaceMember.findUnique({
-        where: { userId_workspaceId: { userId, workspaceId: workspace.id } },
-      });
-      if (!member) {
-        throw new ForbiddenException('Not a member of this workspace');
-      }
-    }
+    await this.accessControl.getWorkspaceAccess(workspace.id, userId);
 
     return workspace;
   }
@@ -1191,10 +1191,13 @@ export class WorkspacesService {
     return workspace ? workspace.id : null;
   }
   async getWorkspaceTree(organizationId: string, userId: string) {
-    const { isSuperAdmin } = await this.accessControl.getOrgAccess(organizationId, userId);
+    const { isSuperAdmin, isElevated } = await this.accessControl.getOrgAccess(
+      organizationId,
+      userId,
+    );
 
     const whereClause: any = { archive: false, organizationId };
-    if (!isSuperAdmin) {
+    if (!isSuperAdmin && !isElevated) {
       whereClause.members = { some: { userId } };
     }
 

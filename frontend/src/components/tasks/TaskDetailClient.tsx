@@ -8,7 +8,7 @@ import TaskAttachments from "./TaskAttachment";
 import TaskLabels from "./TaskLabels";
 import { useTask } from "@/contexts/task-context";
 import { useProjectContext } from "@/contexts/project-context";
-import { useSprint } from "@/contexts/sprint-context";
+
 import { useAuth } from "@/contexts/auth-context";
 import { TokenManager } from "@/lib/api";
 import ActionButton from "@/components/common/ActionButton";
@@ -45,6 +45,7 @@ import RecurrenceSelector from "@/components/common/RecurrenceSelector";
 import { HiShare } from "react-icons/hi";
 import { cn } from "@/lib/utils";
 import { taskApi } from "@/utils/api/taskApi";
+import api from "@/lib/api";
 
 // Helper function to validate internal paths and prevent open redirect vulnerabilities
 function isValidInternalPath(path: string): boolean {
@@ -101,7 +102,12 @@ export default function TaskDetailClient({
   } = useTask();
 
   const { getProjectMembers, getTaskStatusByProject } = useProjectContext();
-  const { getSprintsByProject } = useSprint();
+
+  // Fetch sprints for a project by slug via the /sprints/slug endpoint
+  const getSprintsByProject = async (projectSlug: string) => {
+    const response = await api.get(`/sprints/slug`, { params: { slug: projectSlug } });
+    return response.data;
+  };
   const { getCurrentUser, isAuthenticated } = useAuth();
   const currentUser = getCurrentUser();
   const isAuth = isAuthenticated();
@@ -218,7 +224,8 @@ export default function TaskDetailClient({
   const [statuses, setStatuses] = useState<any[]>([]);
   const [loadingStatuses, setLoadingStatuses] = useState(true);
   const [sprints, setSprints] = useState<any[]>([]);
-  const [loadingSprints, setLoadingSprints] = useState(true);
+  const [loadingSprints, setLoadingSprints] = useState(false);
+
   const [currentStatus, setCurrentStatus] = useState(task?.status);
   const currentOrganization = TokenManager.getCurrentOrgId();
   const { getUserAccess } = useAuth();
@@ -297,9 +304,7 @@ export default function TaskDetailClient({
         reportDate: dailyReport.reportDate,
         content: dailyReport.content.trim(),
         blockers: dailyReport.blockers.trim() || undefined,
-        progressPercent: dailyReport.progressPercent
-          ? Number(dailyReport.progressPercent)
-          : undefined,
+        progressPercent: task?.progressPercent ?? undefined,
       });
       setDailyReport((prev) => ({
         ...prev,
@@ -386,25 +391,7 @@ export default function TaskDetailClient({
     fetchProjectMembers();
   }, [task?.projectId, task?.project?.id]);
 
-  useEffect(() => {
-    const slug = projectSlug || task?.project?.slug;
-    if (!slug || !isAuth) return;
 
-    const fetchSprints = async () => {
-      setLoadingSprints(true);
-      try {
-        const projectSprints = await getSprintsByProject(slug);
-        setSprints(projectSprints || []);
-      } catch (error) {
-        // If getting sprints by slug fails, we might try by ID if API supported it, but for now just log
-        console.error("Failed to fetch sprints:", error);
-      } finally {
-        setLoadingSprints(false);
-      }
-    };
-
-    fetchSprints();
-  }, [projectSlug, task?.project?.slug, isAuth]);
 
   const handleDueDateChange = (newDueDate: string) => {
     // Validate that due date is not before start date
@@ -1094,6 +1081,136 @@ export default function TaskDetailClient({
                 </Link>
               </div>
             )}
+
+            {/* Header Date Range */}
+            <div className="flex items-center gap-4 mt-3">
+              {/* Start Date */}
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-[var(--foreground)]">
+                  {t("detail.startDate")}:
+                </span>
+                {isEditingTask.startDate ? (
+                  <div className="relative">
+                    <Input
+                      type="date"
+                      value={editTaskData.startDate}
+                      max={editTaskData.dueDate || undefined}
+                      onChange={(e) => {
+                        handleStartDateChange(e.target.value);
+                      }}
+                      onBlur={(e) => {
+                        if (
+                          e.target.value !==
+                          (task.startDate ? task.startDate.split("T")[0] : "")
+                        ) {
+                          saveStartDate(e.target.value);
+                        }
+                      }}
+                      className="h-8 text-xs bg-[var(--background)] border-[var(--border)] w-[140px] cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+                      placeholder={t("detail.placeholderSelectStartDate")}
+                    />
+                    {editTaskData.startDate && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleStartDateChange("");
+                          saveStartDate("");
+                        }}
+                        className="absolute right-2 top-1/2 transform -translate-y-1/2 text-[var(--muted-foreground)] hover:text-[var(--foreground)] text-xs z-10"
+                        title={t("detail.placeholderSelectStartDate")}
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <Badge
+                    data-testid="start-date-badge"
+                    onClick={() => {
+                      if (!canEditGeneral) return;
+                      setIsEditingTask((prev) => ({
+                        ...prev,
+                        startDate: true,
+                        dueDate: true,
+                      }));
+                    }}
+                    variant="outline"
+                    className={cn(
+                      "text-[13px] h-8 px-3 rounded bg-[var(--muted)] border-[var(--border)] flex-shrink-0",
+                      canEditGeneral ? "cursor-pointer hover:bg-[var(--accent)]" : "cursor-default"
+                    )}
+                  >
+                    {editTaskData.startDate
+                      ? formatDateForDisplay(editTaskData.startDate)
+                      : t("detail.noStartDate")}
+                  </Badge>
+                )}
+              </div>
+
+              {/* Due Date */}
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-[var(--foreground)]">
+                  {t("detail.dueDate")}:
+                </span>
+                {isEditingTask.dueDate ? (
+                  <div className="relative">
+                    <Input
+                      type="date"
+                      value={editTaskData.dueDate}
+                      min={editTaskData.startDate || undefined}
+                      onChange={(e) => {
+                        handleDueDateChange(e.target.value);
+                      }}
+                      onBlur={(e) => {
+                        if (
+                          e.target.value !== (task.dueDate ? task.dueDate.split("T")[0] : "")
+                        ) {
+                          saveDueDate(e.target.value);
+                        }
+                      }}
+                      className="h-8 text-xs bg-[var(--background)] border-[var(--border)] w-[140px] cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+                      placeholder={t("detail.placeholderSelectDueDate")}
+                    />
+                    {editTaskData.dueDate && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDueDateChange("");
+                          saveDueDate("");
+                        }}
+                        className="absolute right-2 top-1/2 transform -translate-y-1/2 text-[var(--muted-foreground)] hover:text-[var(--foreground)] text-xs z-10"
+                        title={t("detail.placeholderSelectDueDate")}
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <Badge
+                    data-testid="due-date-badge"
+                    onClick={() => {
+                      if (!canEditGeneral) return;
+                      setIsEditingTask((prev) => ({
+                        ...prev,
+                        startDate: true,
+                        dueDate: true,
+                      }));
+                    }}
+                    variant="outline"
+                    className={cn(
+                      "text-[13px] h-8 px-3 rounded bg-[var(--muted)] border-[var(--border)] flex-shrink-0",
+                      canEditGeneral ? "cursor-pointer hover:bg-[var(--accent)]" : "cursor-default"
+                    )}
+                  >
+                    {editTaskData.dueDate
+                      ? formatDateForDisplay(editTaskData.dueDate)
+                      : t("detail.noDueDate")}
+                  </Badge>
+                )}
+              </div>
+            </div>
           </div>
 
           {canEditGeneral && (
@@ -1400,8 +1517,58 @@ export default function TaskDetailClient({
                   </div>
                 </div>
 
-                {/* Sprint */}
+                {/* Progress */}
                 <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <Label className="text-sm">Tiến độ hoàn thành</Label>
+                    <span className="text-xs font-semibold text-[var(--primary)]">
+                      {task?.progressPercent ?? 0}%
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 mt-2">
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      step={5}
+                      defaultValue={task?.progressPercent ?? 0}
+                      disabled={!hasAccess}
+                      onMouseUp={async (e) => {
+                        const val = Number((e.target as HTMLInputElement).value);
+                        try {
+                          await updateTask(taskId, { progressPercent: val } as any);
+                          task.progressPercent = val;
+                          if (!isAIActive()) { onTaskRefetch && onTaskRefetch(); }
+                          toast.success("Đã cập nhật tiến độ");
+                        } catch {
+                          toast.error("Không cập nhật được tiến độ");
+                        }
+                      }}
+                      onTouchEnd={async (e) => {
+                        const val = Number((e.target as HTMLInputElement).value);
+                        try {
+                          await updateTask(taskId, { progressPercent: val } as any);
+                          task.progressPercent = val;
+                          if (!isAIActive()) { onTaskRefetch && onTaskRefetch(); }
+                          toast.success("Đã cập nhật tiến độ");
+                        } catch {
+                          toast.error("Không cập nhật được tiến độ");
+                        }
+                      }}
+                      className="w-full accent-[var(--primary)] cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                      style={{ height: "6px" }}
+                    />
+                  </div>
+                  <div className="mt-1.5 h-2 w-full rounded-full bg-[var(--muted)] overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-[var(--primary)] transition-all duration-300"
+                      style={{ width: `${Math.min(Math.max(task?.progressPercent ?? 0, 0), 100)}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* Sprint - Hidden per request */}
+                {false && <div>
                   <div className="flex items-center justify-between mb-2">
                     <Label className="text-sm">{t("detail.sprint")}</Label>
                     {canEditGeneral && (
@@ -1550,7 +1717,7 @@ export default function TaskDetailClient({
                       </div>
                     )}
                   </div>
-                </div>
+                </div>}
 
                 {/* Priority */}
                 <div>
@@ -1662,111 +1829,7 @@ export default function TaskDetailClient({
                   </div>
                 </div>
 
-                {/* Status */}
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <Label className="text-sm">{t("detail.status")}</Label>
-                    {hasAccess && (
-                      <button
-                        type="button"
-                        data-testid="edit-status-btn"
-                        className="rounded transition flex items-center cursor-pointer text-[var(--muted-foreground)] hover:text-[var(--foreground)] text-xs p-1"
-                        onClick={() => {
-                          setIsEditingTask((prev) => ({
-                            ...prev,
-                            status: true,
-                          }));
-                          setAutoOpenDropdown((prev) => ({
-                            ...prev,
-                            status: true,
-                          }));
-                        }}
-                        tabIndex={0}
-                        aria-label={t("detail.edit")}
-                        style={{ lineHeight: 0 }}
-                      >
-                        {t("detail.edit")}
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Conditionally render badge or dropdown */}
-                  <div className="mt-2">
-                    {isEditingTask.status ? (
-                      <DropdownAction
-                        currentItem={currentStatus}
-                        availableItems={statuses}
-                        loading={loadingStatuses}
-                        forceOpen={autoOpenDropdown.status}
-                        onOpenStateChange={(isOpen) => {
-                          if (!isOpen) {
-                            setAutoOpenDropdown((prev) => ({
-                              ...prev,
-                              status: false,
-                            }));
-                            setIsEditingTask((prev) => ({
-                              ...prev,
-                              status: false,
-                            }));
-                          }
-                        }}
-                        onItemSelect={async (item) => {
-                          await handleStatusChange(item);
-                          setIsEditingTask((prev) => ({
-                            ...prev,
-                            status: false,
-                          }));
-                          setAutoOpenDropdown((prev) => ({
-                            ...prev,
-                            status: false,
-                          }));
-                        }}
-                        placeholder={t("detail.placeholderSelectStatus")}
-                        showUnassign={false}
-                        hideAvatar={true}
-                        hideSubtext={true}
-                        itemType="status"
-                        onDropdownOpen={async () => {
-                          if (statuses.length === 0) {
-                            const projectId = task.projectId || task.project?.id;
-                            if (projectId) {
-                              try {
-                                const allStatuses = await getTaskStatusByProject(projectId);
-                                setStatuses(allStatuses || []);
-                              } catch (error) {
-                                toast.error(t("detail.fetchStatusesError"));
-                              }
-                            }
-                          }
-                        }}
-                      />
-                    ) : (
-                      <StatusBadge data-testid="status-badge" onClick={() => {
-                        setIsEditingTask((prev) => ({
-                          ...prev,
-                          status: true,
-                        }));
-                        setAutoOpenDropdown((prev) => ({
-                          ...prev,
-                          status: true,
-                        }));
-                      }} status={currentStatus} className="text-[13px] min-w-[120px] min-h-[29.33px] flex items-center justify-center" />
-                    )}
-                    {isMember && hasAccess && (
-                      <div className="mt-3 space-y-2">
-                        <Input
-                          value={statusRequestNote}
-                          onChange={(event) => setStatusRequestNote(event.target.value)}
-                          placeholder="Ghi chú gửi manager khi đổi trạng thái"
-                          className="h-9 text-xs"
-                        />
-                        <p className="text-xs text-[var(--muted-foreground)]">
-                          Member chọn trạng thái sẽ tạo yêu cầu chờ manager duyệt.
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </div>
+                {/* Status section removed per request */}
 
                 {hasAccess && (
                   <div className="border-t border-[var(--border)] pt-4">
@@ -1819,27 +1882,13 @@ export default function TaskDetailClient({
                       placeholder="Nội dung đã làm / sẽ làm"
                       className="min-h-[88px] w-full resize-y rounded border border-[var(--border)] bg-transparent p-2 text-sm outline-none focus:ring-1 focus:ring-[var(--primary)]"
                     />
-                    <div className="mt-2 grid grid-cols-[1fr_96px] gap-2">
+                    <div className="mt-2">
                       <Input
                         value={dailyReport.blockers}
                         onChange={(event) =>
                           setDailyReport((prev) => ({ ...prev, blockers: event.target.value }))
                         }
                         placeholder="Vướng mắc"
-                        className="h-9 text-xs"
-                      />
-                      <Input
-                        type="number"
-                        min={0}
-                        max={100}
-                        value={dailyReport.progressPercent}
-                        onChange={(event) =>
-                          setDailyReport((prev) => ({
-                            ...prev,
-                            progressPercent: event.target.value,
-                          }))
-                        }
-                        placeholder="%"
                         className="h-9 text-xs"
                       />
                     </div>
@@ -1853,155 +1902,6 @@ export default function TaskDetailClient({
                     </button>
                   </div>
                 )}
-
-                {/* Date Range Section */}
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <Label className="text-sm">{t("detail.dateRange")}</Label>
-                    {canEditGeneral && (
-                      <button
-                        type="button"
-                        data-testid="edit-dates-btn"
-                        className="rounded transition flex items-center cursor-pointer p-1 text-[var(--muted-foreground)] hover:text-[var(--foreground)] text-xs"
-                        onClick={() =>
-                          setIsEditingTask((prev) => ({
-                            ...prev,
-                            startDate: !prev.startDate,
-                            dueDate: !prev.dueDate,
-                          }))
-                        }
-                        tabIndex={0}
-                        aria-label={t("detail.edit")}
-                        style={{ lineHeight: 0 }}
-                      >
-                        {isEditingTask.startDate ? t("detail.done") : t("detail.edit")}
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Start Date */}
-                  <div className="mb-3">
-                    <Label className="text-xs text-[var(--muted-foreground)] mb-1.5 block">
-                      {t("detail.startDate")}
-                    </Label>
-                    {isEditingTask.startDate ? (
-                      <div className="relative">
-                        <Input
-                          type="date"
-                          value={editTaskData.startDate}
-                          max={editTaskData.dueDate || undefined}
-                          onChange={(e) => {
-                            handleStartDateChange(e.target.value);
-                          }}
-                          onBlur={(e) => {
-                            if (
-                              e.target.value !==
-                              (task.startDate ? task.startDate.split("T")[0] : "")
-                            ) {
-                              saveStartDate(e.target.value);
-                            }
-                          }}
-                          className="text-xs bg-[var(--background)] border-[var(--border)] w-full cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:cursor-pointer"
-                          placeholder={t("detail.placeholderSelectStartDate")}
-                        />
-                        {editTaskData.startDate && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleStartDateChange("");
-                              saveStartDate("");
-                            }}
-                            className="absolute right-2 top-1/2 transform -translate-y-1/2 text-[var(--muted-foreground)] hover:text-[var(--foreground)] text-xs z-10"
-                            title={t("detail.placeholderSelectStartDate")}
-                          >
-                            ✕
-                          </button>
-                        )}
-                      </div>
-                    ) : (
-                      <Badge
-                        data-testid="start-date-badge"
-                        onClick={() =>
-                          setIsEditingTask((prev) => ({
-                            ...prev,
-                            startDate: !prev.startDate,
-                            dueDate: !prev.dueDate,
-                          }))
-                        }
-                        variant="outline"
-                        className="text-[13px] min-w-[120px] min-h-[29.33px] rounded-2xl  px-1.5 py-0.5 bg-[var(--muted)] border-[var(--border)] flex-shrink-0 cursor-pointer"
-                      >
-                        {editTaskData.startDate
-                          ? formatDateForDisplay(editTaskData.startDate)
-                          : t("detail.noStartDate")}
-                      </Badge>
-                    )}
-                  </div>
-
-                  {/* Due Date */}
-                  <div>
-                    <Label className="text-xs text-[var(--muted-foreground)] mb-1.5 block">
-                      {t("detail.dueDate")}
-                    </Label>
-                    {isEditingTask.dueDate ? (
-                      <div className="relative">
-                        <Input
-                          type="date"
-                          value={editTaskData.dueDate}
-                          min={editTaskData.startDate || undefined}
-                          onChange={(e) => {
-                            handleDueDateChange(e.target.value);
-                          }}
-                          onBlur={(e) => {
-                            if (
-                              e.target.value !== (task.dueDate ? task.dueDate.split("T")[0] : "")
-                            ) {
-                              saveDueDate(e.target.value);
-                            }
-                          }}
-                          className="text-xs bg-[var(--background)] border-[var(--border)] w-full cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:cursor-pointer"
-                          placeholder={t("detail.placeholderSelectDueDate")}
-                        />
-                        {editTaskData.dueDate && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDueDateChange("");
-                              saveDueDate("");
-                            }}
-                            className="absolute right-2 top-1/2 transform -translate-y-1/2 text-[var(--muted-foreground)] hover:text-[var(--foreground)] text-xs z-10"
-                            title={t("detail.placeholderSelectDueDate")}
-                          >
-                            ✕
-                          </button>
-                        )}
-                      </div>
-                    ) : (
-                      <Badge
-                        data-testid="due-date-badge"
-                        onClick={() => {
-                          if (!canEditGeneral) return;
-                          setIsEditingTask((prev) => ({
-                            ...prev,
-                            startDate: !prev.startDate,
-                            dueDate: !prev.dueDate,
-                          }))
-                        }}
-                        variant="outline"
-                        className={cn(
-                          "min-w-[120px] min-h-[29.33px] text-[13px] rounded-2xl px-1.5 py-0.5 bg-[var(--muted)] border-[var(--border)] flex-shrink-0",
-                          canEditGeneral ? "cursor-pointer" : "cursor-default"
-                        )}
-                      >
-                        {editTaskData.dueDate
-                          ? formatDateForDisplay(editTaskData.dueDate)
-                          : t("detail.noDueDate")}
-                      </Badge>
-                    )}
-                  </div>
-                </div>
               </div>
             </div>
 

@@ -12,7 +12,9 @@ import ErrorState from "@/components/common/ErrorState";
 import NewWorkspaceDialog from "@/components/workspace/NewWorkspaceDialogProps";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/auth-context";
-import { HiXMark } from "react-icons/hi2";
+import { HiXMark, HiOutlineEllipsisVertical, HiOutlineCog6Tooth, HiOutlineTrash } from "react-icons/hi2";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { useRouter } from "next/router";
 import { CardsSkeleton } from "../skeletons/CardsSkeleton";
 import { useTranslation } from "react-i18next";
 
@@ -38,6 +40,7 @@ function useDebounce<T>(value: T, delay: number): T {
 
 export default function WorkspacesPageContent({ organizationId }: WorkspacesPageContentProps) {
   const { t } = useTranslation("workspaces");
+  const router = useRouter();
   const {
     workspaces,
     isLoading,
@@ -234,7 +237,7 @@ export default function WorkspacesPageContent({ organizationId }: WorkspacesPage
             {workspaces.map((ws) => (
               <EntityCard
                 key={ws.id}
-                href={`/${ws.slug}`}
+                href={`/${ws.slug}/projects`}
                 leading={
                   <div className="w-10 h-10 rounded-md bg-[var(--primary)] flex items-center justify-center text-[var(--primary-foreground)] font-semibold">
                     {ws.name.charAt(0).toUpperCase()}
@@ -258,6 +261,25 @@ export default function WorkspacesPageContent({ organizationId }: WorkspacesPage
                       {t("members_count", { count: ws._count?.members ?? ws.memberCount ?? 0 })}
                     </span>
                   </div>
+                }
+                trailing={
+                  hasAccess && (
+                    <div onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button className="p-1.5 rounded-md hover:bg-[var(--muted)] text-[var(--muted-foreground)]">
+                            <HiOutlineEllipsisVertical size={16} />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => router.push(`/${ws.slug}/settings`)}>
+                            <HiOutlineCog6Tooth className="mr-2 h-4 w-4" />
+                            <span>{t("settings", "Cài đặt")}</span>
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  )
                 }
               />
             ))}

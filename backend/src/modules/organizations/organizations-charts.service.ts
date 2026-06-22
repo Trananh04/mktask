@@ -463,42 +463,68 @@ export class OrganizationChartsService {
     };
   }
 
-  private visibleWorkspaceWhere(orgId: string, userId: string, isSuperAdmin: boolean) {
+  private visibleWorkspaceWhere(
+    orgId: string,
+    userId: string,
+    isSuperAdmin: boolean,
+    isElevated: boolean,
+  ) {
     return {
       organizationId: orgId,
       archive: false,
-      ...(isSuperAdmin
+      ...(isSuperAdmin || isElevated
         ? {}
         : {
-            projects: {
-              some: {
-                archive: false,
-                members: { some: { userId } },
-              },
-            },
+            members: { some: { userId } },
           }),
     };
   }
 
-  private visibleProjectWhere(orgId: string, userId: string, isSuperAdmin: boolean) {
+  private visibleProjectWhere(
+    orgId: string,
+    userId: string,
+    isSuperAdmin: boolean,
+    isElevated: boolean,
+  ) {
     return {
       archive: false,
       workspace: { organizationId: orgId, archive: false },
-      ...(isSuperAdmin ? {} : { members: { some: { userId } } }),
+      ...(isSuperAdmin || isElevated
+        ? {}
+        : {
+            OR: [
+              { members: { some: { userId } } },
+              { visibility: ProjectVisibility.PUBLIC },
+              {
+                visibility: ProjectVisibility.INTERNAL,
+                workspace: { members: { some: { userId } } },
+              },
+            ],
+          }),
     };
   }
 
-  private visibleTaskWhere(orgId: string, userId: string, isSuperAdmin: boolean) {
+  private visibleTaskWhere(
+    orgId: string,
+    userId: string,
+    isSuperAdmin: boolean,
+    isElevated: boolean,
+  ) {
     return {
       isArchived: false,
-      project: this.visibleProjectWhere(orgId, userId, isSuperAdmin),
+      project: this.visibleProjectWhere(orgId, userId, isSuperAdmin, isElevated),
     };
   }
 
-  private visibleSprintWhere(orgId: string, userId: string, isSuperAdmin: boolean) {
+  private visibleSprintWhere(
+    orgId: string,
+    userId: string,
+    isSuperAdmin: boolean,
+    isElevated: boolean,
+  ) {
     return {
       archive: false,
-      project: this.visibleProjectWhere(orgId, userId, isSuperAdmin),
+      project: this.visibleProjectWhere(orgId, userId, isSuperAdmin, isElevated),
     };
   }
 
@@ -512,21 +538,22 @@ export class OrganizationChartsService {
   ): Promise<KPIMetrics> {
     const access = await this.accessControl.getOrgAccess(orgId, userId);
     const isSuperAdmin = Boolean(access.isSuperAdmin);
+    const isElevated = Boolean(access.isElevated);
     const isPersonal = scope === ChartScope.PERSONAL;
     const now = new Date();
     const scoped = this.userScopedWhere(orgId, userId);
     const workspaceWhere = isPersonal
       ? scoped.workspaceForUser
-      : this.visibleWorkspaceWhere(orgId, userId, isSuperAdmin);
+      : this.visibleWorkspaceWhere(orgId, userId, isSuperAdmin, isElevated);
     const projectWhere = isPersonal
       ? scoped.projectForUser
-      : this.visibleProjectWhere(orgId, userId, isSuperAdmin);
+      : this.visibleProjectWhere(orgId, userId, isSuperAdmin, isElevated);
     const taskWhere = isPersonal
       ? scoped.taskForUser
-      : this.visibleTaskWhere(orgId, userId, isSuperAdmin);
+      : this.visibleTaskWhere(orgId, userId, isSuperAdmin, isElevated);
     const sprintWhere = isPersonal
       ? scoped.sprintForUser
-      : this.visibleSprintWhere(orgId, userId, isSuperAdmin);
+      : this.visibleSprintWhere(orgId, userId, isSuperAdmin, isElevated);
 
     const [
       totalWorkspaces,
@@ -610,7 +637,12 @@ export class OrganizationChartsService {
     const where =
       scope === ChartScope.PERSONAL
         ? this.userScopedWhere(orgId, userId).projectForUser
-        : this.visibleProjectWhere(orgId, userId, Boolean(access.isSuperAdmin));
+        : this.visibleProjectWhere(
+            orgId,
+            userId,
+            Boolean(access.isSuperAdmin),
+            Boolean(access.isElevated),
+          );
 
     return this.prisma.project.groupBy({
       by: ['status'],
@@ -668,7 +700,12 @@ export class OrganizationChartsService {
     const where =
       scope === ChartScope.PERSONAL
         ? this.userScopedWhere(orgId, userId).taskForUser
-        : this.visibleTaskWhere(orgId, userId, Boolean(access.isSuperAdmin));
+        : this.visibleTaskWhere(
+            orgId,
+            userId,
+            Boolean(access.isSuperAdmin),
+            Boolean(access.isElevated),
+          );
 
     return this.prisma.task.groupBy({
       by: ['priority'],
@@ -689,7 +726,12 @@ export class OrganizationChartsService {
     const where =
       scope === ChartScope.PERSONAL
         ? this.userScopedWhere(orgId, userId).taskForUser
-        : this.visibleTaskWhere(orgId, userId, Boolean(access.isSuperAdmin));
+        : this.visibleTaskWhere(
+            orgId,
+            userId,
+            Boolean(access.isSuperAdmin),
+            Boolean(access.isElevated),
+          );
 
     return this.prisma.task.groupBy({
       by: ['type'],
@@ -710,7 +752,12 @@ export class OrganizationChartsService {
     const where =
       scope === ChartScope.PERSONAL
         ? this.userScopedWhere(orgId, userId).sprintForUser
-        : this.visibleSprintWhere(orgId, userId, Boolean(access.isSuperAdmin));
+        : this.visibleSprintWhere(
+            orgId,
+            userId,
+            Boolean(access.isSuperAdmin),
+            Boolean(access.isElevated),
+          );
 
     const sprints = await this.prisma.sprint.findMany({
       where,
@@ -738,7 +785,12 @@ export class OrganizationChartsService {
     const where = {
       ...(scope === ChartScope.PERSONAL
         ? this.userScopedWhere(orgId, userId).taskForUser
-        : this.visibleTaskWhere(orgId, userId, Boolean(access.isSuperAdmin))),
+        : this.visibleTaskWhere(
+            orgId,
+            userId,
+            Boolean(access.isSuperAdmin),
+            Boolean(access.isElevated),
+          )),
       type: 'BUG' as const,
     };
 
@@ -779,6 +831,7 @@ export class OrganizationChartsService {
   ): Promise<WorkspaceProjectCount[]> {
     const access = await this.accessControl.getOrgAccess(orgId, userId);
     const isSuperAdmin = Boolean(access.isSuperAdmin);
+    const isElevated = Boolean(access.isElevated);
     const isPersonal = scope === ChartScope.PERSONAL;
     const scoped = this.userScopedWhere(orgId, userId);
     const projectCountWhere = isPersonal
@@ -795,13 +848,13 @@ export class OrganizationChartsService {
         }
       : {
           archive: false,
-          ...(isSuperAdmin ? {} : { members: { some: { userId } } }),
+          ...(isSuperAdmin || isElevated ? {} : { members: { some: { userId } } }),
         };
 
     const workspaces = await this.prisma.workspace.findMany({
       where: isPersonal
         ? scoped.workspaceForUser
-        : this.visibleWorkspaceWhere(orgId, userId, isSuperAdmin),
+        : this.visibleWorkspaceWhere(orgId, userId, isSuperAdmin, isElevated),
       select: {
         id: true,
         name: true,
@@ -837,7 +890,12 @@ export class OrganizationChartsService {
     const taskWhere =
       scope === ChartScope.PERSONAL
         ? this.userScopedWhere(orgId, userId).taskForUser
-        : this.visibleTaskWhere(orgId, userId, Boolean(access.isSuperAdmin));
+        : this.visibleTaskWhere(
+            orgId,
+            userId,
+            Boolean(access.isSuperAdmin),
+            Boolean(access.isElevated),
+          );
 
     const userWhere = isOrganizationWide
       ? {
@@ -899,7 +957,12 @@ export class OrganizationChartsService {
 
     const projectWhere = isPersonal
       ? this.userScopedWhere(orgId, userId).projectForUser
-      : this.visibleProjectWhere(orgId, userId, Boolean(access.isSuperAdmin));
+      : this.visibleProjectWhere(
+          orgId,
+          userId,
+          Boolean(access.isSuperAdmin),
+          Boolean(access.isElevated),
+        );
     const taskWhere = isPersonal
       ? {
           isArchived: false,
@@ -995,6 +1058,18 @@ export class OrganizationChartsService {
       orderBy: { updatedAt: 'desc' },
     })) as ManagementProjectRecord[];
 
+    const visibleWorkspaces = await this.prisma.workspace.findMany({
+      where: isPersonal
+        ? this.userScopedWhere(orgId, userId).workspaceForUser
+        : this.visibleWorkspaceWhere(
+            orgId,
+            userId,
+            Boolean(access.isSuperAdmin),
+            Boolean(access.isElevated),
+          ),
+      select: { id: true, name: true, slug: true },
+    });
+
     const taskOverview: ManagementTaskOverview = {
       totalTasks: 0,
       activeTasks: 0,
@@ -1014,6 +1089,16 @@ export class OrganizationChartsService {
         workspaceSlug: string;
       }
     >();
+
+    // Initialize all visible workspaces
+    for (const ws of visibleWorkspaces) {
+      workspaceProgress.set(ws.id, {
+        ...this.createProgressRow(),
+        workspaceId: ws.id,
+        workspaceName: ws.name,
+        workspaceSlug: ws.slug,
+      });
+    }
     const memberProgress = new Map<
       string,
       ManagementProgressRow & {

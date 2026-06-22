@@ -253,6 +253,9 @@ function extractTaskValue(task: Task, columnId: string): any {
     case "timeEntries":
       return task.timeEntries?.length || 0;
 
+    case "progressPercent":
+      return task.progressPercent || 0;
+
     default:
       return "";
   }
@@ -1544,6 +1547,22 @@ const TaskTable: React.FC<TaskTableProps> = ({
             <div className="flex items-center gap-1">
               <Paperclip className="w-3 h-3 text-gray-500" />
               <span className="text-sm">{numValue}</span>
+            </div>
+          );
+        }
+        if (column.id === "progressPercent") {
+          const percent = Math.min(Math.max(Number(value) || 0, 0), 100);
+          return (
+            <div className="flex items-center gap-2 w-full max-w-[100px]">
+              <div className="flex-1 h-1.5 rounded-full bg-[var(--muted)] overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-[var(--primary)] transition-all duration-300"
+                  style={{ width: `${percent}%` }}
+                />
+              </div>
+              <span className="text-xs text-[var(--muted-foreground)] w-8 text-right">
+                {percent}%
+              </span>
             </div>
           );
         }

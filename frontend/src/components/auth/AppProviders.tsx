@@ -2,7 +2,7 @@ import React, { ReactNode, useEffect, useState } from "react";
 import OrganizationProvider from "@/contexts/organization-context";
 import WorkspaceProvider from "@/contexts/workspace-context";
 import ProjectProvider from "@/contexts/project-context";
-import SprintProvider from "@/contexts/sprint-context";
+
 import TaskProvider from "@/contexts/task-context";
 import Sidebar from "@/components/layout/Sidebar";
 import Header from "@/components/layout/Header";
@@ -51,7 +51,7 @@ function AppProvidersContent({ children }: CommonProvidersProps) {
           <WorkspaceProvider>
           <ProjectProvider>
             <InboxProvider>
-              <SprintProvider>
+
                 <TaskProvider>
                   {/* If showing 404, render children without layout */}
                   {show404 ? (
@@ -85,7 +85,7 @@ function AppProvidersContent({ children }: CommonProvidersProps) {
                     </div>
                   )}
                 </TaskProvider>
-              </SprintProvider>
+
             </InboxProvider>
           </ProjectProvider>
         </WorkspaceProvider>

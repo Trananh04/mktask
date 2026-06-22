@@ -9,7 +9,9 @@ import {
   HiStop,
   HiMicrophone,
   HiClock,
+  HiTrash,
 } from "react-icons/hi2";
+import ReactMarkdown from "react-markdown";
 import { useChatContext } from "@/contexts/chat-context";
 import { mcpServer, extractContextFromPath } from "@/lib/mcp-server";
 import { usePathname, useRouter } from "next/navigation";
@@ -20,6 +22,7 @@ import { aiProjectPlannerApi, ProjectPlan } from "@/utils/api/aiProjectPlannerAp
 import { workspaceApi } from "@/utils/api/workspaceApi";
 import { projectApi } from "@/utils/api/projectApi";
 import { taskApi } from "@/utils/api/taskApi";
+import { toast } from "sonner";
 
 type BulkTaskDraft = {
   tasks: Array<{ title: string; description?: string }>;
@@ -215,7 +218,7 @@ function isBulkTaskCreateRequest(message: string) {
 }
 
 function isAssistantGuidanceRequest(message: string) {
-  const normalized = message.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const normalized = normalizeVietnamese(message);
   const guidancePhrases = [
     "huong dan",
     "cach dung",
@@ -237,6 +240,34 @@ function isAssistantGuidanceRequest(message: string) {
     "workflow",
     "feature",
     "what can you do",
+    "bao nhieu",
+    "liet ke",
+    "tien do",
+    "xong chua",
+    "tinh hinh",
+    "rui ro",
+    "qua han",
+    "overdue",
+    "workload",
+    "qua tai",
+    "dang ranh",
+    "daily report",
+    "bao cao",
+    "hoan thanh",
+    "lam xong",
+    "completed",
+    "deadline",
+    "time tracking",
+    "gio lam",
+    "tai sao",
+    "why",
+    "tom tat",
+    "summar",
+    "ai dang",
+    "bao lau",
+    "gan bo",
+    "kinh nghiem",
+    "lam tot nhat",
   ];
 
   return guidancePhrases.some((phrase) => normalized.includes(phrase));
@@ -274,6 +305,60 @@ export default function ChatPanel() {
       : CHAT_PANEL_DEFAULT_WIDTH;
   });
   const [showHistory, setShowHistory] = useState(false);
+  const [storedQueries, setStoredQueries] = useState<Array<{ content: string; timestamp: number }>>([]);
+
+  // Load persistent query history on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("mktask_ai_chat_queries_history");
+      if (saved) {
+        setStoredQueries(JSON.parse(saved));
+      }
+    } catch (e) {
+      console.warn("Failed to load query history:", e);
+    }
+  }, []);
+
+  // Save new query to history and limit list size
+  const saveQueryToHistory = useCallback((queryText: string) => {
+    if (!queryText || !queryText.trim()) return;
+    setStoredQueries((prev) => {
+      const cleaned = prev.filter((q) => q.content.trim() !== queryText.trim());
+      const updated = [{ content: queryText.trim(), timestamp: Date.now() }, ...cleaned].slice(0, 30);
+      try {
+        localStorage.setItem("mktask_ai_chat_queries_history", JSON.stringify(updated));
+      } catch (e) {
+        console.warn("Failed to save query history:", e);
+      }
+      return updated;
+    });
+  }, []);
+
+  // Clear query history
+  const clearQueryHistory = () => {
+    setStoredQueries([]);
+    localStorage.removeItem("mktask_ai_chat_queries_history");
+    toast?.success?.("Đã xoá lịch sử câu hỏi");
+  };
+
+  // Synchronize storedQueries with active user messages if storedQueries is empty
+  useEffect(() => {
+    if (storedQueries.length === 0 && messages.length > 0) {
+      const userQueries = messages
+        .filter((m) => m.role === "user")
+        .map((m) => ({ content: m.content, timestamp: new Date(m.timestamp).getTime() }))
+        .reverse()
+        .slice(0, 15);
+      if (userQueries.length > 0) {
+        setStoredQueries(userQueries);
+        try {
+          localStorage.setItem("mktask_ai_chat_queries_history", JSON.stringify(userQueries));
+        } catch (e) {
+          console.warn("Failed to save synced query history:", e);
+        }
+      }
+    }
+  }, [messages, storedQueries.length]);
   const [bulkTaskDraft, setBulkTaskDraft] = useState<BulkTaskDraft | null>(null);
   const [autoProjectDraft, setAutoProjectDraft] = useState<AutoProjectDraft | null>(null);
   const resizing = useRef(false);
@@ -682,13 +767,18 @@ export default function ChatPanel() {
 
       setMessages((prev) => [...prev, resultMessage]);
     } catch (error: any) {
-      const rawMessage = error?.response?.data?.message || error?.response?.data?.error || error?.message || "Failed to process request";
-      const errorMessage: Message = {
-        role: "assistant",
-        content: sanitizeErrorMessage(rawMessage),
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, errorMessage]);
+      // If user stopped manually, don't show an error message
+      const isStopped = error?.name === 'AbortError' || error?.name === 'CanceledError' || error?.message === 'stopped';
+      if (!isStopped) {
+        const rawMessage = error?.response?.data?.message || error?.response?.data?.error || error?.message || "Failed to process request";
+        const errorMessage: Message = {
+          role: "assistant",
+          content: sanitizeErrorMessage(rawMessage),
+          timestamp: new Date(),
+        };
+        setMessages((prev) => [...prev, errorMessage]);
+      }
+
     } finally {
       if (thinkingIntervalRef.current) {
         clearInterval(thinkingIntervalRef.current);
@@ -1012,6 +1102,17 @@ export default function ChatPanel() {
         },
       ]);
     } catch (error: any) {
+      if (error?.message === "ABORTED_BY_USER") {
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "system",
+            content: "🛑 Đã dừng phản hồi.",
+            timestamp: new Date(),
+          },
+        ]);
+        return;
+      }
       setMessages((prev) => [
         ...prev,
         {
@@ -1054,12 +1155,14 @@ export default function ChatPanel() {
   const handleSendMessage = async () => {
     if (!inputValue.trim() || isLoading || isBrowserAgentRunning) return;
 
+    const query = inputValue;
     const userMessage: Message = {
       role: "user",
-      content: inputValue,
+      content: query,
       timestamp: new Date(),
     };
 
+    saveQueryToHistory(query);
     setMessages((prev) => [...prev, userMessage]);
     setInputValue("");
 
@@ -1098,12 +1201,29 @@ export default function ChatPanel() {
       timestamp: new Date(),
     };
 
+    saveQueryToHistory(message);
     setMessages((prev) => [...prev, userMessage]);
     await processUserMessage(message);
   };
 
   const handleStopAgent = () => {
+    // Stop browser agent
     browserAgentRef.current?.stop();
+    // Abort any in-flight MCP/chat API request
+    mcpServer.abort();
+    // Reset loading states so the UI unblocks immediately
+    setIsLoading(false);
+    setIsBrowserAgentRunning(false);
+    // Clear any thinking animation
+    if (thinkingIntervalRef.current) {
+      clearInterval(thinkingIntervalRef.current);
+      thinkingIntervalRef.current = null;
+    }
+    if (thinkingDelayRef.current) {
+      clearTimeout(thinkingDelayRef.current);
+      thinkingDelayRef.current = null;
+    }
+    setAgentStatus("");
   };
 
   const clearChat = () => {
@@ -1215,20 +1335,17 @@ export default function ChatPanel() {
           </div>
           <div className="flex items-center gap-1">
             {/* History Button */}
-            {messages.length > 0 && (
-              <button
-                onClick={() => setShowHistory((prev) => !prev)}
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-md transition-all duration-200 ${
-                  showHistory
-                    ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
-                    : 'text-[var(--muted-foreground)] hover:bg-[var(--accent)]'
+            <button
+              onClick={() => setShowHistory((prev) => !prev)}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-md transition-all duration-200 ${showHistory
+                ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                : 'text-[var(--muted-foreground)] hover:bg-[var(--accent)]'
                 }`}
-                title="Lịch sử chat"
-              >
-                <HiClock className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Lịch sử</span>
-              </button>
-            )}
+              title="Lịch sử câu hỏi đã dùng"
+            >
+              <HiClock className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Lịch sử</span>
+            </button>
             {/* Context Reset Button */}
             <button
               onClick={clearContext}
@@ -1259,58 +1376,103 @@ export default function ChatPanel() {
           </div>
         </div>
 
-        {/* Chat History Panel - Enhanced UX */}
+        {/* Chat History Panel - Premium UI */}
         {showHistory && (
-          <div className="flex-shrink-0 border-b border-[var(--border)] bg-[var(--background)]">
-            <div className="px-4 pt-3 pb-1 flex items-center justify-between">
-              <span className="text-xs font-semibold text-[var(--foreground)] uppercase tracking-wider">Lịch sử trò chuyện</span>
-              <span className="text-xs text-[var(--muted-foreground)]">{chatHistoryItems.length} tin nhắn</span>
+          <div className="flex-shrink-0 border-b border-[var(--border)] bg-[var(--background)]/95 backdrop-blur-md transition-all duration-300">
+            <div className="px-4 py-2.5 flex items-center justify-between border-b border-[var(--border)]/50 bg-[var(--accent)]/30">
+              <div className="flex items-center gap-1.5">
+                <HiClock className="w-4 h-4 text-[var(--primary)]" />
+                <span className="text-xs font-bold text-[var(--foreground)] uppercase tracking-wider">Lịch sử câu hỏi</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-[11px] text-[var(--muted-foreground)] font-medium bg-[var(--accent)] px-2 py-0.5 rounded-full">{storedQueries.length} câu hỏi</span>
+                {storedQueries.length > 0 && (
+                  <button
+                    onClick={clearQueryHistory}
+                    className="flex items-center gap-1 text-[11px] text-red-500 hover:text-red-600 transition-colors font-medium cursor-pointer"
+                    title="Xoá toàn bộ lịch sử câu hỏi"
+                  >
+                    <HiTrash className="w-3.5 h-3.5" />
+                    <span>Xoá hết</span>
+                  </button>
+                )}
+              </div>
             </div>
             <div
-              className="overflow-y-auto px-4 pb-3"
-              style={{ maxHeight: '240px', scrollbarWidth: 'thin' }}
+              className="overflow-y-auto px-4 py-3 space-y-3"
+              style={{ maxHeight: '250px', scrollbarWidth: 'thin' }}
             >
-              {chatHistoryItems.length === 0 ? (
-                <div className="flex items-center justify-center py-6">
-                  <p className="text-xs text-[var(--muted-foreground)] text-center">Chưa có lịch sử chat.<br />Hãy gửi tin nhắn đầu tiên!</p>
+              {storedQueries.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-8 text-center text-[var(--muted-foreground)]">
+                  <HiClock className="w-8 h-8 opacity-30 mb-2" />
+                  <p className="text-xs">Chưa có lịch sử câu hỏi.<br />Các câu hỏi bạn gửi sẽ xuất hiện tại đây!</p>
                 </div>
               ) : (
-                <div className="flex flex-col gap-1">
-                  {chatHistoryItems.map((item, index) => {
-                    const prevItem = chatHistoryItems[index + 1];
+                <div className="flex flex-col gap-1.5">
+                  {storedQueries.map((item, index) => {
+                    const prevItem = storedQueries[index + 1];
                     const currentLabel = getDateLabel(new Date(item.timestamp));
                     const prevLabel = prevItem ? getDateLabel(new Date(prevItem.timestamp)) : null;
                     const showDateSeparator = currentLabel !== prevLabel;
 
                     return (
-                      <React.Fragment key={`history-${index}-${String(item.timestamp)}`}>
+                      <React.Fragment key={`stored-history-${index}-${item.timestamp}`}>
                         {showDateSeparator && (
-                          <div className="flex items-center gap-2 py-1">
-                            <div className="flex-1 h-px bg-[var(--border)]" />
-                            <span className="text-[10px] text-[var(--muted-foreground)] font-medium shrink-0">{currentLabel}</span>
-                            <div className="flex-1 h-px bg-[var(--border)]" />
+                          <div className="flex items-center gap-2 py-1.5 first:pt-0">
+                            <div className="flex-1 h-px bg-[var(--border)]/60" />
+                            <span className="text-[10px] text-[var(--muted-foreground)] font-bold uppercase tracking-wider shrink-0">{currentLabel}</span>
+                            <div className="flex-1 h-px bg-[var(--border)]/60" />
                           </div>
                         )}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setInputValue(item.content);
-                            setShowHistory(false);
-                            setTimeout(() => textareaRef.current?.focus(), 50);
-                          }}
-                          className="group w-full text-left rounded-lg border border-[var(--border)] px-3 py-2.5 hover:bg-[var(--accent)] hover:border-[var(--primary)]/30 transition-all duration-150"
-                          title="Nhấp để dùng lại tin nhắn này"
+                        <div
+                          className="group relative flex items-center justify-between rounded-lg border border-[var(--border)] bg-[var(--card)]/50 px-3.5 py-3 hover:bg-[var(--accent)] hover:border-[var(--primary)]/30 shadow-sm hover:shadow transition-all duration-200"
                         >
-                          <div className="flex items-start justify-between gap-2">
-                            <p className="text-xs text-[var(--foreground)] line-clamp-2 leading-relaxed flex-1">{item.content}</p>
-                            <span className="text-[10px] text-[var(--muted-foreground)] shrink-0 mt-0.5">
+                          <div className="flex-1 min-w-0 pr-16">
+                            <p className="text-xs text-[var(--foreground)] leading-relaxed break-words font-medium line-clamp-2">
+                              {item.content}
+                            </p>
+                            <span className="text-[9px] text-[var(--muted-foreground)] font-medium mt-1 block">
                               {new Date(item.timestamp).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
                             </span>
                           </div>
-                          <div className="mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <span className="text-[10px] text-[var(--primary)] font-medium">↑ Nhấp để điền vào ô chat</span>
+
+                          {/* Hover Actions Bar */}
+                          <div className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1 bg-[var(--accent)] group-hover:bg-transparent px-1.5 py-1 rounded-md transition-all">
+                            {/* Reuse Button */}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setInputValue(item.content);
+                                setShowHistory(false);
+                                setTimeout(() => textareaRef.current?.focus(), 50);
+                              }}
+                              className="p-1.5 text-[var(--muted-foreground)] hover:text-[var(--primary)] hover:bg-[var(--background)] rounded-md transition-all duration-150 cursor-pointer"
+                              title="Điền vào ô nhập (để chỉnh sửa)"
+                            >
+                              <HiArrowPath className="w-3.5 h-3.5 rotate-90" />
+                            </button>
+                            {/* Send Immediately Button */}
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                setShowHistory(false);
+                                setInputValue("");
+                                const userMessage: Message = {
+                                  role: "user",
+                                  content: item.content,
+                                  timestamp: new Date(),
+                                };
+                                setMessages((prev) => [...prev, userMessage]);
+                                saveQueryToHistory(item.content);
+                                await processUserMessage(item.content);
+                              }}
+                              className="p-1.5 text-[var(--primary)] hover:text-white hover:bg-[var(--primary)] rounded-md transition-all duration-150 cursor-pointer"
+                              title="Gửi câu hỏi này ngay"
+                            >
+                              <HiPaperAirplane className="w-3.5 h-3.5" />
+                            </button>
                           </div>
-                        </button>
+                        </div>
                       </React.Fragment>
                     );
                   })}
@@ -1400,15 +1562,30 @@ export default function ChatPanel() {
                       </div>
                     </div>
                   ) : (
-                    // Assistant Message - Left aligned like
-                    <div className="flex justify-start mb-4">
-                      <div className="flex items-start gap-3 max-w-[85%]">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-400 flex items-center justify-center flex-shrink-0">
+                    // Assistant Message - Full width, no bubble
+                    <div className="flex justify-start mb-4 w-full">
+                      <div className="flex items-start gap-4 w-full">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-400 flex items-center justify-center flex-shrink-0 mt-0.5">
                           <HiSparkles className="w-4 h-4 text-white" />
                         </div>
-                        <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl rounded-tl-sm px-4 py-2.5 shadow-sm">
-                          <div className="text-sm text-gray-900 dark:text-gray-100 whitespace-pre-wrap break-words">
-                            {message.content}
+                        <div className="flex-1 min-w-0">
+                          <div className="text-[15px] leading-relaxed font-semibold text-[var(--foreground)] break-words text-left whitespace-normal">
+                            <ReactMarkdown
+                              components={{
+                                p: ({node, ...props}) => <p className="mb-2 last:mb-0 text-left whitespace-normal" {...props} />,
+                                a: ({node, ...props}) => <a className="text-blue-500 hover:underline" {...props} />,
+                                ul: ({node, ...props}) => <ul className="pl-5 mb-2 space-y-1 list-disc" {...props} />,
+                                ol: ({node, ...props}) => <ol className="list-decimal pl-5 mb-2 space-y-1" {...props} />,
+                                li: ({node, ...props}) => <li className="text-left whitespace-normal" {...props} />,
+                                strong: ({node, ...props}) => <strong className="font-extrabold" {...props} />,
+                                h1: ({node, ...props}) => <h1 className="text-xl font-extrabold mt-4 mb-2 text-primary text-left" {...props} />,
+                                h2: ({node, ...props}) => <h2 className="text-lg font-bold mt-4 mb-2 text-primary text-left" {...props} />,
+                                h3: ({node, ...props}) => <h3 className="text-base font-bold mt-3 mb-1 text-primary text-left" {...props} />,
+                                h4: ({node, ...props}) => <h4 className="text-[15px] font-bold mt-3 mb-1 text-primary text-left" {...props} />
+                              }}
+                            >
+                              {message.content}
+                            </ReactMarkdown>
                             {message.isStreaming && (
                               <span className="inline-block w-2 h-4 ml-1 bg-blue-600 animate-pulse rounded" />
                             )}
@@ -1556,8 +1733,8 @@ export default function ChatPanel() {
               onClick={handleToggleVoice}
               disabled={isLoading || isBrowserAgentRunning}
               className={`p-3 rounded-full flex items-center justify-center transition-all duration-200 shadow-sm hover:shadow-md flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed ${isListening
-                  ? "bg-red-500 hover:bg-red-600 text-white animate-pulse"
-                  : "bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300"
+                ? "bg-red-500 hover:bg-red-600 text-white animate-pulse"
+                : "bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300"
                 }`}
               title={isListening ? "Stop listening" : "Start voice input"}
             >
@@ -1589,8 +1766,8 @@ export default function ChatPanel() {
             {isBrowserAgentRunning || isLoading ? (
               <button
                 onClick={handleStopAgent}
-                disabled={isLoading && !isBrowserAgentRunning}
                 className="p-3 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center transition-all duration-200 shadow-sm hover:shadow-md flex-shrink-0"
+                title="Dừng thực thi"
               >
                 <HiStop className="w-4 h-4" />
               </button>

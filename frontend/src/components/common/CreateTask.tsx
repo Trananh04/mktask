@@ -24,7 +24,7 @@ import { toast } from "sonner";
 import router from "next/router";
 import ActionButton from "./ActionButton";
 import { useProject } from "@/contexts/project-context";
-import { useSprint } from "@/contexts/sprint-context";
+
 import { formatDateForApi, getTodayDate } from "@/utils/handleDateChange";
 import MemberSelect from "./MemberSelect";
 import { Plus, Eye, X } from "lucide-react";
@@ -47,14 +47,12 @@ const TaskSectionHeader = ({ icon: Icon, title }: { icon: any; title: string }) 
 export default function CreateTask({ projectSlug, workspace, projects }: CreateTaskProps) {
   const { createTaskWithAttachements } = useTask();
   const { getProjectMembers, getTaskStatusByProject } = useProject();
-  const { getSprintsByProject, getActiveSprint } = useSprint();
 
   const [selectedProject, setSelectedProject] = useState<any>(null);
   const [members, setMembers] = useState<any[]>([]);
   const [membersLoading, setMembersLoading] = useState(false);
   const [availableStatuses, setAvailableStatuses] = useState<any[]>([]);
-  const [sprints, setSprints] = useState<any[]>([]);
-  const [loadingSprints, setLoadingSprints] = useState(false);
+
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -64,7 +62,6 @@ export default function CreateTask({ projectSlug, workspace, projects }: CreateT
     storyPoints: "",
     startDate: "",
     dueDate: "",
-    sprintId: "",
     parentTaskId: "",
   });
   const [assignees, setAssignees] = useState<any[]>([]);
@@ -249,40 +246,13 @@ export default function CreateTask({ projectSlug, workspace, projects }: CreateT
       }
     };
 
-    const fetchProjectSprints = async (projectId: string) => {
-      if (!projectId || !getSprintsByProject) return;
-
-      const project = projects.find(p => p.id === projectId);
-      if (!project) return;
-
-      setLoadingSprints(true);
-      try {
-        const [projectSprints, activeSprint] = await Promise.all([
-          getSprintsByProject(project.slug),
-          getActiveSprint(projectId),
-        ]);
-        setSprints(projectSprints || []);
-
-        if (activeSprint) {
-          setFormData(prev => ({ ...prev, sprintId: activeSprint.id }));
-        }
-      } catch (error) {
-        console.error("Failed to fetch project sprints:", error);
-        setSprints([]);
-        toast.error("Không thể tải sprint của dự án");
-      } finally {
-        setLoadingSprints(false);
-      }
-    };
 
     if (selectedProject?.id) {
       fetchProjectMembers(selectedProject.id);
       fetchProjectStatuses(selectedProject.id);
-      fetchProjectSprints(selectedProject.id);
     } else {
       setMembers([]);
       setAvailableStatuses([]);
-      setSprints([]);
     }
   }, [selectedProject?.id]);
 
@@ -407,7 +377,6 @@ export default function CreateTask({ projectSlug, workspace, projects }: CreateT
         projectId: selectedProject.id,
         statusId: formData.status || defaultStatus?.id,
       };
-      if (formData.sprintId) taskData.sprintId = formData.sprintId;
       if (formData.type === "SUBTASK" && formData.parentTaskId) taskData.parentTaskId = formData.parentTaskId;
 
       if (assignees.length > 0) taskData.assigneeIds = assignees.map((a) => a.id);
@@ -886,39 +855,7 @@ export default function CreateTask({ projectSlug, workspace, projects }: CreateT
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="sprint">Sprint</Label>
-                <Select
-                  value={formData.sprintId}
-                  onValueChange={(value) => handleFormDataChange("sprintId", value)}
-                  disabled={loadingSprints}
-                >
-                  <SelectTrigger className="w-full border-[var(--border)] bg-[var(--background)]">
-                    <SelectValue
-                      placeholder={
-                        !selectedProject?.id
-                          ? "Chọn dự án trước"
-                          : loadingSprints
-                            ? "Đang tải..."
-                            : "Chọn sprint (không bắt buộc)"
-                      }
-                    />
-                  </SelectTrigger>
-                  <SelectContent className="border-[var(--border)] bg-[var(--popover)]">
-                    {sprints.map((sprint) => (
-                      <SelectItem
-                        className="hover:bg-[var(--hover-bg)]"
-                        key={sprint.id}
-                        value={sprint.id}
-                      >
-                        <div className="flex items-center gap-2">
-                          {sprint.name} {sprint.isDefault === true && "(Mặc định)"}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+
 
               <div className="space-y-2">
                 <Label htmlFor="startDate">Ngày bắt đầu</Label>

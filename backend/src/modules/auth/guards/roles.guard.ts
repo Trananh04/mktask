@@ -110,6 +110,38 @@ export class RolesGuard implements CanActivate {
         return m?.role ?? null;
       }
       case 'WORKSPACE': {
+        const workspace = await this.prisma.workspace.findUnique({
+          where: { id: scopeId },
+          select: {
+            organizationId: true,
+            organization: { select: { ownerId: true } },
+          },
+        });
+        if (!workspace) return null;
+
+        // Organization owner bypass
+        if (workspace.organization.ownerId === userId) {
+          return PrismaRole.OWNER;
+        }
+
+        // Check organization membership for elevated role
+        const orgMember = await this.prisma.organizationMember.findUnique({
+          where: {
+            userId_organizationId: {
+              userId,
+              organizationId: workspace.organizationId,
+            },
+          },
+          select: { role: true },
+        });
+
+        if (
+          orgMember &&
+          (orgMember.role === PrismaRole.MANAGER || orgMember.role === PrismaRole.OWNER)
+        ) {
+          return orgMember.role;
+        }
+
         const m = await this.prisma.workspaceMember.findUnique({
           where: { userId_workspaceId: { userId, workspaceId: scopeId } },
           select: { role: true },
@@ -117,16 +149,35 @@ export class RolesGuard implements CanActivate {
         return m?.role ?? null;
       }
       case 'PROJECT': {
+        const project = await this.prisma.project.findUnique({
+          where: { id: scopeId },
+          select: {
+            visibility: true,
+            workspaceId: true,
+            workspace: {
+              select: {
+                organizationId: true,
+                organization: { select: { ownerId: true } },
+              },
+            },
+          },
+        });
+        if (!project) return null;
+
+        // Organization owner bypass — org owner is always treated as OWNER
+        if (project.workspace.organization.ownerId === userId) {
+          return PrismaRole.OWNER;
+        }
+
+        // Access is granted ONLY by an explicit ProjectMember record.
+        // Org-level MANAGER is NOT automatically a project member — Admin must add them.
         const m = await this.prisma.projectMember.findUnique({
           where: { userId_projectId: { userId, projectId: scopeId } },
           select: { role: true },
         });
         if (m) return m.role;
-        const project = await this.prisma.project.findUnique({
-          where: { id: scopeId },
-          select: { visibility: true, workspaceId: true },
-        });
-        if (project?.visibility === 'INTERNAL') {
+
+        if (project.visibility === 'INTERNAL') {
           const ws = await this.prisma.workspaceMember.findUnique({
             where: { userId_workspaceId: { userId, workspaceId: project.workspaceId } },
             select: { role: true },

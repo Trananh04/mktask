@@ -114,29 +114,8 @@ export class OrganizationMembersService {
           },
         },
       });
-      if (orgMember.role === 'MANAGER' || orgMember.role === 'OWNER') {
-        const workspaces = await this.prisma.workspace.findMany({
-          where: { organizationId },
-        });
-
-        const role = orgMember.role;
-        const userId = orgMember.userId;
-
-        if (workspaces.length > 0) {
-          await Promise.all(
-            workspaces.map(async (workspace) => {
-              await this.workspaceMembersService.create(
-                {
-                  userId,
-                  role,
-                  workspaceId: workspace.id,
-                },
-                requestUserId,
-              );
-            }),
-          );
-        }
-      }
+      // Do NOT automatically add to workspaces.
+      // Workspace membership must be assigned explicitly by a manager or admin.
       return orgMember;
     } catch (error) {
       console.error(error);
@@ -628,43 +607,8 @@ export class OrganizationMembersService {
         },
       },
     });
-    const organizationId = updatedMember.organizationId;
-    const workspaces = await this.prisma.workspace.findMany({
-      where: { organizationId },
-    });
-
-    const role = updatedMember.role;
-    const userId = updatedMember.userId;
-    if (workspaces.length > 0) {
-      await Promise.all(
-        workspaces.map(async (workspace) => {
-          const wsMember = await this.prisma.workspaceMember.findUnique({
-            where: {
-              userId_workspaceId: { userId, workspaceId: workspace.id },
-            },
-          });
-          if (wsMember) {
-            await this.workspaceMembersService.update(
-              wsMember.id,
-              {
-                role,
-              },
-              requestUserId,
-            );
-          } else {
-            // If they are a MANAGER/OWNER of the org, they should be added to the workspace if not already there
-            await this.workspaceMembersService.create(
-              {
-                userId,
-                role,
-                workspaceId: workspace.id,
-              },
-              requestUserId,
-            );
-          }
-        }),
-      );
-    }
+    // Do NOT automatically sync workspace membership when org role changes.
+    // Workspace assignments must be managed explicitly by a manager or admin.
     return updatedMember;
   }
 

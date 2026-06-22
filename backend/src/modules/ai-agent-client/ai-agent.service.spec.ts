@@ -33,8 +33,6 @@ describe('AiAgentService', () => {
       tasks: [],
     });
 
-    expect(result.warnings).toContain(
-      'An đang quá tải: 8 công việc đang làm và 42.0/40.0 giờ.',
-    );
+    expect(result.warnings).toContain('An đang quá tải: 8 công việc đang làm và 42.0/40.0 giờ.');
   });
 });

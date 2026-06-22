@@ -7,6 +7,8 @@ import { useAuth } from "@/contexts/auth-context";
 import { useRouter } from "next/router";
 import ResizableSidebar from "./ResizableSidebar";
 import ProjectSelector from "./ProjectSelector";
+import WorkspaceSelector from "./WorkspaceSelector";
+import CreateDepartmentModal from "./CreateDepartmentModal";
 
 import {
   HiHome,
@@ -102,6 +104,7 @@ export default function Sidebar() {
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
   const [isMobileViewport, setIsMobileViewport] = useState(false);
   const [chatUnreadCount, setChatUnreadCount] = useState(0);
+  const [showCreateDeptModal, setShowCreateDeptModal] = useState(false);
 
   const { currentWorkspaceSlug, currentProjectSlug } = usePathnameParsing(pathname, isMounted);
 
@@ -177,7 +180,7 @@ export default function Sidebar() {
 
   const globalNavItems = useMemo(
     () => [
-      ...(isAuth && (currentUser?.role === "SUPER_ADMIN" || currentUser?.role === "MANAGER" || currentUser?.role === "MEMBER")
+      ...(isAuth && (currentUser?.role === "SUPER_ADMIN" || currentUser?.role === "MANAGER")
         ? [
             {
               name: t("dashboard"),
@@ -322,13 +325,7 @@ export default function Sidebar() {
         title: t("tasks"),
         disabled: false,
       },
-      {
-        name: t("sprints"),
-        href: `/${currentWorkspaceSlug || ""}/${currentProjectSlug || ""}/sprints`,
-        icon: <HiLightningBolt size={16} />,
-        title: t("sprints"),
-        disabled: false,
-      },
+
       // {
       //   name: "Calendar",
       //   href: `/${currentWorkspaceSlug || ""}/${currentProjectSlug || ""}/calendar`,
@@ -370,13 +367,7 @@ export default function Sidebar() {
             title: t("tasks"),
             disabled: false,
           },
-          {
-            name: t("sprints"),
-            href: `/${currentWorkspaceSlug}/${currentProjectSlug}/sprints`,
-            icon: <HiLightningBolt size={16} />,
-            title: t("sprints"),
-            disabled: false,
-          },
+
           {
             name: t("calendar"),
             href: `/${currentWorkspaceSlug}/${currentProjectSlug}/calendar`,
@@ -545,16 +536,9 @@ export default function Sidebar() {
                 );
               })()}
 
-            {/* Workspace level is hidden in single-company mode. */}
-            {currentWorkspaceSlug && !currentProjectSlug && (
-              <div className="layout-sidebar-header-dashboard">
-                <div className="layout-sidebar-header-dashboard-content">
-                  <div className="layout-sidebar-header-dashboard-icon">
-                    <HiViewBoards size={16} />
-                  </div>
-                  <span className="layout-sidebar-header-dashboard-title">{t("projects")}</span>
-                </div>
-              </div>
+            {/* Workspace Level */}
+            {currentWorkspaceSlug && (
+              <WorkspaceSelector currentWorkspaceSlug={currentWorkspaceSlug} />
             )}
 
             {/* Project Level */}
@@ -623,6 +607,20 @@ export default function Sidebar() {
         </ul>
 
       </nav>
+
+      {/* Create Department Button - shown to Managers and Super Admins on global nav */}
+      {isAuth && !currentWorkspaceSlug && (currentUser?.role === "SUPER_ADMIN" || currentUser?.role === "MANAGER") && (
+        <div className="px-3 py-3 border-t border-[var(--border)]">
+          <button
+            type="button"
+            onClick={() => setShowCreateDeptModal(true)}
+            className="flex items-center gap-2 w-full rounded-lg px-3 h-8 text-xs font-medium text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)] transition-colors"
+          >
+            <Plus size={14} />
+            <span>Tạo phòng ban</span>
+          </button>
+        </div>
+      )}
     </div>
   );
 
@@ -743,6 +741,18 @@ export default function Sidebar() {
           className="layout-sidebar-overlay"
           onClick={() => toggleSidebar(!isSidebarCollapsed)}
           aria-hidden="true"
+        />
+      )}
+
+      {showCreateDeptModal && (
+        <CreateDepartmentModal
+          onClose={() => setShowCreateDeptModal(false)}
+          onCreated={(ws) => {
+            // Navigate to new workspace
+            if (ws?.slug) {
+              window.location.href = `/${ws.slug}`;
+            }
+          }}
         />
       )}
     </>

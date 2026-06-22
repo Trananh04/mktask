@@ -92,10 +92,8 @@ const emptyOrganizationAnalyticsData = {
   managementSummary: null,
 };
 
-const singleCompanyKPICards = organizationKPICards.filter((card) => card.id !== "workspaces");
-const singleCompanyWidgets = organizationAnalyticsWidgets.filter(
-  (widget) => widget.id !== "workspace-projects"
-);
+const singleCompanyKPICards = organizationKPICards;
+const singleCompanyWidgets = organizationAnalyticsWidgets;
 
 // Sortable Widget Component
 function SortableWidget({

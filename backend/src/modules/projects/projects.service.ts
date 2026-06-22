@@ -198,34 +198,23 @@ export class ProjectsService {
     if (!workspace) throw new NotFoundException('Workspace not found');
 
     const isOrgOwner = workspace.organization.ownerId === userId;
-    const isOrgManager = organizationRole === Role.OWNER || organizationRole === Role.MANAGER;
     const superAdmin = await this.isSuperAdmin(userId);
 
     // Check global setting for project creation
     const allowProjectCreation = await this.settingsService.get('allow_project_creation');
     if (allowProjectCreation === 'false') {
-      // Only MANAGER+ at workspace level, org owner, or SUPER_ADMIN can create when disabled
-      if (!isOrgOwner && !isOrgManager && !superAdmin) {
-        const wsMember = await this.prisma.workspaceMember.findUnique({
-          where: { userId_workspaceId: { userId, workspaceId } },
-          select: { role: true },
-        });
-        if (!wsMember || (wsMember.role !== Role.OWNER && wsMember.role !== Role.MANAGER)) {
-          throw new ForbiddenException(
-            'Project creation is restricted. Please contact your organization admin.',
-          );
-        }
+      // Only SUPER_ADMIN can create when disabled
+      if (!superAdmin) {
+        throw new ForbiddenException(
+          'Project creation is restricted. Please contact your organization admin.',
+        );
       }
     } else {
-      // Default behavior: org owner and SUPER_ADMIN can always create, others need MANAGER+.
-      if (!isOrgOwner && !isOrgManager && !superAdmin) {
-        const wsMember = await this.prisma.workspaceMember.findUnique({
-          where: { userId_workspaceId: { userId, workspaceId } },
-          select: { role: true },
-        });
-        if (!wsMember || (wsMember.role !== Role.OWNER && wsMember.role !== Role.MANAGER)) {
-          throw new ForbiddenException('Insufficient permissions to create projects');
-        }
+      // Default: only org owner and SUPER_ADMIN can create projects
+      if (!isOrgOwner && !superAdmin) {
+        throw new ForbiddenException(
+          'Insufficient permissions to create projects. Only admins can create projects.',
+        );
       }
     }
 
@@ -752,12 +741,8 @@ export class ProjectsService {
     };
     if (!isSuperAdmin) {
       whereClause.OR = [
-        { visibility: 'PUBLIC', workspace: { organization: { members: { some: { userId } } } } },
+        // Access granted ONLY by explicit ProjectMember record.
         { members: { some: { userId } } },
-        {
-          visibility: 'INTERNAL',
-          workspace: { members: { some: { userId } } },
-        },
       ];
     }
 

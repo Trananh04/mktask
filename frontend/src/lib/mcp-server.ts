@@ -1,4 +1,4 @@
-﻿import api from "@/lib/api";
+import api from "@/lib/api";
 import * as crypto from 'crypto';
 
 interface ChatMessage {
@@ -10,6 +10,7 @@ interface ChatMessage {
 export interface MktaskContext {
   currentWorkspace?: string;
   currentProject?: string;
+  currentSprint?: string;
   currentUser?: {
     id: string;
     email: string;
@@ -30,6 +31,7 @@ class MCPServer {
   private tools: Map<string, MCPTool> = new Map();
   private conversationHistory: ChatMessage[] = [];
   private sessionId: string = this.getOrCreateSessionId();
+  private abortController: AbortController | null = null;
 
   // Initialize MCP server with context
   initialize(context: MktaskContext = {}) {
@@ -102,6 +104,11 @@ class MCPServer {
     // Build history for context
     const history = this.conversationHistory.slice(0, -1); // Exclude current message
 
+    // Recreate abort controller if needed
+    if (!this.abortController || this.abortController.signal.aborted) {
+      this.abortController = new AbortController();
+    }
+
     try {
       // Call backend API using centralized API client
       const apiResponse = await api.post(
@@ -111,10 +118,14 @@ class MCPServer {
           history,
           workspaceId: this.context.currentWorkspace,
           projectId: this.context.currentProject,
+          sprintId: this.context.currentSprint,
           sessionId: this.sessionId,
           currentOrganizationId: currentOrganizationId,
         },
-        { timeout: 18000 }
+        { 
+          timeout: 18000,
+          signal: this.abortController.signal 
+        }
       );
 
       const data = apiResponse.data;
@@ -146,9 +157,20 @@ class MCPServer {
       }
 
       return response;
-    } catch (error) {
+    } catch (error: any) {
+      if (error.name === 'AbortError' || error.name === 'CanceledError') {
+        console.log("MCP Server request was aborted");
+        throw new Error("ABORTED_BY_USER");
+      }
       console.error("MCP Server error:", error);
       throw error;
+    }
+  }
+
+  // Abort ongoing request
+  abort() {
+    if (this.abortController) {
+      this.abortController.abort();
     }
   }
 
@@ -240,6 +262,16 @@ export function extractContextFromPath(pathname: string): Partial<MktaskContext>
     !workspaceSubRoutes.includes(pathParts[1])
   ) {
     context.currentProject = pathParts[1];
+  }
+
+  // Extract sprint from URL query params or path if possible
+  // Current pattern: ?sprint=id
+  if (typeof window !== "undefined") {
+    const urlParams = new URLSearchParams(window.location.search);
+    const sprintParam = urlParams.get('sprint');
+    if (sprintParam) {
+      context.currentSprint = sprintParam;
+    }
   }
 
   return context;

@@ -34,6 +34,7 @@ interface KanbanTask {
     color: string;
   }>;
   isArchived?: boolean;
+  progressPercent?: number;
 }
 
 interface TaskCardProps {
@@ -152,13 +153,26 @@ const TaskCard: React.FC<TaskCardProps> = ({
           )}
         </div>
 
-        {/* Category Tag */}
-        <div className="mb-3">
+        {/* Category Tag and Progress */}
+        <div className="mb-3 flex items-center justify-between">
           <span
             className={`inline-block px-2 py-1 rounded text-xs font-medium text-[var(--muted-foreground)]`}
           >
             {task.priority}
           </span>
+          {typeof task.progressPercent === 'number' && (
+            <div className="flex items-center gap-2 w-1/2">
+              <div className="flex-1 h-1.5 rounded-full bg-[var(--muted)] overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-[var(--primary)] transition-all duration-300"
+                  style={{ width: `${Math.min(Math.max(task.progressPercent, 0), 100)}%` }}
+                />
+              </div>
+              <span className="text-[10px] text-[var(--muted-foreground)] whitespace-nowrap">
+                {task.progressPercent}%
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Bottom Section */}

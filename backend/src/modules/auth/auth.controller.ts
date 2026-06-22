@@ -94,6 +94,26 @@ export class AuthController {
   }
 
   @Public()
+  @Post('google')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Login with Google' })
+  @ApiResponse({
+    status: 200,
+    description: 'Login successful',
+    type: AuthResponseDto,
+  })
+  async loginWithGoogle(
+    @Body('idToken') idToken: string,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<AuthResponseDto> {
+    const result = await this.authService.loginWithGoogle(idToken);
+    if (result.refresh_token) {
+      this.setRefreshTokenCookie(res, result.refresh_token);
+    }
+    return result;
+  }
+
+  @Public()
   @Post('register')
   @ApiOperation({ summary: 'User registration' })
   @ApiBody({ type: RegisterDto })
@@ -111,7 +131,9 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ): Promise<AuthResponseDto> {
     const result = await this.authService.register(registerDto);
-    this.setRefreshTokenCookie(res, result.refresh_token);
+    if (result.refresh_token) {
+      this.setRefreshTokenCookie(res, result.refresh_token);
+    }
     return result;
   }
 

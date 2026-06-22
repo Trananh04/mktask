@@ -19,10 +19,10 @@ describe('ChatService', () => {
   const workspaceId = '88888888-8888-4888-8888-888888888888';
 
   const project = {
-      id: projectId,
-      name: 'Chat MVP',
-      slug: 'chat-mvp',
-      workspace: {
+    id: projectId,
+    name: 'Chat MVP',
+    slug: 'chat-mvp',
+    workspace: {
       id: workspaceId,
       organizationId,
       organization: {
@@ -294,10 +294,7 @@ describe('ChatService', () => {
       organizationId,
     });
 
-    await service.createDirectConversation(
-      { organizationId, participantId: teammateId },
-      memberId,
-    );
+    await service.createDirectConversation({ organizationId, participantId: teammateId }, memberId);
 
     expect(prisma.chatConversation.create).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -531,7 +528,10 @@ describe('ChatService', () => {
         }),
       }),
     );
-    expect(eventsGateway.emitChatMessagePinned).toHaveBeenCalledWith(conversationId, updatedMessage);
+    expect(eventsGateway.emitChatMessagePinned).toHaveBeenCalledWith(
+      conversationId,
+      updatedMessage,
+    );
   });
 
   it('creates a project task from a chat message with inferred title and due date', async () => {
@@ -546,13 +546,11 @@ describe('ChatService', () => {
       conversation: projectConversation,
     });
     prisma.projectMember.findUnique.mockResolvedValue({ role: Role.MEMBER });
-    prisma.project.findUnique
-      .mockResolvedValueOnce(project)
-      .mockResolvedValueOnce({
-        workflow: {
-          statuses: [{ id: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd' }],
-        },
-      });
+    prisma.project.findUnique.mockResolvedValueOnce(project).mockResolvedValueOnce({
+      workflow: {
+        statuses: [{ id: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd' }],
+      },
+    });
 
     await service.createTaskFromMessage(messageId, memberId, {});
 

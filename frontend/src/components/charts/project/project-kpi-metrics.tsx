@@ -90,7 +90,6 @@ export function ProjectKPIMetrics({ data, taskStatus }: ProjectKPIMetricsProps) 
   const [orderedIds, setOrderedIds] = useState<string[]>([
     "total-tasks",
     "completed-tasks",
-    "active-sprints",
     "bug-resolution",
     "task-completion",
     "open-bugs",
@@ -167,16 +166,7 @@ export function ProjectKPIMetrics({ data, taskStatus }: ProjectKPIMetricsProps) 
             icon: <CheckCircle className="h-4 w-4" />,
             onClick: () => handleNavigate("/tasks", doneStatusIds ? { statuses: doneStatusIds } : {}),
           };
-        case "active-sprints":
-          return {
-            id,
-            title: t("kpi.active_sprints.title"),
-            label: t("kpi.active_sprints.label"),
-            value: data?.activeSprints,
-            description: t("kpi.active_sprints.description"),
-            icon: <Zap className="h-4 w-4" />,
-            onClick: () => handleNavigate("/sprints"),
-          };
+
         case "bug-resolution":
           return {
             id,

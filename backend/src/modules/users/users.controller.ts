@@ -148,6 +148,11 @@ export class UsersController {
       throw new ForbiddenException('You cannot change your own role');
     }
 
+    // 3. Prevent self-updating of status
+    if (requestUser.role !== Role.SUPER_ADMIN && updateUserDto.status) {
+      throw new ForbiddenException('You cannot change your own status');
+    }
+
     return this.usersService.update(id, updateUserDto);
   }
 
