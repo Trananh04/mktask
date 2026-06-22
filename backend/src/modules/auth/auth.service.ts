@@ -141,7 +141,7 @@ export class AuthService {
           lastName: family_name || '',
           password: crypto.randomBytes(32).toString('hex'), // Random password
           role: Role.MEMBER,
-          status: UserStatus.ACTIVE,
+          status: UserStatus.PENDING, // Requires admin approval
           avatar: picture,
           externalId: sub,
           externalProvider: 'google',
@@ -149,6 +149,11 @@ export class AuthService {
 
         // Auto-join default organization
         await this.addUserToDefaultOrganization(user.id);
+
+        // Return without tokens - account is pending approval
+        throw new ForbiddenException(
+          'Tài khoản của bạn đã được tạo và đang chờ phê duyệt từ Admin. Vui lòng chờ thông báo.',
+        );
       } else {
         // Update user's external provider info if they didn't have it
         if (!user.externalId || user.externalProvider !== 'google') {
@@ -201,8 +206,12 @@ export class AuthService {
         },
       };
     } catch (error) {
-       console.error('Error verifying Google token:', error);
-       throw new UnauthorizedException('Invalid Google token');
+      // Re-throw known NestJS HTTP exceptions (PENDING, SUSPENDED, etc.)
+      if (error instanceof ForbiddenException || error instanceof UnauthorizedException || error instanceof BadRequestException) {
+        throw error;
+      }
+      console.error('Error verifying Google token:', error);
+      throw new UnauthorizedException('Invalid Google token');
     }
   }
 

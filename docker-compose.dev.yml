@@ -3,18 +3,18 @@ services:
   postgres:
     image: postgres:16
     environment:
-      POSTGRES_USER: taskosaur
-      POSTGRES_PASSWORD: taskosaur
-      POSTGRES_DB: taskosaur
+      POSTGRES_USER: ${POSTGRES_USER:-mktask}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mktask}
+      POSTGRES_DB: ${POSTGRES_DB:-mktask_db}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U taskosaur" ]
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-mktask}" ]
       interval: 10s
       timeout: 5s
       retries: 5
     networks:
-      - taskosaur-network
+      - mktask-network
     ports:
       - "5435:5432"
 
@@ -29,7 +29,7 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - taskosaur-network
+      - mktask-network
     ports:
       - "${REDIS_PORT:-6379}:6379"
 
@@ -43,13 +43,16 @@ services:
       - .env
     environment:
       # Override for Docker (uses service names instead of localhost)
-      DATABASE_URL: postgresql://taskosaur:taskosaur@postgres:5432/taskosaur
+      DATABASE_URL: postgresql://${POSTGRES_USER:-mktask}:${POSTGRES_PASSWORD:-mktask}@postgres:5432/${POSTGRES_DB:-mktask_db}
       REDIS_HOST: redis
       # Frontend environment variable for API connection
-      NEXT_PUBLIC_API_BASE_URL: http://localhost:3000/api
+      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8080/api}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:8081}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:8081}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
     ports:
-      - "3000:3000" # Backend
-      - "3001:3001" # Frontend
+      - "8080:3000" # Backend API → http://localhost:8080
+      - "8081:3001" # Frontend   → http://localhost:8081
     volumes:
       - .:/app
       - /app/node_modules
@@ -62,7 +65,7 @@ services:
       redis:
         condition: service_healthy
     networks:
-      - taskosaur-network
+      - mktask-network
     restart: unless-stopped
 
 volumes:
@@ -74,5 +77,5 @@ volumes:
     driver: local
 
 networks:
-  taskosaur-network:
+  mktask-network:
     driver: bridge

@@ -7,7 +7,6 @@ echo "🚀 Starting mktask Development Environment..."
 wait_for_postgres() {
   echo "⏳ Waiting for PostgreSQL to be ready..."
 
-  # Extract database host from DATABASE_URL (format: postgresql://user:pass@host:port/db)
   DB_HOST=$(echo "$DATABASE_URL" | sed -n 's/.*@\([^:]*\):.*/\1/p')
   DB_PORT=$(echo "$DATABASE_URL" | sed -n 's/.*:\([0-9]*\)\/.*/\1/p')
 
@@ -64,22 +63,17 @@ npm run db:migrate || {
   echo "⚠️  Migration failed or already up to date"
 }
 
-# Seed database (idempotent - safe to run multiple times)
+# Seed admin user only (idempotent - safe to run multiple times, no sample data)
 echo ""
-echo "🌱 Seeding database..."
-npm run db:seed || {
-  echo "⚠️  Seeding failed or data already exists"
-}
-
-# Seed admin user (idempotent)
-echo ""
-echo "👤 Seeding admin user..."
+echo "👤 Seeding admin account..."
 npm run db:seed:admin || {
   echo "⚠️  Admin seeding failed or already exists"
 }
 
 echo ""
 echo "✅ Bootstrap completed!"
+echo "   → Admin: admin@mktask.app / password123"
+echo "   → Change the password after first login!"
 echo ""
 echo "🎯 Starting development servers (frontend + backend)..."
 exec npm run dev:app
