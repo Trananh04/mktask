@@ -5,7 +5,7 @@ services:
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-mktask}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mktask}
-      POSTGRES_DB: ${POSTGRES_DB:-mktask}
+      POSTGRES_DB: ${POSTGRES_DB:-mktask_db}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -13,6 +13,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    ports:
+      - "5433:5432"
     networks:
       - mktask-network
     restart: unless-stopped
@@ -32,59 +34,64 @@ services:
       - mktask-network
     restart: unless-stopped
 
-  # mktask Application
-  app:
-    image: mktask/mktask:latest
+  # mktask Backend (NestJS)
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
     environment:
-      # Node Environment
-      NODE_ENV: ${NODE_ENV:-production}
-
-      # Database Configuration (overridden for Docker)
-      DATABASE_URL: postgresql://${POSTGRES_USER:-mktask}:${POSTGRES_PASSWORD:-mktask}@postgres:5432/${POSTGRES_DB:-mktask}
-
-      # Redis Configuration (overridden for Docker)
+      NODE_ENV: ${NODE_ENV:-development}
+      # Database - use Docker service name
+      DATABASE_URL: postgresql://${POSTGRES_USER:-mktask}:${POSTGRES_PASSWORD:-mktask}@postgres:5432/${POSTGRES_DB:-mktask_db}
+      # Redis - use Docker service name
       REDIS_HOST: redis
       REDIS_PORT: ${REDIS_PORT:-6379}
       REDIS_PASSWORD: ${REDIS_PASSWORD:-}
-
-      # Application URLs
-      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
-      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
-      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:3000/api}
-
-      # Security
+      REDIS_DB: ${REDIS_DB:-0}
+      # App
+      HOST: 0.0.0.0
       JWT_SECRET: ${JWT_SECRET}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-15m}
       JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-7d}
       ENCRYPTION_KEY: ${ENCRYPTION_KEY}
-
-      # Email Configuration (optional)
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3001}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3001}
+      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8080/api}
+      # Email
       SMTP_HOST: ${SMTP_HOST:-}
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASS: ${SMTP_PASS:-}
       SMTP_FROM: ${SMTP_FROM:-noreply@mktask.app}
       EMAIL_DOMAIN: ${EMAIL_DOMAIN:-mktask.app}
-
       # File Upload
-      UPLOAD_DEST: ${UPLOAD_DEST:-./uploads}
+      UPLOAD_DEST: ${UPLOAD_DEST:-/app/uploads}
       MAX_FILE_SIZE: ${MAX_FILE_SIZE:-10485760}
-
-      # Queue Configuration
+      MAX_EDITOR_IMAGE_SIZE: ${MAX_EDITOR_IMAGE_SIZE:-5242880}
+      ALLOWED_IMAGE_TYPES: ${ALLOWED_IMAGE_TYPES:-image/jpeg,image/png,image/gif,image/webp}
+      EDITOR_IMAGE_UPLOAD_FOLDER: ${EDITOR_IMAGE_UPLOAD_FOLDER:-editor-images}
+      # Queue
       MAX_CONCURRENT_JOBS: ${MAX_CONCURRENT_JOBS:-5}
       JOB_RETRY_ATTEMPTS: ${JOB_RETRY_ATTEMPTS:-3}
-
-      # AWS S3 Configuration (optional)
+      BULL_BOARD_EMAIL: ${BULL_BOARD_EMAIL:-}
+      BULL_BOARD_PASSWORD: ${BULL_BOARD_PASSWORD:-}
+      # AWS S3 (optional)
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
       AWS_REGION: ${AWS_REGION:-}
       AWS_BUCKET_NAME: ${AWS_BUCKET_NAME:-}
+      # Google
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
     ports:
-      - "3000:3000"
+      - "8080:3000"   # Backend API  → http://localhost:8080
+      - "8081:3001"   # Frontend     → http://localhost:8081
     volumes:
-      - app_uploads:/app/mktask/uploads
-      - app_logs:/app/mktask/logs
+      - .:/app
+      - /app/node_modules
+      - /app/backend/node_modules
+      - /app/frontend/node_modules
+      - app_uploads:/app/uploads
     depends_on:
       postgres:
         condition: service_healthy
@@ -93,18 +100,14 @@ services:
     networks:
       - mktask-network
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:3000/api/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))\""]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
 
 volumes:
   postgres_data:
+    driver: local
   redis_data:
+    driver: local
   app_uploads:
-  app_logs:
+    driver: local
 
 networks:
   mktask-network:

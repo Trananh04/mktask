@@ -44,18 +44,26 @@ async function bootstrap() {
   app.use(cookieParser());
 
   // Enable CORS
-  app.enableCors({
-    origin: process.env.CORS_ORIGINS
-      ? process.env.CORS_ORIGINS.split(',')
+  const corsOrigins = process.env.CORS_ORIGINS
+    ? process.env.CORS_ORIGINS.split(',').map((o) => o.trim())
+    : process.env.CORS_ORIGIN
+      ? process.env.CORS_ORIGIN.split(',').map((o) => o.trim())
       : [
           'http://localhost:3000',
           'http://localhost:3001',
-          'http://0.0.0.0:3000',
-          'http://0.0.0.0:3001',
+          'http://localhost:8080',
+          'http://localhost:8081',
           'http://127.0.0.1:3000',
-        ],
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+          'http://127.0.0.1:3001',
+          'http://127.0.0.1:8080',
+          'http://127.0.0.1:8081',
+        ];
+
+  app.enableCors({
+    origin: corsOrigins,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Organization-ID', 'x-organization-id'],
   });
 
   // Enable ValidationPipe globally

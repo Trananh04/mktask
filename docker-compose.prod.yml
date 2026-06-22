@@ -5,7 +5,7 @@ services:
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-mktask}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mktask}
-      POSTGRES_DB: ${POSTGRES_DB:-mktask}
+      POSTGRES_DB: ${POSTGRES_DB:-mktask_db}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -43,7 +43,7 @@ services:
 
       # Database Configuration (connect to internal PostgreSQL)
       # Note: Explicitly set to use 'postgres' hostname for Docker network
-      DATABASE_URL: postgresql://${POSTGRES_USER:-mktask}:${POSTGRES_PASSWORD:-mktask}@postgres:5432/${POSTGRES_DB:-mktask}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-mktask}:${POSTGRES_PASSWORD:-mktask}@postgres:5432/${POSTGRES_DB:-mktask_db}
 
       # Redis Configuration (connect to internal Redis)
       # Note: Explicitly set to use 'redis' hostname for Docker network

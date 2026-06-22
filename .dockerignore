@@ -1,75 +1,107 @@
-# Node modules (must be excluded to prevent architecture conflicts)
+# ─── Node modules ──────────────────────────────────────────────────────────
 **/node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Development files
+# ─── Environment files ─────────────────────────────────────────────────────
 .env
 .env.local
+.env.development
 .env.development.local
+.env.test
 .env.test.local
 .env.production.local
-.env.test
 
-# IDE files
+# ─── IDE / Editor ──────────────────────────────────────────────────────────
 .vscode/
 .idea/
 *.swp
 *.swo
+*.sublime-project
+*.sublime-workspace
 
-# OS files
+# ─── OS files ──────────────────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
+desktop.ini
 
-# Git
+# ─── Git ───────────────────────────────────────────────────────────────────
 .git/
 .gitignore
+.gitattributes
 
-# Documentation
+# ─── Documentation ─────────────────────────────────────────────────────────
 *.md
 LICENSE*
 CODE_OF_CONDUCT*
 CONTRIBUTING*
 SECURITY*
+ROADMAP*
+AGENTS.md
+DOCKER_DEV_SETUP.md
 
-# Build outputs
+# ─── Build outputs ─────────────────────────────────────────────────────────
 dist/
 build/
 .next/
 out/
+*.tsbuildinfo
 
-# Test files
+# ─── Test files ────────────────────────────────────────────────────────────
 test/
 tests/
+e2e/
 **/*.test.js
 **/*.spec.js
 **/*.test.ts
 **/*.spec.ts
+**/*.test.tsx
+**/*.spec.tsx
 coverage/
+.nyc_output/
 
-# Temporary files
+# ─── Temporary / Cache ─────────────────────────────────────────────────────
 tmp/
 temp/
+.cache/
 *.tmp
 *.temp
+*.log
+logs/
 
-# Socket files
-*.sock
+# ─── Prisma dev artifacts (keep migrations, exclude generated client) ───────
+backend/node_modules/.prisma/
+backend/src/generated/
 
-# Docker files (except entrypoint)
+# ─── Docker files (not needed inside image) ────────────────────────────────
 Dockerfile*
 docker-compose*
 .dockerignore
 
-# Development-only tools
+# ─── Dev tooling ───────────────────────────────────────────────────────────
 .eslintrc*
+.eslintignore
 .prettierrc*
+.prettierignore
 jest.config.*
+vitest.config.*
+playwright.config.*
+.husky/
 
-# Uploads and data
+# ─── Uploads & data ────────────────────────────────────────────────────────
 uploads/
 docker-data/
 
-# Scripts (not needed in build)
+# ─── Misc scripts not needed in image ──────────────────────────────────────
 sync_to_oss.sh
+get_manager.js
+tmp_verify_planner_ui.js
+backend/clear-project.js
+backend/clear-workspace.js
+
+# ─── Assets & plans (not needed at runtime) ────────────────────────────────
+assets/
+plans/
+docs/
+ai-agent/

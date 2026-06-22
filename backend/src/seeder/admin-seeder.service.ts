@@ -73,9 +73,9 @@ export class AdminSeederService {
     console.log('🌱 Seeding default organization...');
 
     const orgData = {
-      name: 'mekong',
-      slug: 'mekong',
-      description: 'Default organization for Mekong projects',
+      name: 'MeKong TH Holdings',
+      slug: 'mekong-th-holdings',
+      description: 'Default organization for MeKong TH Holdings projects',
       website: 'https://mktask.app',
       avatar: null,
       ownerId: adminUser.id,
