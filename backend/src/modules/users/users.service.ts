@@ -66,6 +66,8 @@ export class UsersService {
         language: createUserDto.language,
         role: createUserDto.role || Role.MEMBER,
         status: createUserDto.status || UserStatus.ACTIVE,
+        externalId: createUserDto.externalId,
+        externalProvider: createUserDto.externalProvider,
       },
     });
 

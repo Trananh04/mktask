@@ -19,6 +19,7 @@ import { SYSTEM_USER_ID } from '../../common/constants';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { Role, UserStatus } from '@prisma/client';
 import { SettingsService } from '../settings/settings.service';
+import { OAuth2Client } from 'google-auth-library';
 
 @Injectable()
 export class AuthService {
@@ -96,6 +97,115 @@ export class AuthService {
       },
     };
   }
+
+  async loginWithGoogle(idToken: string): Promise<AuthResponseDto> {
+    const clientId = this.configService.get<string>('GOOGLE_CLIENT_ID');
+    if (!clientId) {
+      throw new BadRequestException('Google Client ID is not configured');
+    }
+
+    const client = new OAuth2Client(clientId);
+
+    try {
+      const ticket = await client.verifyIdToken({
+        idToken,
+        audience: clientId,
+      });
+      const payload = ticket.getPayload();
+      if (!payload) {
+        throw new UnauthorizedException('Invalid Google token');
+      }
+
+      const { email, given_name, family_name, picture, sub } = payload;
+      
+      if (!email) {
+        throw new UnauthorizedException('Google account must have an email');
+      }
+
+      // Check if user already exists
+      let user: any = await this.usersService.findByEmail(email);
+
+      if (!user) {
+        // Register new user
+        // Check if registration is enabled
+        const registrationEnabledValue = await this.settingsService.get('registration_enabled');
+        const registrationEnabled = registrationEnabledValue !== 'false';
+        
+        if (!registrationEnabled) {
+           throw new BadRequestException('User registration is currently disabled. Please contact your administrator.');
+        }
+
+        user = await this.usersService.create({
+          email,
+          firstName: given_name || email.split('@')[0],
+          lastName: family_name || '',
+          password: crypto.randomBytes(32).toString('hex'), // Random password
+          role: Role.MEMBER,
+          status: UserStatus.ACTIVE,
+          avatar: picture,
+          externalId: sub,
+          externalProvider: 'google',
+        } as any); // Cast as any because CreateUserDto does not explicitly have externalId in all places if it didn't compile
+
+        // Auto-join default organization
+        await this.addUserToDefaultOrganization(user.id);
+      } else {
+        // Update user's external provider info if they didn't have it
+        if (!user.externalId || user.externalProvider !== 'google') {
+          await this.prisma.user.update({
+            where: { id: user.id },
+            data: { externalId: sub, externalProvider: 'google' }
+          });
+        }
+        
+        if (user.status === 'PENDING') {
+          throw new ForbiddenException('Tài khoản của bạn đang chờ phê duyệt từ Super Admin. Vui lòng chờ.');
+        }
+        if (user.status === 'SUSPENDED') {
+          throw new ForbiddenException('Tài khoản của bạn đã bị khóa. Vui lòng liên hệ admin.');
+        }
+        if (user.status === 'INACTIVE') {
+          throw new ForbiddenException('Tài khoản của bạn đã bị vô hiệu hóa.');
+        }
+      }
+
+      // Generate tokens
+      const jwtPayload: JwtPayload = {
+        sub: user.id,
+        email: user.email,
+        role: user.role,
+      };
+
+      const accessToken = this.jwtService.sign(jwtPayload);
+      const refreshToken = this.jwtService.sign(jwtPayload, {
+        secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
+        expiresIn: this.configService.get<string>('JWT_REFRESH_EXPIRES_IN', '7d') as any,
+      });
+
+      // Update refresh token in database
+      await this.usersService.updateRefreshToken(user.id, refreshToken);
+
+      return {
+        access_token: accessToken,
+        refresh_token: refreshToken,
+        user: {
+          id: user.id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          username: user.username || undefined,
+          role: user.role,
+          avatar: user.avatar || undefined,
+          bio: user.bio || undefined,
+          mobileNumber: user.mobileNumber || undefined,
+        },
+      };
+    } catch (error) {
+       console.error('Error verifying Google token:', error);
+       throw new UnauthorizedException('Invalid Google token');
+    }
+  }
+
 
   async register(registerDto: RegisterDto): Promise<AuthResponseDto> {
     // Check if registration is allowed (default: enabled)
@@ -255,36 +365,36 @@ export class AuthService {
       data: { defaultOrganizationId: defaultOrgId },
     });
 
-    let workspace = await this.prisma.workspace.findFirst({
-      where: { organizationId: defaultOrgId, slug: { in: ['mekong', 'projects'] }, archive: false },
-      select: { id: true },
-    });
-
-    if (!workspace) {
-      workspace = await this.prisma.workspace.create({
-        data: {
-          name: 'Projects',
-          slug: 'mekong',
-          description: 'Default project workspace for mekong',
-          organizationId: defaultOrgId,
-          createdBy: userId,
-          updatedBy: userId,
-        },
-        select: { id: true },
-      });
-    }
-
-    await this.prisma.workspaceMember.upsert({
-      where: { userId_workspaceId: { userId, workspaceId: workspace.id } },
-      update: { role: Role.MEMBER },
-      create: {
-        userId,
-        workspaceId: workspace.id,
-        role: Role.MEMBER,
-        createdBy: userId,
-        updatedBy: userId,
-      },
-    });
+    // let workspace = await this.prisma.workspace.findFirst({
+    //   where: { organizationId: defaultOrgId, slug: { in: ['mekong', 'projects'] }, archive: false },
+    //   select: { id: true },
+    // });
+    // 
+    // if (!workspace) {
+    //   workspace = await this.prisma.workspace.create({
+    //     data: {
+    //       name: 'Projects',
+    //       slug: 'mekong',
+    //       description: 'Default project workspace for mekong',
+    //       organizationId: defaultOrgId,
+    //       createdBy: userId,
+    //       updatedBy: userId,
+    //     },
+    //     select: { id: true },
+    //   });
+    // }
+    // 
+    // await this.prisma.workspaceMember.upsert({
+    //   where: { userId_workspaceId: { userId, workspaceId: workspace.id } },
+    //   update: { role: Role.MEMBER },
+    //   create: {
+    //     userId,
+    //     workspaceId: workspace.id,
+    //     role: Role.MEMBER,
+    //     createdBy: userId,
+    //     updatedBy: userId,
+    //   },
+    // });
   }
 
   async refreshToken(refreshToken: string): Promise<AuthResponseDto> {

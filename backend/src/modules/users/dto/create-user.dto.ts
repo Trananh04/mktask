@@ -123,4 +123,14 @@ export class CreateUserDto {
   @IsOptional()
   @IsEnum(UserStatus)
   status?: UserStatus;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  externalId?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  externalProvider?: string;
 }

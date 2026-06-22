@@ -2,6 +2,8 @@ import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import api, { TokenManager } from "@/lib/api";
+import { authApi } from "@/utils/api/authApi";
+import Script from "next/script";
 import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/auth-context";
 import { Button } from "@/components/ui/button";
@@ -111,6 +113,44 @@ export function LoginForm() {
       setIsLoading(false);
     }
   };
+
+  const handleGoogleLogin = async (response: any) => {
+    setIsLoading(true);
+    setError("");
+    try {
+      await authApi.loginWithGoogle(response.credential);
+      const redirectPath = await checkOrganizationAndRedirect();
+      window.location.href = redirectPath;
+    } catch (err: any) {
+      console.error("Google login error:", err);
+      setError("Đăng nhập bằng Google thất bại. Vui lòng thử lại.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const initGoogleLogin = () => {
+    if (typeof window !== "undefined" && window.google?.accounts?.id && process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID) {
+      window.google.accounts.id.initialize({
+        client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
+        callback: handleGoogleLogin,
+      });
+      const btnContainer = document.getElementById("google-signin-btn");
+      if (btnContainer) {
+        window.google.accounts.id.renderButton(
+          btnContainer,
+          { theme: "outline", size: "large", type: "standard", shape: "rectangular", text: "signin_with", width: btnContainer.offsetWidth || 250 } 
+        );
+      }
+    }
+  };
+
+  useEffect(() => {
+    // Re-initialize on mount if script is already loaded
+    initGoogleLogin();
+    
+    // Listen for resize to re-render button with correct width if needed (optional)
+  }, []);
 
   return (
     <motion.div
@@ -278,19 +318,41 @@ export function LoginForm() {
         </motion.div>
       </form>
 
+      {/* Google Login Script */}
+      <Script 
+        src="https://accounts.google.com/gsi/client" 
+        strategy="afterInteractive" 
+        onLoad={initGoogleLogin}
+      />
+
+      {/* Divider */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5, delay: 0.45 }}
+        className="login-divider-container"
+      >
+        <div className="login-divider-line">
+          <div className="login-divider-border" />
+        </div>
+        <div className="login-divider-text-container" style={{ position: 'absolute', background: 'var(--background)', padding: '0 8px' }}>
+          <span className="login-divider-text text-muted-foreground text-sm">Hoặc tiếp tục với</span>
+        </div>
+      </motion.div>
+
+      {/* Google Login Button */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.5 }}
+        className="flex justify-center w-full mt-4 mb-4"
+      >
+        <div id="google-signin-btn" className="w-full flex justify-center"></div>
+      </motion.div>
+
       {/* SSO Login Button */}
       {ssoConfig?.enabled && (
         <>
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5, delay: 0.45 }}
-            className="login-divider-container"
-          >
-            <div className="login-divider-text-container">
-              <span className="login-divider-text">Hoặc tiếp tục với</span>
-            </div>
-          </motion.div>
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}

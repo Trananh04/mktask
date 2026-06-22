@@ -37,6 +37,17 @@ export const authApi = {
     return response.data;
   },
 
+  loginWithGoogle: async (idToken: string): Promise<AuthResponse> => {
+    const response = await api.post<AuthResponse>("/auth/google", { idToken });
+
+    const { access_token, refresh_token, user } = response.data;
+    if (access_token) TokenManager.setAccessToken(access_token);
+    if (refresh_token) TokenManager.setRefreshToken(refresh_token);
+    if (user) localStorage.setItem("user", JSON.stringify(user));
+
+    return response.data;
+  },
+
   logout: async (): Promise<void> => {
     try {
       await api.post("/auth/logout", {}, { withCredentials: true });

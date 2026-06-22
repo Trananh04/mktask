@@ -767,13 +767,18 @@ export default function ChatPanel() {
 
       setMessages((prev) => [...prev, resultMessage]);
     } catch (error: any) {
-      const rawMessage = error?.response?.data?.message || error?.response?.data?.error || error?.message || "Failed to process request";
-      const errorMessage: Message = {
-        role: "assistant",
-        content: sanitizeErrorMessage(rawMessage),
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, errorMessage]);
+      // If user stopped manually, don't show an error message
+      const isStopped = error?.name === 'AbortError' || error?.name === 'CanceledError' || error?.message === 'stopped';
+      if (!isStopped) {
+        const rawMessage = error?.response?.data?.message || error?.response?.data?.error || error?.message || "Failed to process request";
+        const errorMessage: Message = {
+          role: "assistant",
+          content: sanitizeErrorMessage(rawMessage),
+          timestamp: new Date(),
+        };
+        setMessages((prev) => [...prev, errorMessage]);
+      }
+
     } finally {
       if (thinkingIntervalRef.current) {
         clearInterval(thinkingIntervalRef.current);
@@ -1097,6 +1102,17 @@ export default function ChatPanel() {
         },
       ]);
     } catch (error: any) {
+      if (error?.message === "ABORTED_BY_USER") {
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "system",
+            content: "🛑 Đã dừng phản hồi.",
+            timestamp: new Date(),
+          },
+        ]);
+        return;
+      }
       setMessages((prev) => [
         ...prev,
         {
@@ -1191,7 +1207,23 @@ export default function ChatPanel() {
   };
 
   const handleStopAgent = () => {
+    // Stop browser agent
     browserAgentRef.current?.stop();
+    // Abort any in-flight MCP/chat API request
+    mcpServer.abort();
+    // Reset loading states so the UI unblocks immediately
+    setIsLoading(false);
+    setIsBrowserAgentRunning(false);
+    // Clear any thinking animation
+    if (thinkingIntervalRef.current) {
+      clearInterval(thinkingIntervalRef.current);
+      thinkingIntervalRef.current = null;
+    }
+    if (thinkingDelayRef.current) {
+      clearTimeout(thinkingDelayRef.current);
+      thinkingDelayRef.current = null;
+    }
+    setAgentStatus("");
   };
 
   const clearChat = () => {
@@ -1734,8 +1766,8 @@ export default function ChatPanel() {
             {isBrowserAgentRunning || isLoading ? (
               <button
                 onClick={handleStopAgent}
-                disabled={isLoading && !isBrowserAgentRunning}
                 className="p-3 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center transition-all duration-200 shadow-sm hover:shadow-md flex-shrink-0"
+                title="Dừng thực thi"
               >
                 <HiStop className="w-4 h-4" />
               </button>
